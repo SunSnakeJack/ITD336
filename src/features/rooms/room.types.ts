@@ -1,0 +1,2 @@
+export interface Room { id:string; code:string; name:string; room_type_id:string; building:string|null; floor:string|null; location_description:string|null; capacity:number; description:string|null; booking_enabled:boolean; active:boolean; created_at:string; updated_at:string }
+export interface AvailabilityConflict { available:boolean; conflict_type:string|null; conflict_id:string|null; conflict_description:string|null }
