@@ -23,7 +23,7 @@ docs/                  Architecture and workflow decisions
 2. Run `npm install` and `npm run dev`.
 3. Install the Supabase CLI separately, then run `supabase start` and `npm run db:reset`. This applies migrations and `seed.sql`.
 4. Create test users through Supabase Auth. The auth trigger creates their profile. Assign roles through a trusted admin/server path, not browser code.
-5. Generate exact project types with `npm run db:types` after the local database is running.
+5. Generate exact types from the linked development project with `npm run db:types`, or use `npm run db:types:local` when a local database is intentionally running.
 
 ## Development commands
 
