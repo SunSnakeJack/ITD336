@@ -4,8 +4,8 @@ begin;
 
 do $$
 begin
- assert (select count(*)=27 from pg_tables where schemaname='public'), 'unexpected application table count';
- assert (select count(*)=27 from pg_tables t where schemaname='public' and rowsecurity), 'RLS is not enabled on every application table';
+ assert (select count(*)=28 from pg_tables where schemaname='public'), 'unexpected application table count';
+ assert (select count(*)=28 from pg_tables t where schemaname='public' and rowsecurity), 'RLS is not enabled on every application table';
  assert exists(select 1 from pg_constraint where conname='no_overlapping_active_bookings' and contype='x'), 'booking exclusion constraint missing';
  assert exists(select 1 from pg_indexes where indexname='one_active_loan_per_key'), 'active key loan unique index missing';
  assert not has_table_privilege('authenticated','public.audit_logs','INSERT'), 'authenticated can insert audit logs';

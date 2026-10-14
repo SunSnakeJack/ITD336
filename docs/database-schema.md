@@ -10,11 +10,11 @@
 
 ## Booking lifecycle
 
-`profiles` request `bookings` for rooms. Each booking has append-only `booking_status_history` and zero or more `booking_approvals`. Important rows are never deleted by client workflows. A GiST exclusion constraint prevents overlapping APPROVED/IN_USE bookings for the same room.
+`profiles` request or create `bookings`; beneficiary users and `external_parties` are represented separately from the authenticated actor. Each booking has append-only history and may point to its priority replacement through `superseded_by_booking_id`. A GiST exclusion constraint prevents overlapping APPROVED/IN_USE bookings.
 
 ## Key lifecycle
 
-An approved booking can own one active `key_loan` request. Checkout assigns a physical `room_key`; partial unique indexes prevent a key or booking from participating in two active loans. `key_loan_history` records transitions. Abnormal returns create `key_incidents`, which can have compensation records and later resolution.
+A `key_loan` identifies its room and is authorized by one of `BOOKING`, `CLASS_SCHEDULE`, or `DIRECT_USAGE`; a booking is no longer mandatory. Checkout assigns a tracked physical `room_key`. User-reported return and physical verification are separate evidence fields. Permanent housekeeper keys are marked outside operational tracking.
 
 ## Messaging and governance
 
