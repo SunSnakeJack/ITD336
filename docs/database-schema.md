@@ -20,6 +20,8 @@ Migration `0013_public_room_status_and_saturday_holiday.sql` adds `active` to th
 
 Migration `0014_academic_term_settings.sql` adds RLS-protected `academic_terms`. Authenticated users may read terms; changes require the `SETTINGS_MANAGE` permission through `upsert_academic_term`, which validates date ranges and writes an audit event. Recurring class schedules copy the selected term's year, code, and effective dates at save time so historical schedules remain stable when future term settings change.
 
+Migration `0015_academic_schedule_conflict_details.sql` adds a read-only, `SCHEDULE_MANAGE`-protected conflict lookup used before schedule mutation. It returns only the conflicting class label, weekday, and time range needed for a clear Admin message; the transactional conflict checks in `upsert_academic_schedule` remain the final authority.
+
 ## Booking lifecycle
 
 `profiles` request or create `bookings`; beneficiary users and `external_parties` are represented separately from the authenticated actor. Each booking has append-only history and may point to its priority replacement through `superseded_by_booking_id`. A GiST exclusion constraint prevents overlapping APPROVED/IN_USE bookings.

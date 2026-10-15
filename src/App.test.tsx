@@ -1,13 +1,16 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { App } from './App'
 import { addDays, dateKey, startOfWeek, weekRange } from './features/schedules/schedule.utils'
 import { SCHEDULE_TIMES, WeeklySchedule } from './features/schedules/components/WeeklySchedule'
 import { ROOM_MAP_ITEMS } from './features/rooms/room-map.config'
+import { formatScheduleConflictMessage } from './features/schedules/schedule.service'
+import { RoomCellActions } from './features/student/components/RoomCellActions'
 
 const authStateSubscription = { unsubscribe: vi.fn() }
+function LocationProbe() { return <output>{useLocation().pathname}</output> }
 
 vi.mock('./lib/supabase/client', () => ({
   setSessionPersistence: vi.fn(),
@@ -60,6 +63,9 @@ describe('Authentication entry point', () => {
 })
 
 describe('schedule date helpers', () => {
+  it('formats a detailed Thai message for an academic schedule conflict', () => {
+    expect(formatScheduleConflictMessage({ day_of_week: 1, course_code: 'ITD101', subject_name: 'การเขียนโปรแกรม', start_time: '09:30:00', end_time: '10:30:00' })).toBe('ไม่สามารถบันทึกได้: วันจันทร์ เวลา 09:30–10:30 มีวิชา ITD101 · การเขียนโปรแกรม อยู่แล้ว')
+  })
   it('creates a Monday-through-Sunday display range', () => {
     const monday = startOfWeek(new Date(2026, 9, 15))
     expect(dateKey(monday)).toBe('2026-10-12')
@@ -87,6 +93,12 @@ describe('schedule date helpers', () => {
     expect(holiday).toBeEnabled()
     holiday.click()
     expect(onCellSelect).toHaveBeenCalledWith(expect.objectContaining({ date: '2026-10-17', time: '08:30', holiday: true }))
+  })
+
+  it('sends a public room action to the login page', () => {
+    render(<MemoryRouter initialEntries={['/rooms/room-1']}><RoomCellActions selection={{ date: '2026-10-18', time: '08:30', holiday: false }} onClose={vi.fn()} /><LocationProbe /></MemoryRouter>)
+    fireEvent.click(screen.getByRole('button', { name: 'จองห้อง' }))
+    expect(screen.getByText('/login')).toBeInTheDocument()
   })
 
   it('allows an administrator to select an existing class event for editing', () => {

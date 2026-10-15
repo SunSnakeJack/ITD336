@@ -78,14 +78,35 @@ export async function getPublicScheduleEvents(filters: ScheduleFilters): Promise
 }
 
 export async function saveAcademicSchedule(input: AcademicScheduleInput) {
+  const conflictResult = await callRpc<UnknownRow[]>('find_academic_schedule_conflict', {
+    p_schedule_id: input.id ?? null, p_room_id: input.roomId, p_day_of_week: input.dayOfWeek,
+    p_start_time: input.startTime, p_end_time: input.endTime, p_effective_from: input.effectiveFrom, p_effective_until: input.effectiveUntil,
+  })
+  if (conflictResult.error) throw new Error(conflictResult.error.message)
+  const conflict = conflictResult.data?.[0]
+  if (conflict) throw new Error(formatScheduleConflictMessage(conflict))
   const result = await callRpc<string>('upsert_academic_schedule', {
     p_schedule_id: input.id ?? null, p_room_id: input.roomId, p_course_code: input.courseCode,
     p_subject_name: input.courseName, p_academic_year: input.academicYear, p_semester: input.semester, p_teacher_id: input.teacherId,
     p_day_of_week: input.dayOfWeek, p_start_time: input.startTime, p_end_time: input.endTime,
     p_effective_from: input.effectiveFrom, p_effective_until: input.effectiveUntil,
   })
-  if (result.error) throw new Error(result.error.message)
+  if (result.error) {
+    if (result.error.message.includes('ACADEMIC_SCHEDULE_CONFLICT')) throw new Error('ไม่สามารถบันทึกได้ เนื่องจากมีตารางเรียนในช่วงเวลานี้แล้ว กรุณาโหลดข้อมูลล่าสุดและลองใหม่')
+    if (result.error.message.includes('BOOKING_CONFLICT')) throw new Error('ไม่สามารถบันทึกได้ เนื่องจากมีการจองห้องในช่วงเวลานี้แล้ว')
+    if (result.error.message.includes('ROOM_BLOCK_CONFLICT')) throw new Error('ไม่สามารถบันทึกได้ เนื่องจากห้องถูกปิดใช้งานในช่วงเวลานี้')
+    throw new Error(result.error.message)
+  }
   return result.data
+}
+
+export function formatScheduleConflictMessage(row: UnknownRow) {
+  const days = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์']
+  const day = days[num(row, 'day_of_week')] ?? 'วันที่เลือก'
+  const start = text(row, 'start_time').slice(0, 5)
+  const end = text(row, 'end_time').slice(0, 5)
+  const course = [text(row, 'course_code'), text(row, 'subject_name')].filter(Boolean).join(' · ')
+  return `ไม่สามารถบันทึกได้: ${day} เวลา ${start}–${end} มีวิชา ${course || 'อื่น'} อยู่แล้ว`
 }
 
 export async function deactivateAcademicSchedule(id: string) {

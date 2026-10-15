@@ -16,6 +16,8 @@ Admin users can create a recurring academic schedule directly from an empty cale
 
 The public room detail intentionally hides calendar navigation and treats every visible cell as an action target. Its temporary action dialog exposes non-functional booking and key-request affordances without bypassing any backend workflow. Admin schedule deletion is a soft deactivation through the existing permission-checked RPC. Schedules may use either a configured academic term or an explicitly entered custom teaching range.
 
+The temporary public booking and key actions redirect to `/login`; they do not create records. Before an Admin schedule save, an authorized conflict lookup produces a localized message naming the weekday, existing subject, and time range. The mutation RPC repeats the conflict check transactionally to protect against races.
+
 The room directory and room-detail routes are public. Guests read only through dedicated `security definer` catalog and schedule RPCs; they receive active room metadata, class occupancy, generic booking occupancy, and generic room-block occupancy. Direct anonymous table access remains disabled. Authentication is isolated at `/login`, while `/admin/*` retains an explicit role guard.
 
 Notifications are stored with IN_APP and EMAIL delivery queue rows. No provider is wired in this phase. A trusted Edge Function/server can later claim EMAIL rows. Supabase Storage is ready for later use but no bucket is created because no confirmed document workflow exists.
