@@ -16,6 +16,10 @@ Migration `0011_public_room_schedule_api.sql` exposes a narrow anonymous read su
 
 Migration `0012_admin_room_map_management.sql` adds the general classroom type and rooms `2401`–`2406` so every Admin map target has a stable UUID. The `set_room_availability` RPC requires `ROOM_MANAGE`, changes active/booking state atomically, and records the before/after state in `audit_logs`.
 
+Migration `0016_admin_room_details.sql` adds the `update_room_details` RPC. It requires `ROOM_MANAGE`, validates the room name and capacity, keeps `active` and `booking_enabled` aligned, and records the before/after change in `audit_logs`.
+
+Migration `0017_external_booking_edit.sql` updates exact-time availability checks to expand recurring academic schedules and adds permission-checked read/update RPCs for approved external-party bookings. Updates exclude the current booking from overlap checks, retain booking history, and append an audit event.
+
 Migration `0013_public_room_status_and_saturday_holiday.sql` adds `active` to the privacy-safe public room catalog so closed rooms can be rendered without exposing direct table access. It records Saturday in `CLOSED_WEEKDAYS` and rejects new or reactivated Saturday academic schedules at the database boundary.
 
 Migration `0014_academic_term_settings.sql` adds RLS-protected `academic_terms`. Authenticated users may read terms; changes require the `SETTINGS_MANAGE` permission through `upsert_academic_term`, which validates date ranges and writes an audit event. Recurring class schedules copy the selected term's year, code, and effective dates at save time so historical schedules remain stable when future term settings change.

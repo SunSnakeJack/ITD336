@@ -123,3 +123,14 @@ export async function updateRoomAvailability(roomId: string, active: boolean) {
   const result = await callRpc<boolean>('set_room_availability', { p_room_id: roomId, p_active: active })
   if (result.error) throw new Error(result.error.message)
 }
+
+export async function updateRoomDetails(input: { roomId: string; name: string; capacity: number; active: boolean }) {
+  const result = await callRpc<boolean>('update_room_details', {
+    p_room_id: input.roomId, p_name: input.name, p_capacity: input.capacity, p_active: input.active,
+  })
+  if (result.error) {
+    if (result.error.message.includes('ROOM_NAME_REQUIRED')) throw new Error('กรุณาระบุชื่อห้อง')
+    if (result.error.message.includes('INVALID_ROOM_CAPACITY')) throw new Error('ความจุห้องต้องอยู่ระหว่าง 1–1,000 คน')
+    throw new Error(result.error.message)
+  }
+}

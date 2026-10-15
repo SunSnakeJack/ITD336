@@ -8,6 +8,10 @@ import { SCHEDULE_TIMES, WeeklySchedule } from './features/schedules/components/
 import { ROOM_MAP_ITEMS } from './features/rooms/room-map.config'
 import { formatScheduleConflictMessage } from './features/schedules/schedule.service'
 import { RoomCellActions } from './features/student/components/RoomCellActions'
+import { AdminCellActions } from './features/admin/components/AdminCellActions'
+import { ExternalBookingForm } from './features/bookings/components/ExternalBookingForm'
+import { getExternalBookingForEdit } from './features/bookings/external-booking.service'
+import { supabase } from './lib/supabase/client'
 
 const authStateSubscription = { unsubscribe: vi.fn() }
 function LocationProbe() { return <output>{useLocation().pathname}</output> }
@@ -107,6 +111,38 @@ describe('schedule date helpers', () => {
     render(<WeeklySchedule rangeStart={new Date(2026, 9, 12)} events={[classEvent]} onEventSelect={onEventSelect} />)
     screen.getByRole('button', { name: /ClassITD101/ }).click()
     expect(onEventSelect).toHaveBeenCalledWith(classEvent)
+  })
+
+  it('allows an administrator to select an existing booking for editing', () => {
+    const onEventSelect = vi.fn()
+    const bookingEvent = { id: 'booking-1', eventType: 'BOOKING' as const, title: 'ผู้มาติดต่อ', startsAt: '2026-10-16T08:30:00+07:00', endsAt: '2026-10-16T09:30:00+07:00', sourceId: 'booking-id-1', status: 'APPROVED' }
+    render(<WeeklySchedule rangeStart={new Date(2026, 9, 12)} events={[bookingEvent]} onEventSelect={onEventSelect} />)
+    fireEvent.click(screen.getByRole('button', { name: /Bookedผู้มาติดต่อ/ }))
+    expect(onEventSelect).toHaveBeenCalledWith(bookingEvent)
+  })
+
+  it('asks an administrator to choose the type of use before opening a form', () => {
+    const onExternalBooking = vi.fn()
+    const onAcademicSchedule = vi.fn()
+    render(<AdminCellActions date="2026-10-14" time="08:30" onClose={vi.fn()} onExternalBooking={onExternalBooking} onAcademicSchedule={onAcademicSchedule} />)
+    fireEvent.click(screen.getByRole('button', { name: 'จองห้องสำหรับบุคคลภายนอก' }))
+    expect(onExternalBooking).toHaveBeenCalledOnce()
+    fireEvent.click(screen.getByRole('button', { name: 'เพิ่มตารางเรียน' }))
+    expect(onAcademicSchedule).toHaveBeenCalledOnce()
+  })
+
+  it('shows the external booking fields without an academic term field', () => {
+    const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+    render(<QueryClientProvider client={client}><ExternalBookingForm roomId="room-1" date="2026-10-14" time="08:30" onClose={vi.fn()} /></QueryClientProvider>)
+    expect(screen.getByLabelText('ชื่อบุคคลภายนอก')).toBeInTheDocument()
+    expect(screen.getByLabelText('เหตุผลการจอง')).toBeInTheDocument()
+    expect(screen.queryByLabelText('ภาคเรียน')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'บันทึกการจอง' })).toBeInTheDocument()
+  })
+
+  it('maps an external booking timestamp to Bangkok date and time for editing', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{ booking_id: 'booking-1', external_name: 'ผู้มาติดต่อ', reason: 'ประชุม', starts_at: '2026-10-16T01:30:00Z', ends_at: '2026-10-16T02:30:00Z' }], error: null } as never)
+    await expect(getExternalBookingForEdit('booking-1')).resolves.toEqual({ bookingId: 'booking-1', externalName: 'ผู้มาติดต่อ', reason: 'ประชุม', date: '2026-10-16', startTime: '08:30', endTime: '09:30' })
   })
 
   it('keeps room targets separate from non-clickable map references', () => {

@@ -2,7 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import type { AuthIdentity } from '../../auth/auth.types'
 
 const links = [
-  ['/admin', 'ภาพรวม'], ['/admin/rooms', 'จัดการห้อง'], ['/admin/room-schedule', 'ตารางห้อง'], ['/admin/terms', 'ตั้งค่าภาคเรียน'],
+  ['/admin', 'ภาพรวม'], ['/admin/rooms', 'จัดการห้อง'], ['/admin/room-schedule', 'ปฏิทินการใช้ห้อง'], ['/admin/terms', 'ตั้งค่าภาคเรียน'],
 ]
 
 export function AdminLayout({ identity, onLogout }: { identity: AuthIdentity; onLogout: () => Promise<void> }) {

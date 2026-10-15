@@ -18,6 +18,10 @@ The public room detail intentionally hides calendar navigation and treats every 
 
 The temporary public booking and key actions redirect to `/login`; they do not create records. Before an Admin schedule save, an authorized conflict lookup produces a localized message naming the weekday, existing subject, and time range. The mutation RPC repeats the conflict check transactionally to protect against races.
 
+The Admin room calendar defaults to a Monday-through-Sunday empty grid until a room is selected. On a room detail page, an empty slot first asks whether the Admin is adding an academic schedule or an external-party booking. External bookings use the permission-checked `create_external_booking` RPC and render as pastel-blue booking events. Room metadata changes use one audited RPC rather than direct table updates.
+
+An Admin may reopen an approved external-party booking from its calendar cell and edit it through a controlled RPC. Exact-time availability checks expand recurring academic schedules for every requested Bangkok date, so both new and edited external bookings are rejected when they overlap a class occurrence, another active booking, or a room block.
+
 The room directory and room-detail routes are public. Guests read only through dedicated `security definer` catalog and schedule RPCs; they receive active room metadata, class occupancy, generic booking occupancy, and generic room-block occupancy. Direct anonymous table access remains disabled. Authentication is isolated at `/login`, while `/admin/*` retains an explicit role guard.
 
 Notifications are stored with IN_APP and EMAIL delivery queue rows. No provider is wired in this phase. A trusted Edge Function/server can later claim EMAIL rows. Supabase Storage is ready for later use but no bucket is created because no confirmed document workflow exists.
