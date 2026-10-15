@@ -30,31 +30,38 @@ where r.code='PRIORITY_USER' on conflict do nothing;
 insert into public.room_types(code,name,booking_policy,student_booking_allowed) values
  ('COMPUTER','Computer Room','AUTO_CONFIRM',true),('STUDIO','Studio Room','MANUAL_APPROVAL',true),
  ('GAMING','Gaming Room','MANUAL_APPROVAL',true),('ELEARNING','E-Learning Room','MANUAL_APPROVAL',true),
- ('MEETING','Meeting Room','AUTO_CONFIRM',true),('COLD','Cold Room','AUTO_CONFIRM',false)
+ ('MEETING','Meeting Room','AUTO_CONFIRM',true),('COLD','Cold Room','AUTO_CONFIRM',false),
+ ('CLASSROOM','Classroom','MANUAL_APPROVAL',true)
 on conflict(code) do update set booking_policy=excluded.booking_policy,student_booking_allowed=excluded.student_booking_allowed;
 insert into public.rooms(code,name,room_type_id,building,floor,capacity,description)
-select v.code,v.name,rt.id,'Main Building',v.floor,v.capacity,'Development seed room'
-from (values ('COMP-101','Computer Room','COMPUTER','1',40),('STUDIO-201','Studio Room','STUDIO','2',25),
- ('GAME-301','Gaming Room','GAMING','3',30),('ELRN-202','E-Learning Room','ELEARNING','2',40),
- ('MEET-401','Faculty Meeting Room','MEETING','4',20),('COLD-102','Cold Room','COLD','1',15)) v(code,name,type_code,floor,capacity)
+select v.code,v.name,rt.id,'อาคารคณะเทคโนโลยีสารสนเทศ',v.floor,v.capacity,'Development seed room aligned with the ITD floor map'
+from (values ('S2407','ห้องปฏิบัติการ S2407','COMPUTER','4',40),('S2408','ห้องปฏิบัติการ S2408','COMPUTER','4',40),
+ ('S2409','ห้องปฏิบัติการ S2409','COMPUTER','4',40),('S2410','ห้องปฏิบัติการ S2410','COMPUTER','4',40),
+ ('S2411','ห้องปฏิบัติการ S2411','COMPUTER','4',40),('S2412','ห้องปฏิบัติการ S2412','COMPUTER','4',40),
+ ('STUDIO','Studio','STUDIO','4.5',25),('ESPORT','E-sport','GAMING','3.5',30),
+ ('ELEARNING','E-learning','ELEARNING','4',40),('MEET-FACULTY','ห้องประชุมคณะ','MEETING','4',20),
+ ('2401','ห้องเรียน 2401','CLASSROOM','4',40),('2402','ห้องเรียน 2402','CLASSROOM','4',40),
+ ('2403','ห้องเรียน 2403','CLASSROOM','4',40),('2404','ห้องเรียน 2404','CLASSROOM','4',40),
+ ('2405','ห้องเรียน 2405','CLASSROOM','4',40),('2406','ห้องเรียน 2406','CLASSROOM','4',40)) v(code,name,type_code,floor,capacity)
 join public.room_types rt on rt.code=v.type_code on conflict(code) do nothing;
 insert into public.equipment(code,name) values
  ('PROJECTOR','Projector'),('COMPUTER','Computer'),('MICROPHONE','Microphone'),('CAMERA','Camera'),('SMART_TV','Smart TV'),('WHITEBOARD','Whiteboard')
 on conflict(code) do nothing;
 insert into public.room_equipment(room_id,equipment_id,quantity)
-select r.id,e.id,case when r.code='COMP-101' and e.code='COMPUTER' then 40 else 1 end
+select r.id,e.id,case when r.code like 'S24%' and e.code='COMPUTER' then 40 else 1 end
 from public.rooms r join public.equipment e on
- (r.code='COMP-101' and e.code in ('COMPUTER','PROJECTOR','WHITEBOARD')) or
- (r.code='STUDIO-201' and e.code in ('CAMERA','MICROPHONE','SMART_TV')) or
- (r.code in ('ELRN-202','MEET-401') and e.code in ('PROJECTOR','WHITEBOARD'))
+ (r.code like 'S24%' and e.code in ('COMPUTER','PROJECTOR','WHITEBOARD')) or
+ (r.code='STUDIO' and e.code in ('CAMERA','MICROPHONE','SMART_TV')) or
+ (r.code in ('ELEARNING','MEET-FACULTY') and e.code in ('PROJECTOR','WHITEBOARD'))
 on conflict do nothing;
 insert into public.room_keys(key_code,room_id)
-select v.key_code,r.id from (values ('KEY-STUDIO-001','STUDIO-201'),('KEY-STUDIO-002','STUDIO-201'),('KEY-STUDIO-003','STUDIO-201'),('KEY-MEET-001','MEET-401')) v(key_code,room_code)
+select v.key_code,r.id from (values ('KEY-STUDIO-001','STUDIO'),('KEY-STUDIO-002','STUDIO'),('KEY-STUDIO-003','STUDIO'),('KEY-MEET-001','MEET-FACULTY')) v(key_code,room_code)
 join public.rooms r on r.code=v.room_code on conflict(key_code) do nothing;
 insert into public.booking_rules(rule_key,rule_value,description) values
  ('MAX_ADVANCE_BOOKING_DAYS','3','Confirmed V2 limit; implemented as rolling exact duration pending calendar-day confirmation'),
  ('MAX_BOOKINGS_PER_DAY','3','PROVISIONAL development default'),
- ('ALLOW_WEEKEND_BOOKING','true','PROVISIONAL; Saturday is not hard-coded unavailable'),
+ ('ALLOW_WEEKEND_BOOKING','true','PROVISIONAL for Sunday; Saturday is closed through CLOSED_WEEKDAYS'),
+ ('CLOSED_WEEKDAYS','[6]','Confirmed weekly closure; PostgreSQL day 6 is Saturday'),
  ('ALLOW_EXTERNAL_USERS','false','PROVISIONAL; external workflow not active'),
  ('AUTO_APPROVE_TEACHER_CLASS','false','PROVISIONAL pending policy confirmation'),
  ('CANCEL_BEFORE_MINUTES','60','PROVISIONAL development default'),

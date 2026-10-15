@@ -1,0 +1,26 @@
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { academicSchedulesQuery, roomsQuery, scheduleKeys } from '../../schedules/schedule.queries'
+import { deactivateAcademicSchedule, saveAcademicSchedule } from '../../schedules/schedule.service'
+import { DAY_LABELS, dateKey } from '../../schedules/schedule.utils'
+import type { AcademicScheduleInput } from '../../schedules/schedule.types'
+
+const initial = (): AcademicScheduleInput => ({ roomId: '', courseCode: '', courseName: '', academicYear: String(new Date().getFullYear() + 543), semester: '1', teacherId: null, dayOfWeek: 1, startTime: '08:00', endTime: '09:00', effectiveFrom: dateKey(new Date()), effectiveUntil: dateKey(new Date(new Date().setMonth(new Date().getMonth() + 4))), active: true })
+
+export function AcademicSchedulesPage() {
+  const client = useQueryClient(); const rooms = useQuery(roomsQuery()); const schedules = useQuery(academicSchedulesQuery())
+  const [form, setForm] = useState(initial); const [open, setOpen] = useState(false)
+  const refresh = () => client.invalidateQueries({ queryKey: scheduleKeys.all })
+  const save = useMutation({ mutationFn: saveAcademicSchedule, onSuccess: () => { setOpen(false); setForm(initial()); void refresh() } })
+  const deactivate = useMutation({ mutationFn: deactivateAcademicSchedule, onSuccess: refresh })
+  const edit = (id: string) => { const item = schedules.data?.find((value) => value.id === id); if (item) { setForm({ id: item.id, roomId: item.roomId, courseCode: item.courseCode, courseName: item.courseName, academicYear: item.academicYear, semester: item.semester, teacherId: item.teacherId, dayOfWeek: item.dayOfWeek, startTime: item.startTime, endTime: item.endTime, effectiveFrom: item.effectiveFrom, effectiveUntil: item.effectiveUntil, active: item.active }); setOpen(true) } }
+  return <section className="content-page"><div className="page-heading"><div><span>ACADEMIC SCHEDULE</span><h1>จัดการตารางเรียน</h1><p>ระบบจะตรวจหาตารางเรียน การจอง และช่วงปิดห้องที่ทับซ้อนในฐานข้อมูล</p></div><button className="primary-action" onClick={() => { setForm(initial()); setOpen(true) }}>เพิ่มตารางเรียน</button></div>
+    {(schedules.error || save.error || deactivate.error) && <p className="panel-error">{(schedules.error || save.error || deactivate.error)?.message}</p>}
+    {open && <form className="schedule-form" onSubmit={(event) => { event.preventDefault(); save.mutate(form) }}><h2>{form.id ? 'แก้ไขตารางเรียน' : 'เพิ่มตารางเรียน'}</h2>
+      <label>ห้อง<select required value={form.roomId} onChange={(event) => setForm({ ...form, roomId: event.target.value })}><option value="">เลือกห้อง</option>{rooms.data?.filter((room) => room.active).map((room) => <option value={room.id} key={room.id}>{room.code} · {room.name}</option>)}</select></label>
+      <label>รหัสวิชา<input required value={form.courseCode} onChange={(event) => setForm({ ...form, courseCode: event.target.value })} /></label><label>ชื่อวิชา<input required value={form.courseName} onChange={(event) => setForm({ ...form, courseName: event.target.value })} /></label><label>ปีการศึกษา<input required value={form.academicYear} onChange={(event) => setForm({ ...form, academicYear: event.target.value })} /></label><label>ภาคเรียน<input required value={form.semester} onChange={(event) => setForm({ ...form, semester: event.target.value })} /></label>
+      <label>วัน<select value={form.dayOfWeek} onChange={(event) => setForm({ ...form, dayOfWeek: Number(event.target.value) })}>{DAY_LABELS.map((label, index) => <option value={index} key={label}>{label}</option>)}</select></label><label>เริ่ม<input type="time" required value={form.startTime} onChange={(event) => setForm({ ...form, startTime: event.target.value })} /></label><label>สิ้นสุด<input type="time" required value={form.endTime} onChange={(event) => setForm({ ...form, endTime: event.target.value })} /></label><label>เริ่มใช้<input type="date" required value={form.effectiveFrom} onChange={(event) => setForm({ ...form, effectiveFrom: event.target.value })} /></label><label>สิ้นสุด<input type="date" required value={form.effectiveUntil} onChange={(event) => setForm({ ...form, effectiveUntil: event.target.value })} /></label>
+      <div className="form-actions"><button type="button" onClick={() => setOpen(false)}>ยกเลิก</button><button className="primary-action" disabled={save.isPending}>บันทึก</button></div></form>}
+    <div className="data-table"><div className="table-row schedule-table table-head"><span>รายวิชา</span><span>ห้อง</span><span>วัน / เวลา</span><span>ช่วงวันที่</span><span>จัดการ</span></div>{schedules.data?.map((item) => <div className="table-row schedule-table" key={item.id}><span><strong>{item.courseCode}</strong><small>{item.courseName} · {item.semester}/{item.academicYear}</small></span><span>{item.roomLabel}</span><span>{DAY_LABELS[item.dayOfWeek]} {item.startTime.slice(0, 5)}–{item.endTime.slice(0, 5)}</span><span>{item.effectiveFrom}<small>ถึง {item.effectiveUntil}</small></span><span className="row-actions"><button onClick={() => edit(item.id)}>แก้ไข</button>{item.active && <button onClick={() => deactivate.mutate(item.id)}>ปิดใช้</button>}</span></div>)}</div>
+  </section>
+}

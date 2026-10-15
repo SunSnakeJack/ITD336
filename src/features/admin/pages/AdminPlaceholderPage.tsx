@@ -1,0 +1,1 @@
+export function AdminPlaceholderPage({ title }: { title: string }) { return <section className="content-page"><div className="page-heading"><div><span>ADMIN MODULE</span><h1>{title}</h1><p>โมดูลนี้คงไว้เป็นขอบเขตงานระยะถัดไป โดยยังไม่สร้างข้อมูลจำลองทับข้อมูลจริง</p></div></div><div className="empty-panel">ยังไม่มีการเปลี่ยนแปลงข้อมูลในโมดูลนี้</div></section> }
