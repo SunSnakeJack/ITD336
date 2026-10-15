@@ -18,6 +18,8 @@ Migration `0012_admin_room_map_management.sql` adds the general classroom type a
 
 Migration `0013_public_room_status_and_saturday_holiday.sql` adds `active` to the privacy-safe public room catalog so closed rooms can be rendered without exposing direct table access. It records Saturday in `CLOSED_WEEKDAYS` and rejects new or reactivated Saturday academic schedules at the database boundary.
 
+Migration `0014_academic_term_settings.sql` adds RLS-protected `academic_terms`. Authenticated users may read terms; changes require the `SETTINGS_MANAGE` permission through `upsert_academic_term`, which validates date ranges and writes an audit event. Recurring class schedules copy the selected term's year, code, and effective dates at save time so historical schedules remain stable when future term settings change.
+
 ## Booking lifecycle
 
 `profiles` request or create `bookings`; beneficiary users and `external_parties` are represented separately from the authenticated actor. Each booking has append-only history and may point to its priority replacement through `superseded_by_booking_id`. A GiST exclusion constraint prevents overlapping APPROVED/IN_USE bookings.

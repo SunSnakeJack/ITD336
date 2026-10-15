@@ -11,7 +11,9 @@ function eventForSlot(events: ScheduleEvent[], day: Date, time: string) {
   return events.find((event) => new Date(event.startsAt).getTime() < end && new Date(event.endsAt).getTime() > start)
 }
 
-export function WeeklySchedule({ rangeStart, events, onEmptyCellSelect }: { rangeStart: Date; events: ScheduleEvent[]; onEmptyCellSelect?: (date: string, time: string) => void }) {
+export interface ScheduleCellSelection { date: string; time: string; event?: ScheduleEvent; holiday: boolean }
+
+export function WeeklySchedule({ rangeStart, events, onEmptyCellSelect, onEventSelect, onCellSelect }: { rangeStart: Date; events: ScheduleEvent[]; onEmptyCellSelect?: (date: string, time: string) => void; onEventSelect?: (event: ScheduleEvent) => void; onCellSelect?: (selection: ScheduleCellSelection) => void }) {
   const [selected, setSelected] = useState<string | null>(null)
   const days = Array.from({ length: 7 }, (_, index) => addDays(rangeStart, index))
   return <div className="availability-table-wrap"><table className="availability-table"><thead><tr><th>Time</th>{days.map((day) => <th className={day.getDay() === 6 ? 'holiday-heading' : ''} key={dateKey(day)}>{new Intl.DateTimeFormat('th-TH', { weekday: 'short' }).format(day)} {day.getDate()}</th>)}</tr></thead><tbody>{SCHEDULE_TIMES.map((time) => <tr key={time}><th>{time}</th>{days.map((day) => {
@@ -19,6 +21,6 @@ export function WeeklySchedule({ rangeStart, events, onEmptyCellSelect }: { rang
     const event = eventForSlot(events, day, time)
     const holiday = day.getDay() === 6
     const interactive = Boolean(onEmptyCellSelect && !event && !holiday)
-    return <td key={cellKey}><button aria-pressed={selected === cellKey} className={`${holiday ? 'holiday' : event ? `occupied event-${event.eventType.toLowerCase()}` : 'available'}${selected === cellKey ? ' selected' : ''}`} disabled={holiday} onClick={() => { setSelected(cellKey); if (interactive) onEmptyCellSelect?.(dateKey(day), time) }} title={holiday ? 'วันหยุดประจำสัปดาห์' : event?.title ?? `ว่าง ${cellKey}`}><span>{holiday ? 'วันหยุด' : event ? EVENT_LABELS[event.eventType] : ''}</span>{event && !holiday && <small>{event.title}</small>}</button></td>
+    return <td key={cellKey}><button aria-pressed={selected === cellKey} className={`${holiday ? 'holiday' : event ? `occupied event-${event.eventType.toLowerCase()}` : 'available'}${selected === cellKey ? ' selected' : ''}`} disabled={holiday && !onCellSelect} onClick={() => { setSelected(cellKey); if (onCellSelect) onCellSelect({ date: dateKey(day), time, event, holiday }); else if (interactive) onEmptyCellSelect?.(dateKey(day), time); else if (event?.eventType === 'CLASS') onEventSelect?.(event) }} title={holiday ? 'วันหยุดประจำสัปดาห์' : event?.title ?? `ว่าง ${cellKey}`}><span>{holiday ? 'วันหยุด' : event ? EVENT_LABELS[event.eventType] : ''}</span>{event && !holiday && <small>{event.title}</small>}</button></td>
   })}</tr>)}</tbody></table></div>
 }

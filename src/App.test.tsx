@@ -80,6 +80,23 @@ describe('schedule date helpers', () => {
     holidays.forEach((slot) => expect(slot).toBeDisabled())
   })
 
+  it('allows the public room view to select every cell, including holidays', () => {
+    const onCellSelect = vi.fn()
+    render(<WeeklySchedule rangeStart={new Date(2026, 9, 12)} events={[]} onCellSelect={onCellSelect} />)
+    const holiday = screen.getAllByRole('button', { name: 'วันหยุด' })[0]
+    expect(holiday).toBeEnabled()
+    holiday.click()
+    expect(onCellSelect).toHaveBeenCalledWith(expect.objectContaining({ date: '2026-10-17', time: '08:30', holiday: true }))
+  })
+
+  it('allows an administrator to select an existing class event for editing', () => {
+    const onEventSelect = vi.fn()
+    const classEvent = { id: 'event-1', eventType: 'CLASS' as const, title: 'ITD101 · Test', startsAt: '2026-10-12T08:30:00+07:00', endsAt: '2026-10-12T09:30:00+07:00', sourceId: 'schedule-1', status: 'ACTIVE' }
+    render(<WeeklySchedule rangeStart={new Date(2026, 9, 12)} events={[classEvent]} onEventSelect={onEventSelect} />)
+    screen.getByRole('button', { name: /ClassITD101/ }).click()
+    expect(onEventSelect).toHaveBeenCalledWith(classEvent)
+  })
+
   it('keeps room targets separate from non-clickable map references', () => {
     const selectableCodes = ROOM_MAP_ITEMS.filter((item) => item.kind === 'room').map((item) => item.code)
     expect(selectableCodes).toHaveLength(16)

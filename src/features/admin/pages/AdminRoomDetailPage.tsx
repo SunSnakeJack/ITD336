@@ -8,7 +8,7 @@ import { CellScheduleForm } from '../../schedules/components/CellScheduleForm'
 import { useState } from 'react'
 
 export function AdminRoomDetailPage() {
-  const [selectedCell, setSelectedCell] = useState<{ date: string; time: string } | null>(null)
+  const [selectedCell, setSelectedCell] = useState<{ date: string; time: string; scheduleId?: string } | null>(null)
   const { roomId = '' } = useParams()
   const client = useQueryClient()
   const rooms = useQuery(roomsQuery())
@@ -23,7 +23,7 @@ export function AdminRoomDetailPage() {
   return <section className="content-page"><Link className="back-link" to="/admin/rooms">← กลับไปแผนผังห้อง</Link>
     <RoomDetailContent room={room} action={<button className={`room-availability-action ${room.active ? 'close' : 'open'}`} disabled={availability.isPending} onClick={toggle}>{availability.isPending ? 'กำลังบันทึก…' : room.active ? 'ปิดใช้งานห้อง' : 'เปิดใช้งานห้อง'}</button>} />
     {availability.error && <p className="panel-error">{availability.error.message}</p>}
-    <div className="detail-schedule-title"><h2>ตารางเวลาห้อง</h2><p>แสดงวันจันทร์ถึงวันอาทิตย์ของสัปดาห์ · คลิกช่องว่างเพื่อเพิ่มตารางเรียน</p></div><ScheduleExplorer fixedRoomId={room.id} roomRequired rangeMode="calendar-week" onEmptyCellSelect={(date, time) => setSelectedCell({ date, time })} />
-    {selectedCell && <CellScheduleForm roomId={room.id} date={selectedCell.date} time={selectedCell.time} onClose={() => setSelectedCell(null)} />}
+    <div className="detail-schedule-title"><h2>ตารางเวลาห้อง</h2><p>คลิกช่องว่างเพื่อเพิ่ม หรือคลิกตารางเรียนสีส้มเพื่อแก้ไขทั้งภาคเรียน</p></div><ScheduleExplorer fixedRoomId={room.id} roomRequired rangeMode="calendar-week" onEmptyCellSelect={(date, time) => setSelectedCell({ date, time })} onEventSelect={(event) => setSelectedCell({ date: event.startsAt.slice(0, 10), time: event.startsAt.slice(11, 16), scheduleId: event.sourceId })} />
+    {selectedCell && <CellScheduleForm roomId={room.id} date={selectedCell.date} time={selectedCell.time} scheduleId={selectedCell.scheduleId} onClose={() => setSelectedCell(null)} />}
   </section>
 }

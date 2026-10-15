@@ -12,7 +12,9 @@ The shared floor-plan geometry is frontend configuration in `src/features/rooms/
 
 Admin room management reuses the floor map and room-detail presentation. Availability changes use the permission-checked `set_room_availability` RPC, update booking availability consistently, and append an audit event. Admin room schedules use a Monday-through-Sunday calendar week; the public room view retains its rolling seven-day range.
 
-Admin users can create a one-date academic schedule directly from an empty calendar cell. Class events use the same schedule feed for Admin and guest rendering. Saturday is the confirmed weekly closure, is rendered as a non-interactive holiday, and is rejected for active academic schedules by a database trigger.
+Admin users can create a recurring academic schedule directly from an empty calendar cell and edit the whole recurring record from an occupied class cell. The selected academic term supplies the effective start/end dates and academic labels. Class events use the same schedule feed for Admin and guest rendering. Saturday is the confirmed weekly closure, is rendered as a holiday, and is rejected for active academic schedules by a database trigger.
+
+The public room detail intentionally hides calendar navigation and treats every visible cell as an action target. Its temporary action dialog exposes non-functional booking and key-request affordances without bypassing any backend workflow. Admin schedule deletion is a soft deactivation through the existing permission-checked RPC. Schedules may use either a configured academic term or an explicitly entered custom teaching range.
 
 The room directory and room-detail routes are public. Guests read only through dedicated `security definer` catalog and schedule RPCs; they receive active room metadata, class occupancy, generic booking occupancy, and generic room-block occupancy. Direct anonymous table access remains disabled. Authentication is isolated at `/login`, while `/admin/*` retains an explicit role guard.
 
