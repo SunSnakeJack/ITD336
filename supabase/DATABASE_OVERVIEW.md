@@ -4,7 +4,7 @@
 
 ## 1. Database Overview
 
-ฐานข้อมูลรองรับระบบจองห้อง ตารางเรียน การเบิก–คืนกุญแจ การแจ้งเตือน รายงาน และ RBAC บน Supabase PostgreSQL การวิเคราะห์นี้สร้างจาก migration `0001`–`0027` แบบ static เท่านั้น ไม่ได้เชื่อมต่อฐานข้อมูล local/remote และไม่ยืนยันข้อมูล runtime
+ฐานข้อมูลรองรับระบบจองห้อง ตารางเรียน การเบิก–คืนกุญแจ การแจ้งเตือน รายงาน และ RBAC บน Supabase PostgreSQL การวิเคราะห์นี้สร้างจาก migration `0001`–`0028` แบบ static เท่านั้น ไม่ได้เชื่อมต่อฐานข้อมูล local/remote และไม่ยืนยันข้อมูล runtime
 
 สถานะที่สร้างใหม่ใน migration ภายหลังจะทับความหมายของ definition ชื่อเดียวกันจาก migration ก่อนหน้า เช่น `create_booking`, `check_room_availability`, `request_booking_key`, `report_key_status` และ `get_admin_key_cabinet`
 
@@ -49,6 +49,7 @@
 | 0025 | `0025_self_service_booking_key_approval.sql` | self-service booking-key approval |
 | 0026 | `0026_extend_booking_close_time.sql` | เปลี่ยนเวลาปิดเป็น 18:30 |
 | 0027 | `0027_finalize_expired_bookings.sql` | reconcile booking หมดเวลาและ cancel guard |
+| 0028 | `0028_overdue_key_cabinet_and_borrower_identity.sql` | สถานะกุญแจเกินกำหนดและข้อมูลผู้ยืมสำหรับ Admin |
 
 ลำดับข้างต้นมาจากชื่อไฟล์แบบ zero-padded และ dependency ภายใน SQL ซึ่งสอดคล้องกัน ไม่ได้อาศัย remote migration table
 
@@ -138,15 +139,15 @@ Notification มี read state ต่อผู้ใช้และ delivery sta
 | 02 Auth/RLS | 0001–0003, 0005–0007, 0014, 0023 |
 | 03 Rooms/Academic | 0001, 0005–0006, 0008–0018, 0020, 0023, 0026 |
 | 04 Booking | 0001–0007, 0017, 0019–0020, 0022–0023, 0025, 0027 |
-| 05 Keys | 0001–0007, 0019–0025 |
-| 06 Notifications/Reports | 0001–0003, 0006–0007, 0020–0021, 0023–0027 |
+| 05 Keys | 0001–0007, 0019–0025, 0028 |
+| 06 Notifications/Reports | 0001–0003, 0006–0007, 0020–0021, 0023–0028 |
 | 07 Settings | 0001, 0005, 0013–0014, 0022–0023, 0026 |
 
 ## 17. Dependencies and Known Limitations
 
 - วิเคราะห์เฉพาะ repository; ไม่เข้าถึง local/remote database หรือ credentials
 - Conditional/data-dependent SQL และข้อมูล seed ที่ถูกแก้ภายหลังไม่สามารถยืนยันค่าปัจจุบันได้
-- `0004` ยืนยัน foundation ณ จุดเวลาเดิม ไม่ใช่จำนวน object ล่าสุดหลัง 0005–0027
+- `0004` ยืนยัน foundation ณ จุดเวลาเดิม ไม่ใช่จำนวน object ล่าสุดหลัง 0005–0028
 - จำนวน function ใช้ชื่อไม่ซ้ำ ไม่ได้แยก overload
 - RLS count เป็น static estimate; remote drift ถูกระบุเป็น **UNVERIFIED**
 - Authenticated end-to-end/database authorization tests: **NOT RUN — AUTH TEST USERS REQUIRED**

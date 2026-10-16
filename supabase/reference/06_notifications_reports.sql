@@ -9,7 +9,7 @@
 -- This file is not used for database deployment.
 -- =====================================================
 
--- Sources: 0001–003, 0006–007, 0020–0021, 0023–0027.
+-- Sources: 0001–003, 0006–007, 0020–0021, 0023–0028.
 
 -- Tables
 -- notifications: per-user in-app notification, optional related entity, read_at.
@@ -28,7 +28,7 @@
 -- Reporting/status views
 -- operational_room_summary_v, booking_report_v             -- 0007
 -- key_loan_report_v                                        -- latest 0023
--- admin_key_activity_v                                     -- 0021
+-- admin_key_activity_v                                     -- latest 0028
 -- booking_details_v, user_booking_history_v,
 -- staff_pending_bookings_v, key_current_status_v,
 -- active_key_loans_v, room_current_status_v                 -- latest 0007

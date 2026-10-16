@@ -17,6 +17,7 @@ import { UserBookingForm } from './features/bookings/components/UserBookingForm'
 import { reportKeyStatus, requestBookingKey } from './features/keys/key.service'
 import { markAllNotificationsRead, markNotificationRead } from './features/notifications/notification.queries'
 import { keyStatusLabel } from './features/keys/utils/key-status.utils'
+import { getBorrowerIdentity, keyCabinetLabels } from './features/keys/utils/admin-key.utils'
 import { PasswordField } from './features/auth/components/PasswordField'
 import { saveRoomUsagePolicy } from './features/policies/policy.service'
 import { canCancelBooking, effectiveBookingStatus } from './features/bookings/booking-status.utils'
@@ -288,6 +289,17 @@ describe('schedule date helpers', () => {
   it('labels a late user-reported return for the administrator', () => {
     expect(keyStatusLabel({status:'RETURN_REPORTED',returnedLate:true} as never)).toBe('คืนกุญแจช้ากว่ากำหนด')
     expect(keyStatusLabel({status:'RETURN_REPORTED',returnedLate:false} as never)).toBe('คืนกุญแจ')
+  })
+
+  it('distinguishes overdue keys from active checkouts and closed rooms', () => {
+    expect(keyCabinetLabels.CHECKED_OUT).toBe('มีผู้ถือกุญแจ')
+    expect(keyCabinetLabels.OVERDUE).toBe('เกินกำหนดคืนกุญแจ')
+    expect(keyCabinetLabels.ROOM_CLOSED).toBe('ห้องปิดใช้งาน')
+  })
+
+  it('shows the borrower name and university id with a safe fallback', () => {
+    expect(getBorrowerIdentity({borrower_id:'cfdba773-0000',borrowerName:'นักศึกษาทดสอบ',borrowerUniversityId:'66010001',borrowerEmail:'student@example.test'})).toEqual({name:'นักศึกษาทดสอบ',identifier:'66010001'})
+    expect(getBorrowerIdentity({borrower_id:'cfdba773-0000',borrowerName:null,borrowerUniversityId:null,borrowerEmail:'student@example.test'})).toEqual({name:'student@example.test',identifier:'รหัสระบบ cfdba773…'})
   })
 
   it('saves every configurable usage permission through the controlled RPC', async () => {

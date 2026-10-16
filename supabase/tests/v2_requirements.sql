@@ -20,5 +20,7 @@ begin
  assert (select rule_value#>>'{}'='18:30' from public.booking_rules where rule_key='GENERAL_CLOSE_TIME' and active), 'final 17:30-18:30 booking slot is outside operating hours';
  assert exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='reconcile_expired_bookings'), 'expired-booking reconciliation RPC missing';
  assert position('BOOKING_ALREADY_ENDED' in pg_get_functiondef('public.cancel_booking(uuid,text)'::regprocedure))>0, 'expired booking cancellation guard missing';
+ assert position('''OVERDUE''' in pg_get_functiondef('public.get_admin_key_cabinet()'::regprocedure))>0, 'key cabinet overdue state missing';
+ assert exists(select 1 from information_schema.columns where table_schema='public' and table_name='admin_key_activity_v' and column_name='borrower_university_id'), 'Admin key borrower identity missing';
 end $$;
 rollback;

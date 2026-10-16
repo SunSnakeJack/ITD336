@@ -2040,7 +2040,10 @@ export type Database = {
           approved_by: string | null
           authorized_by: string | null
           booking_id: string | null
+          borrower_email: string | null
+          borrower_full_name: string | null
           borrower_id: string | null
+          borrower_university_id: string | null
           checked_out_at: string | null
           checked_out_by: string | null
           class_schedule_id: string | null

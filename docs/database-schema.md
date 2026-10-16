@@ -34,6 +34,8 @@ Migration `0023_room_permission_matrix_and_key_availability.sql` replaces the sh
 
 Migration `0024_self_service_key_return.sql` completes borrower-reported returns immediately, releases assigned physical keys, and migrates earlier `RETURN_REPORTED` rows to `RETURNED`. A database trigger plus transaction-level room lock ensures that concurrent clients cannot create two active holders for one room. The key-cabinet aggregate counts only `CHECKED_OUT` and `LATE` loans as held.
 
+Migration `0028_overdue_key_cabinet_and_borrower_identity.sql` keeps the cabinet RPC signature stable while adding the derived `OVERDUE` status when an active loan is past `expected_return_at` (or already `LATE`). It also appends borrower name, university id, and email to `admin_key_activity_v` for authorized Admin monitoring.
+
 Migration `0025_self_service_booking_key_approval.sql` makes eligible booking-derived key requests `APPROVED` at creation, backfills valid legacy `REQUESTED` booking loans, and retains the booking-date, ownership, per-room policy, and current-holder checks. No key-loan approval action is required from Admin.
 
 Migration `0026_extend_booking_close_time.sql` aligns the database operating-hours rule with the schedule grid by moving the close time to 18:30. This makes the visible 17:30 start cell a valid one-hour booking while retaining 17:30 as the final allowed start time.

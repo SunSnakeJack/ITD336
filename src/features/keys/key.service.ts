@@ -3,8 +3,8 @@ import type { RpcResult } from '../bookings/booking.types'
 import type { AdminKeyLoan, AvailableRoomKey, KeyCabinetRoom, KeyLoan, KeyLoanDetail, KeyLoanStatus, KeyUsageSource } from './key.types'
 export const getMyKeyLoans=()=>unwrap<KeyLoan[]>(supabase.from('key_loans').select('*').order('requested_at',{ascending:false}))
 export async function getActiveKeyLoans(): Promise<AdminKeyLoan[]> {
-  const rows=await unwrap<Array<KeyLoan&{room_code:string;room_name:string;key_code:string|null;returned_late:boolean|null}>>(supabase.from('admin_key_activity_v' as never).select('*').order('requested_at',{ascending:false}) as never)
-  return rows.map((row)=>({...row,roomCode:row.room_code,roomName:row.room_name,keyCode:row.key_code,returnedLate:Boolean(row.returned_late)}))
+  const rows=await unwrap<Array<KeyLoan&{room_code:string;room_name:string;key_code:string|null;returned_late:boolean|null;borrower_full_name:string|null;borrower_university_id:string|null;borrower_email:string|null}>>(supabase.from('admin_key_activity_v' as never).select('*').order('requested_at',{ascending:false}) as never)
+  return rows.map((row)=>({...row,roomCode:row.room_code,roomName:row.room_name,keyCode:row.key_code,returnedLate:Boolean(row.returned_late),borrowerName:row.borrower_full_name,borrowerUniversityId:row.borrower_university_id,borrowerEmail:row.borrower_email}))
 }
 export const requestKey=(bookingId:string)=>unwrap<RpcResult>(supabase.rpc('request_key',{p_booking_id:bookingId}))
 export const approveKeyRequest=(loanId:string,notes?:string)=>unwrap<RpcResult>(supabase.rpc('approve_key_request',{p_key_loan_id:loanId,p_notes:notes}))

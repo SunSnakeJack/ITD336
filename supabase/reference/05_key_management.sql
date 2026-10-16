@@ -9,7 +9,7 @@
 -- This file is not used for database deployment.
 -- =====================================================
 
--- Sources: 0001–007, 0019–0025.
+-- Sources: 0001–007, 0019–0025, 0028.
 
 -- Tables: room_keys, key_loans, key_loan_history, key_incidents,
 -- key_compensations. A key loan can originate from BOOKING, CLASS_SCHEDULE or
@@ -43,11 +43,12 @@
 -- supplies the newer self-service room-level protection.
 
 -- Cabinet/status APIs
--- public.get_admin_key_cabinet() latest definition: 0024 (replaces 0023).
--- Colors/status semantics derive from room active state and loans: unavailable rooms,
--- available key/no holder, or checked-out/late holder. RETURNED no longer counts held.
+-- public.get_admin_key_cabinet() latest definition: 0028 (replaces 0023/0024).
+-- Colors/status semantics derive from room active state, expected_return_at and loans:
+-- closed rooms are gray, available/no holder is green, an in-period holder is yellow,
+-- and an overdue CHECKED_OUT/LATE holder is red. RETURNED no longer counts held.
 -- Views: key_current_status_v, active_key_loans_v (0007), key_loan_report_v latest
--- 0023, admin_key_activity_v (0021).
+-- 0023, admin_key_activity_v latest 0028 (replaces 0021 and appends borrower identity).
 
 -- Superseded definitions: request_booking_key 0019/0023; report_key_status 0021;
 -- get_admin_key_cabinet 0023; ensure_key_request_for_booking 0019 then 0025;
