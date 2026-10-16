@@ -69,7 +69,7 @@ insert into public.booking_rules(rule_key,rule_value,description) values
  ('BOOKING_DEFAULT_DURATION','60','PROVISIONAL duration in minutes'),
  ('HISTORY_RETENTION_DAYS','2555','PROVISIONAL development default'),
  ('GENERAL_OPEN_TIME','"08:30"','Confirmed V2 local opening time in Asia/Bangkok'),
- ('GENERAL_CLOSE_TIME','"17:30"','Confirmed V2 local closing time in Asia/Bangkok'),
+ ('GENERAL_CLOSE_TIME','"18:30"','Confirmed local closing time; permits the final 17:30-18:30 slot in Asia/Bangkok'),
  ('ADVANCE_BOOKING_INTERPRETATION','"EXACT_DURATION"','PENDING_BUSINESS_DECISION: confirm calendar days vs exact duration')
 on conflict(rule_key) do update set rule_value=excluded.rule_value,description=excluded.description;
 insert into public.system_settings(setting_key,setting_value,description) values

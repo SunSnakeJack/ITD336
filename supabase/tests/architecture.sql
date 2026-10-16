@@ -4,10 +4,13 @@ begin;
 
 do $$
 begin
- assert (select count(*)=28 from pg_tables where schemaname='public'), 'unexpected application table count';
- assert (select count(*)=28 from pg_tables t where schemaname='public' and rowsecurity), 'RLS is not enabled on every application table';
+ assert (select count(*)=29 from pg_tables where schemaname='public'), 'unexpected application table count';
+ assert (select count(*)=29 from pg_tables t where schemaname='public' and rowsecurity), 'RLS is not enabled on every application table';
  assert exists(select 1 from pg_constraint where conname='no_overlapping_active_bookings' and contype='x'), 'booking exclusion constraint missing';
  assert exists(select 1 from pg_indexes where indexname='one_active_loan_per_key'), 'active key loan unique index missing';
+ assert exists(select 1 from pg_trigger where tgname='enforce_single_room_key_holder' and not tgisinternal), 'room-level key holder trigger missing';
+ assert position('''APPROVED''' in pg_get_functiondef('public.request_booking_key(uuid,text)'::regprocedure))>0, 'booking-key auto approval missing';
+ assert (select rule_value#>>'{}'='18:30' from public.booking_rules where rule_key='GENERAL_CLOSE_TIME' and active), 'booking close time must include the final visible slot';
  assert not has_table_privilege('authenticated','public.audit_logs','INSERT'), 'authenticated can insert audit logs';
  assert not has_table_privilege('authenticated','public.bookings','UPDATE'), 'authenticated can directly update bookings';
 end $$;

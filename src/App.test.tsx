@@ -14,12 +14,22 @@ import { getExternalBookingForEdit } from './features/bookings/external-booking.
 import { supabase } from './lib/supabase/client'
 import { PublicLayout } from './features/public/components/PublicLayout'
 import { UserBookingForm } from './features/bookings/components/UserBookingForm'
+import { reportKeyStatus, requestBookingKey } from './features/keys/key.service'
+import { markAllNotificationsRead, markNotificationRead } from './features/notifications/notification.queries'
+import { keyStatusLabel } from './features/keys/utils/key-status.utils'
+import { PasswordField } from './features/auth/components/PasswordField'
+import { saveRoomUsagePolicy } from './features/policies/policy.service'
 
 const authStateSubscription = { unsubscribe: vi.fn() }
 function LocationProbe() { return <output>{useLocation().pathname}</output> }
 
 vi.mock('./lib/supabase/client', () => ({
   setSessionPersistence: vi.fn(),
+  execute: async (request: PromiseLike<{ data: unknown; error: { message: string } | null }>) => {
+    const { data, error } = await request
+    if (error) throw new Error(error.message)
+    return data
+  },
   unwrap: async (request: PromiseLike<{ data: unknown; error: { message: string } | null }>) => {
     const { data, error } = await request
     if (error) throw new Error(error.message)
@@ -66,7 +76,7 @@ describe('Authentication entry point', () => {
 
   it('shows the room map to a guest at the root route', async () => {
     renderPath('/')
-    expect(await screen.findByRole('heading', { name: 'แผนผังห้อง' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /แผนผังห้อง อาคารเรียน ชั้น 4/ })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'เข้าสู่ระบบ' })).toHaveAttribute('href', '/login')
     expect(screen.queryByRole('link', { name: 'เลือกห้อง' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'เลือกห้อง' })).not.toBeInTheDocument()
@@ -129,6 +139,22 @@ describe('schedule date helpers', () => {
     render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/rooms/room-1']}><RoomCellActions selection={{ date: '2026-10-18', time: '08:30', holiday: false }} authenticated={false} onClose={vi.fn()} /><LocationProbe /></MemoryRouter></QueryClientProvider>)
     fireEvent.click(screen.getByRole('button', { name: 'จองห้อง' }))
     expect(screen.getByText('/login')).toBeInTheDocument()
+  })
+
+  it('opens an embedded login form for a guest key request', () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(<QueryClientProvider client={client}><MemoryRouter><RoomCellActions selection={{date:'2026-10-18',time:'08:30',holiday:false}} authenticated={false} onClose={vi.fn()}/></MemoryRouter></QueryClientProvider>)
+    fireEvent.click(screen.getByRole('button',{name:'เบิกกุญแจ'}))
+    expect(screen.getByRole('heading',{name:'เข้าสู่ระบบ'})).toBeInTheDocument()
+    expect(screen.getByRole('button',{name:'ปิดหน้าต่างเข้าสู่ระบบ'})).toBeInTheDocument()
+  })
+
+  it('changes the password icon and field visibility together', () => {
+    render(<PasswordField value="secret" onChange={vi.fn()}/>)
+    expect(screen.getByLabelText('รหัสผ่าน')).toHaveAttribute('type','password')
+    fireEvent.click(screen.getByRole('button',{name:'แสดงรหัสผ่าน'}))
+    expect(screen.getByLabelText('รหัสผ่าน')).toHaveAttribute('type','text')
+    expect(screen.getByRole('button',{name:'ซ่อนรหัสผ่าน'})).toBeInTheDocument()
   })
 
   it('allows an authenticated user to book when the database grants permission', async () => {
@@ -230,6 +256,43 @@ describe('schedule date helpers', () => {
     render(<QueryClientProvider client={client}><ExternalBookingForm roomId="room-1" date="2026-10-16" time="08:30" bookingId="booking-1" onClose={vi.fn()} /></QueryClientProvider>)
     fireEvent.click(await screen.findByRole('button', { name: 'ลบการจอง' }))
     await waitFor(() => expect(supabase.rpc).toHaveBeenCalledWith('cancel_booking', { p_booking_id: 'booking-1', p_reason: 'ยกเลิกจากหน้าจัดการการจองบุคคลภายนอก' }))
+  })
+
+  it('marks one or all notifications read through owner-checked RPCs', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: true, error: null } as never)
+    await markNotificationRead('notification-1')
+    await markAllNotificationsRead()
+    expect(supabase.rpc).toHaveBeenNthCalledWith(1, 'mark_notification_read', { p_notification_id: 'notification-1' })
+    expect(supabase.rpc).toHaveBeenNthCalledWith(2, 'mark_all_notifications_read')
+  })
+
+  it('reports borrower key lifecycle actions through one controlled RPC', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: { id:'loan-1', status:'DAMAGED' }, error: null } as never)
+    await reportKeyStatus('loan-1','DAMAGED','ตัวกุญแจแตกร้าว')
+    expect(supabase.rpc).toHaveBeenCalledWith('report_key_status',{p_key_loan_id:'loan-1',p_action:'DAMAGED',p_description:'ตัวกุญแจแตกร้าว'})
+  })
+
+  it('completes a borrower key return through the self-service RPC', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: { id:'loan-1', status:'RETURNED' }, error: null } as never)
+    await reportKeyStatus('loan-1','RETURNED')
+    expect(supabase.rpc).toHaveBeenCalledWith('report_key_status',{p_key_loan_id:'loan-1',p_action:'RETURNED',p_description:null})
+  })
+
+  it('requests an owned booking key through the auto-approval RPC', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: { id:'loan-2', status:'APPROVED' }, error: null } as never)
+    await requestBookingKey('booking-1','ใช้งานตามเวลาจอง')
+    expect(supabase.rpc).toHaveBeenCalledWith('request_booking_key',{p_booking_id:'booking-1',p_notes:'ใช้งานตามเวลาจอง'})
+  })
+
+  it('labels a late user-reported return for the administrator', () => {
+    expect(keyStatusLabel({status:'RETURN_REPORTED',returnedLate:true} as never)).toBe('คืนกุญแจช้ากว่ากำหนด')
+    expect(keyStatusLabel({status:'RETURN_REPORTED',returnedLate:false} as never)).toBe('คืนกุญแจ')
+  })
+
+  it('saves every configurable usage permission through the controlled RPC', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({data:{},error:null} as never)
+    await saveRoomUsagePolicy({roomId:'room-1',guestViewDetails:true,guestViewSchedule:true,studentViewDetails:true,studentViewSchedule:true,studentBookEmpty:false,studentClassKey:true,studentOwnBookingKey:true,studentManageOwnBooking:true,studentViewOwnKeyStatus:true,studentViewOwnHistory:true,manualApproval:true})
+    expect(supabase.rpc).toHaveBeenCalledWith('update_room_usage_policy',{p_room_id:'room-1',p_policy:expect.objectContaining({student_class_key:true,student_book_empty:false,manual_approval:true})})
   })
 
   it('keeps room targets separate from non-clickable map references', () => {

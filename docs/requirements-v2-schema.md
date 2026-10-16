@@ -4,7 +4,7 @@
 
 ## สถานะข้อกำหนด
 
-- **Confirmed Requirement:** รองรับ auto-confirm, special-room approval, Cold Room restriction, booking override เฉพาะ booking ปกติ, key usage จาก booking/class/direct usage, self-return report, Staff read-only และเวลา 08:30–17:30
+- **Confirmed Requirement:** รองรับ auto-confirm, special-room approval, Cold Room restriction, booking override เฉพาะ booking ปกติ, key usage จาก booking/class/direct usage, self-return report, Staff read-only และเวลา 08:30–18:30
 - **Engineering Implementation Decision:** ตีความ advance limit 3 วันเป็น rolling exact duration ชั่วคราว และบันทึกใน `booking_rules`
 - **Pending Business Decision:** ต้องยืนยันว่า “3 วัน” คือ calendar days หรือ 72 ชั่วโมง และ Priority User จะ override protected schedules ได้หรือไม่
 - **Technical Blocker:** ยังไม่มี provider configuration ของระบบบัญชีมหาวิทยาลัย และยังไม่มี Auth test users สำหรับทดสอบ RLS แบบ end-to-end
@@ -36,7 +36,7 @@
 | `key_compensations` | compensation | REQ-14 | KEEP_AS_IS | ไม่มี | รองรับ reporting แล้ว / Medium |
 | `notifications` | user notifications | REQ-05 | KEEP_AS_IS | reuse สำหรับ superseded booking | แจ้งผู้ถูกแทนที่ / Medium |
 | `notification_deliveries` | channel delivery | — | KEEP_AS_IS | ไม่มี | ไม่กระทบ V2 / Low |
-| `booking_rules` | configurable rules | REQ-09 | MODIFY | 3 days, 08:30, 17:30, interpretation | ไม่กระจาย constants / High |
+| `booking_rules` | configurable rules | REQ-09 | MODIFY | 3 days, 08:30, 18:30, interpretation | ไม่กระจาย constants / High |
 | `system_settings` | system config | REQ-09 | KEEP_AS_IS | ใช้ timezone เดิม | `Asia/Bangkok` มีอยู่แล้ว / Medium |
 | `holidays` | holiday exceptions | REQ-09,10 | KEEP_AS_IS | ไม่มี | ไม่มี blanket weekday rule / Medium |
 | `audit_logs` | immutable audit trail | REQ-03,05,12,14 | KEEP_AS_IS | RPCs เพิ่ม event ใหม่ | รักษา actor และ history / High |
@@ -83,7 +83,7 @@ Priority authority is a narrow permission and does not imply Admin. Guest QR lin
 
 ## Booking workflow V2
 
-1. `create_booking` validates Auth, room, conflict, rolling 3-day limit, and 08:30–17:30 in `Asia/Bangkok`.
+1. `create_booking` validates Auth, room, conflict, three-calendar-day limit, and 08:30–18:30 in `Asia/Bangkok`.
 2. `AUTO_CONFIRM` room types create `APPROVED`; Studio/Gaming/E-learning create `PENDING`.
 3. Cold Room rejects users who are neither Teacher nor Admin.
 4. `override_booking` locks an approved non-priority booking/room, rejects any class/admin/block conflict, marks the old booking `SUPERSEDED`, creates a priority replacement, history, notification, and audit in one transaction. Priority bookings cannot recursively replace one another.
@@ -93,7 +93,7 @@ Priority authority is a narrow permission and does not imply Admin. Guest QR lin
 
 `borrow_key` supports `BOOKING`, `CLASS_SCHEDULE`, and `DIRECT_USAGE`. It assigns one tracked physical copy and creates a checked-out loan atomically without a manual approval stage. A Teacher may nominate a different borrower for that Teacher's active class schedule; arbitrary delegation remains forbidden.
 
-`confirm_key_return` records user evidence as `RETURN_REPORTED` and changes the key to `RESERVED`, not `AVAILABLE`, so the system does not imply independent physical verification or allow double checkout. `return_key` remains an Admin/`KEY_MANAGE` verification path and records physical verification separately.
+The earlier `confirm_key_return` design recorded `RETURN_REPORTED` for later Admin verification. The subsequently confirmed self-service rule in migration `0024` supersedes it: `report_key_status(..., 'RETURNED')` completes the return immediately and releases the key, while a room-level transaction lock prevents double checkout.
 
 Keys marked `EXCLUDED_PERMANENT` are excluded from ordinary borrowing and overdue tracking.
 

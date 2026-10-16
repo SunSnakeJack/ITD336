@@ -8,16 +8,16 @@ export function RoomFloorMap({ rooms, mode = 'public' }: { rooms: ScheduleRoom[]
   const meetingRoom = roomsByLayoutKey.get('MEET-FACULTY')
   const mapItems = ROOM_MAP_ITEMS.filter((item) => item.className !== 'faculty-area' && item.className !== 'meeting-room')
   return <section className="floor-map-panel" aria-labelledby="floor-map-title">
-    <header><div><h2 id="floor-map-title">แผนผังห้อง</h2><p>ชั้น 4 และห้องพิเศษบริเวณชั้นลอย</p></div><span>⌁ คลิกห้องเพื่อดูรายละเอียด</span></header>
+    <header><div className="map-title-icon" aria-hidden="true">⌂</div><div><h2 id="floor-map-title">แผนผังห้อง อาคารเรียน ชั้น 4</h2><p>เลือกห้องจากแผนผังเพื่อดูรายละเอียดการจอง</p></div><span>เลือกห้องเพื่อดูรายละเอียด</span></header>
     <div className="floor-map">
-      <div className="faculty-cluster"><strong>ห้องคณะ ITD</strong><div className="faculty-workspace">โต๊ะทำงานอาจารย์</div>{meetingRoom && (mode === 'admin' || meetingRoom.active) ? <Link className="faculty-meeting" to={`${roomBasePath}/${meetingRoom.id}`}>{meetingRoom.name}<span>↗</span></Link> : <div className="faculty-meeting unavailable">ห้องประชุมคณะ</div>}<div className="faculty-system">โต๊ะระบบ</div><small>ประตู</small></div>
+      <div className="faculty-cluster"><strong>Faculty Office</strong><div className="faculty-workspace">Faculty<br/>Workstations</div>{meetingRoom && (mode === 'admin' || meetingRoom.active) ? <Link className="faculty-meeting" to={`${roomBasePath}/${meetingRoom.id}`}>{meetingRoom.name}</Link> : <div className="faculty-meeting unavailable">Meeting room</div>}<div className="faculty-system">Reception</div><small>Entrance</small></div>
       {mapItems.map((item, index) => {
         if (item.kind === 'reference') return <div aria-disabled="true" className={`map-space map-reference ${item.className}`} key={`${item.label}-${index}`}><strong>{item.label}</strong>{item.detail && <small>{item.detail}</small>}</div>
         const room = roomsByLayoutKey.get(item.layoutKey)
         const selectable = room && (mode === 'admin' || room.active)
-        return selectable ? <Link className={`map-space map-room ${item.className}${room.active ? '' : ' room-inactive'}`} key={item.layoutKey} to={`${roomBasePath}/${room.id}`}><strong>{room.name}</strong><small>{room.code}</small>{item.detail && <small>{item.detail}</small>}{!room.active && <small>ปิดใช้งาน</small>}<span>↗</span></Link> : <div aria-disabled="true" className={`map-space map-reference ${item.className}`} key={item.layoutKey}><strong>{item.label}</strong>{room && !room.active ? <small>ปิดใช้งาน</small> : !room && <small>ยังไม่มีข้อมูลห้อง</small>}</div>
+        return selectable ? <Link className={`map-space map-room ${item.className}${room.active ? '' : ' room-inactive'}`} key={item.layoutKey} to={`${roomBasePath}/${room.id}`}>{item.className.startsWith('lab-')&&<b aria-hidden="true">▣</b>}<strong>{room.code}</strong><small>{room.name}</small>{item.detail && <small>{item.detail}</small>}{!room.active && <small>ปิดใช้งาน</small>}</Link> : <div aria-disabled="true" className={`map-space map-reference ${item.className}`} key={item.layoutKey}><strong>{room?.code??item.label}</strong>{room && !room.active ? <small>{room.name}</small> : !room && <small>ยังไม่มีข้อมูลห้อง</small>}</div>
       })}
     </div>
-    <footer><span><i className="legend-selectable" /> กดดูห้องได้</span><span><i className="legend-reference" /> จุดอ้างอิง</span><span><i className="legend-other" /> ห้องต่างชั้น</span><small>แผนผังโดยสังเขป · ไม่ใช่มาตราส่วนจริง</small></footer>
+    <footer><span><i className="legend-selectable" /> Room details available</span><span><i className="legend-reference" /> Landmark</span><span><i className="legend-other" /> Different level</span><small>Schematic floor plan · Not to scale</small></footer>
   </section>
 }

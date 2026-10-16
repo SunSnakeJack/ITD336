@@ -5,7 +5,7 @@ import { signInWithPassword } from '../auth.service'
 import { LoginBrand } from './LoginBrand'
 import { PasswordField } from './PasswordField'
 
-export function LoginForm() {
+export function LoginForm({ embedded=false, onClose, onSuccess }: { embedded?:boolean;onClose?:()=>void;onSuccess?:()=>void }={}) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
@@ -21,6 +21,7 @@ export function LoginForm() {
       setSessionPersistence(remember)
       const { error: signInError } = await signInWithPassword(email.trim(), password)
       if (signInError) throw signInError
+      onSuccess?.()
     } catch {
       setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง')
     } finally {
@@ -28,9 +29,8 @@ export function LoginForm() {
     }
   }
 
-  return (
-    <main className="login-page">
-      <section aria-labelledby="login-heading" className="login-card">
+  const card = <section aria-labelledby="login-heading" className={`login-card${embedded?' login-card-embedded':''}`}>
+        {embedded&&<button className="login-modal-close" aria-label="ปิดหน้าต่างเข้าสู่ระบบ" onClick={onClose} type="button">×</button>}
         <LoginBrand />
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="input-shell">
@@ -89,6 +89,5 @@ export function LoginForm() {
           <img className="faculty-footer-logo" src="/images/faculty-logo-placeholder.png" alt="โลโก้ชั่วคราวคณะเทคโนโลยีสารสนเทศและนวัตกรรมดิจิทัล" />
         </footer>
       </section>
-    </main>
-  )
+  return embedded?<div className="login-modal-backdrop" onMouseDown={(event)=>{if(event.target===event.currentTarget)onClose?.()}}>{card}</div>:<main className="login-page">{card}</main>
 }

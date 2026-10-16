@@ -9,7 +9,7 @@ The following need product-owner decisions before enforcement:
 5. No-show detection and penalties.
 6. History/audit retention and legal requirements.
 7. Report/export formats.
-8. Sunday staffing and exceptional-holiday policy; Saturday is confirmed closed and the general window is 08:30–17:30.
+8. Sunday staffing and exceptional-holiday policy; Saturday is confirmed closed and the general window is 08:30–18:30.
 9. Whether housekeepers need a separate authenticated role; permanently assigned keys are excluded from loan tracking.
 10. Teacher-specific presentation and delegation rules beyond the confirmed class-derived key permission shared with Students.
 11. Recurring schedule source/format and occurrence expansion ownership.

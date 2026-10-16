@@ -26,6 +26,18 @@ Migration `0019_student_booking_key_workflow.sql` adds database-owned slot permi
 
 Migration `0020_calendar_booking_notifications_and_key_reports.sql` changes the advance limit to Bangkok calendar days, exposes only a boolean ownership marker for privacy-safe schedule coloring, adds borrower-controlled LOST/DAMAGED reporting with incident and audit records, and publishes notifications through Realtime.
 
+Migration `0021_user_reported_key_status_and_notification_reads.sql` adds owner-checked notification read RPCs, a borrower-controlled key status RPC, room-level incident support when no physical key copy is configured, and an RLS-respecting Admin key activity view with late-return reporting.
+
+Migration `0022_configurable_usage_permissions.sql` stores the confirmed S2407–S2412 role/scenario matrix in `booking_rules`. Permission-checked RPCs expose and update the policy with audit logging, while slot checks, class-key creation, and a booking insert trigger enforce it in the database. The approval switch updates the applicable room type's booking policy so `create_booking` remains the transactional status authority.
+
+Migration `0023_room_permission_matrix_and_key_availability.sql` replaces the shared laboratory switches with an audited `room_usage_policies` row for every room. The first supported matrix columns are Guest and Student. Catalog/schedule visibility, empty-slot booking, class and own-booking key access, own-booking cancellation, and manual approval are enforced by RPCs or triggers. Booking-derived key checkout is blocked until the booking's Bangkok calendar date. The Admin key cabinet is backed by a permission-checked aggregate RPC over room, key, and active-loan state.
+
+Migration `0024_self_service_key_return.sql` completes borrower-reported returns immediately, releases assigned physical keys, and migrates earlier `RETURN_REPORTED` rows to `RETURNED`. A database trigger plus transaction-level room lock ensures that concurrent clients cannot create two active holders for one room. The key-cabinet aggregate counts only `CHECKED_OUT` and `LATE` loans as held.
+
+Migration `0025_self_service_booking_key_approval.sql` makes eligible booking-derived key requests `APPROVED` at creation, backfills valid legacy `REQUESTED` booking loans, and retains the booking-date, ownership, per-room policy, and current-holder checks. No key-loan approval action is required from Admin.
+
+Migration `0026_extend_booking_close_time.sql` aligns the database operating-hours rule with the schedule grid by moving the close time to 18:30. This makes the visible 17:30 start cell a valid one-hour booking while retaining 17:30 as the final allowed start time.
+
 Migration `0013_public_room_status_and_saturday_holiday.sql` adds `active` to the privacy-safe public room catalog so closed rooms can be rendered without exposing direct table access. It records Saturday in `CLOSED_WEEKDAYS` and rejects new or reactivated Saturday academic schedules at the database boundary.
 
 Migration `0014_academic_term_settings.sql` adds RLS-protected `academic_terms`. Authenticated users may read terms; changes require the `SETTINGS_MANAGE` permission through `upsert_academic_term`, which validates date ranges and writes an audit event. Recurring class schedules copy the selected term's year, code, and effective dates at save time so historical schedules remain stable when future term settings change.
@@ -38,7 +50,7 @@ Migration `0015_academic_schedule_conflict_details.sql` adds a read-only, `SCHED
 
 ## Key lifecycle
 
-A `key_loan` identifies its room and is authorized by one of `BOOKING`, `CLASS_SCHEDULE`, or `DIRECT_USAGE`; a booking is no longer mandatory. Checkout assigns a tracked physical `room_key`. User-reported return and physical verification are separate evidence fields. Permanent housekeeper keys are marked outside operational tracking.
+A `key_loan` identifies its room and is authorized by one of `BOOKING`, `CLASS_SCHEDULE`, or `DIRECT_USAGE`; a booking is no longer mandatory. Checkout may assign a tracked physical `room_key`. A normal borrower return completes immediately, while the schema retains legacy verification fields for historical compatibility. Permanent housekeeper keys are marked outside operational tracking.
 
 ## Messaging and governance
 

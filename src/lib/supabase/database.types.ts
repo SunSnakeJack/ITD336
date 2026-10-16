@@ -734,7 +734,7 @@ export type Database = {
           description: string
           id: string
           incident_type: Database["public"]["Enums"]["incident_type"]
-          key_id: string
+          key_id: string | null
           key_loan_id: string | null
           reported_at: string
           reported_by: string
@@ -747,7 +747,7 @@ export type Database = {
           description: string
           id?: string
           incident_type: Database["public"]["Enums"]["incident_type"]
-          key_id: string
+          key_id?: string | null
           key_loan_id?: string | null
           reported_at?: string
           reported_by: string
@@ -760,7 +760,7 @@ export type Database = {
           description?: string
           id?: string
           incident_type?: Database["public"]["Enums"]["incident_type"]
-          key_id?: string
+          key_id?: string | null
           key_loan_id?: string | null
           reported_at?: string
           reported_by?: string
@@ -789,6 +789,13 @@ export type Database = {
             columns: ["key_loan_id"]
             isOneToOne: false
             referencedRelation: "active_key_loans_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_incidents_key_loan_id_fkey"
+            columns: ["key_loan_id"]
+            isOneToOne: false
+            referencedRelation: "admin_key_activity_v"
             referencedColumns: ["id"]
           },
           {
@@ -873,6 +880,13 @@ export type Database = {
             columns: ["key_loan_id"]
             isOneToOne: false
             referencedRelation: "active_key_loans_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loan_history_key_loan_id_fkey"
+            columns: ["key_loan_id"]
+            isOneToOne: false
+            referencedRelation: "admin_key_activity_v"
             referencedColumns: ["id"]
           },
           {
@@ -1621,6 +1635,86 @@ export type Database = {
         }
         Relationships: []
       }
+      room_usage_policies: {
+        Row: {
+          guest_view_details: boolean
+          guest_view_schedule: boolean
+          manual_approval: boolean
+          room_id: string
+          student_book_empty: boolean
+          student_class_key: boolean
+          student_manage_own_booking: boolean
+          student_own_booking_key: boolean
+          student_view_details: boolean
+          student_view_own_history: boolean
+          student_view_own_key_status: boolean
+          student_view_schedule: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          guest_view_details?: boolean
+          guest_view_schedule?: boolean
+          manual_approval?: boolean
+          room_id: string
+          student_book_empty?: boolean
+          student_class_key?: boolean
+          student_manage_own_booking?: boolean
+          student_own_booking_key?: boolean
+          student_view_details?: boolean
+          student_view_own_history?: boolean
+          student_view_own_key_status?: boolean
+          student_view_schedule?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          guest_view_details?: boolean
+          guest_view_schedule?: boolean
+          manual_approval?: boolean
+          room_id?: string
+          student_book_empty?: boolean
+          student_class_key?: boolean
+          student_manage_own_booking?: boolean
+          student_own_booking_key?: boolean
+          student_view_details?: boolean
+          student_view_own_history?: boolean
+          student_view_own_key_status?: boolean
+          student_view_schedule?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_usage_policies_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: true
+            referencedRelation: "operational_room_summary_v"
+            referencedColumns: ["room_id"]
+          },
+          {
+            foreignKeyName: "room_usage_policies_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: true
+            referencedRelation: "room_current_status_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_usage_policies_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: true
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_usage_policies_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           academic_schedule_confirmed: boolean
@@ -1795,6 +1889,174 @@ export type Database = {
           requested_by: string | null
           return_confirmed_by: string | null
           returned_at: string | null
+          returned_to: string | null
+          room_code: string | null
+          room_id: string | null
+          room_name: string | null
+          status: Database["public"]["Enums"]["key_loan_status"] | null
+          updated_at: string | null
+          usage_source: Database["public"]["Enums"]["key_usage_source"] | null
+          user_reported_return_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "key_loans_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_authorized_by_fkey"
+            columns: ["authorized_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_details_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_report_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "staff_pending_bookings_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "user_booking_history_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_borrower_id_fkey"
+            columns: ["borrower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_checked_out_by_fkey"
+            columns: ["checked_out_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_class_schedule_id_fkey"
+            columns: ["class_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "class_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_key_id_fkey"
+            columns: ["key_id"]
+            isOneToOne: false
+            referencedRelation: "key_current_status_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_key_id_fkey"
+            columns: ["key_id"]
+            isOneToOne: false
+            referencedRelation: "room_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_physically_verified_by_fkey"
+            columns: ["physically_verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_return_confirmed_by_fkey"
+            columns: ["return_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_returned_to_fkey"
+            columns: ["returned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "operational_room_summary_v"
+            referencedColumns: ["room_id"]
+          },
+          {
+            foreignKeyName: "key_loans_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "room_current_status_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_key_activity_v: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          authorized_by: string | null
+          booking_id: string | null
+          borrower_id: string | null
+          checked_out_at: string | null
+          checked_out_by: string | null
+          class_schedule_id: string | null
+          created_at: string | null
+          expected_return_at: string | null
+          id: string | null
+          key_code: string | null
+          key_id: string | null
+          notes: string | null
+          physically_verified_at: string | null
+          physically_verified_by: string | null
+          requested_at: string | null
+          requested_by: string | null
+          return_confirmed_by: string | null
+          returned_at: string | null
+          returned_late: boolean | null
           returned_to: string | null
           room_code: string | null
           room_id: string | null
@@ -2209,6 +2471,7 @@ export type Database = {
       }
       key_loan_report_v: {
         Row: {
+          available_from: string | null
           borrower_id: string | null
           checked_out_at: string | null
           expected_return_at: string | null
@@ -2652,6 +2915,18 @@ export type Database = {
           subject_name: string
         }[]
       }
+      get_admin_key_cabinet: {
+        Args: never
+        Returns: {
+          available_keys: number
+          held_keys: number
+          key_status: string
+          room_active: boolean
+          room_code: string
+          room_id: string
+          room_name: string
+        }[]
+      }
       get_external_booking_for_edit: {
         Args: { p_booking_id: string }
         Returns: {
@@ -2715,6 +2990,32 @@ export type Database = {
           own_booking_id: string
         }[]
       }
+      get_room_usage_policy: {
+        Args: { p_room_id: string }
+        Returns: {
+          guest_view_details: boolean
+          guest_view_schedule: boolean
+          manual_approval: boolean
+          room_id: string
+          student_book_empty: boolean
+          student_class_key: boolean
+          student_manage_own_booking: boolean
+          student_own_booking_key: boolean
+          student_view_details: boolean
+          student_view_own_history: boolean
+          student_view_own_key_status: boolean
+          student_view_schedule: boolean
+          updated_at: string
+          updated_by: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "room_usage_policies"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_usage_permission_policy: { Args: never; Returns: Json }
       has_permission: { Args: { p_permission: string }; Returns: boolean }
       has_role: { Args: { p_role: string }; Returns: boolean }
       list_available_rooms: {
@@ -2755,6 +3056,7 @@ export type Database = {
           room_name: string
         }[]
       }
+      mark_all_notifications_read: { Args: never; Returns: number }
       mark_notification_read: {
         Args: { p_notification_id: string }
         Returns: undefined
@@ -2780,6 +3082,14 @@ export type Database = {
         Args: {
           p_condition: string
           p_description: string
+          p_key_loan_id: string
+        }
+        Returns: Json
+      }
+      report_key_status: {
+        Args: {
+          p_action: string
+          p_description?: string
           p_key_loan_id: string
         }
         Returns: Json
@@ -2839,6 +3149,14 @@ export type Database = {
           p_room_id: string
         }
         Returns: boolean
+      }
+      update_room_usage_policy: {
+        Args: { p_policy: Json; p_room_id: string }
+        Returns: boolean
+      }
+      update_usage_permission_policy: {
+        Args: { p_policy: Json }
+        Returns: Json
       }
       upsert_academic_schedule: {
         Args: {

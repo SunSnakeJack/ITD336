@@ -5,5 +5,6 @@ export const notificationKeys={all:['notifications'] as const,mine:['notificatio
 export const getMyNotifications=()=>unwrap<Notification[]>(supabase.from('notifications').select('*').order('created_at',{ascending:false}))
 export const getUnreadNotifications=()=>unwrap<Notification[]>(supabase.from('notifications').select('*').is('read_at',null).order('created_at',{ascending:false}))
 export const markNotificationRead=(id:string)=>execute(supabase.rpc('mark_notification_read',{p_notification_id:id}))
+export const markAllNotificationsRead=()=>execute(supabase.rpc('mark_all_notifications_read' as never))
 export const myNotificationsQuery=()=>queryOptions({queryKey:notificationKeys.mine,queryFn:getMyNotifications})
 export const unreadNotificationsQuery=()=>queryOptions({queryKey:notificationKeys.unread,queryFn:getUnreadNotifications})

@@ -23,11 +23,19 @@ The Admin room calendar defaults to a Monday-through-Sunday empty grid until a r
 An Admin may reopen an approved external-party booking from its calendar cell and edit it through a controlled RPC. Exact-time availability checks expand recurring academic schedules for every requested Bangkok date, so both new and edited external bookings are rejected when they overlap a class occurrence, another active booking, or a room block.
 
 The public application shell shows the room overview. Authenticated users receive a combined booking/key workspace with inner tabs plus a usage-history placeholder. Guest room actions redirect to `/login`; authenticated users receive a permission-aware room-booking or key-request form. An Admin can approve or reject pending room bookings and can soft-cancel an external-party booking through controlled lifecycle RPCs.
+
+The room overview is one shared schematic component for Guest, User, and Admin; room identity and availability come from the catalog while geometry remains stable frontend configuration. Guest room booking opens the full login route, whereas guest key access uses the same credential form inside an accessible modal and re-evaluates permission after authentication.
+
+The Admin usage-policy page selects one room and configures a Guest/Student permission matrix. Student is the only authenticated role configurable in this phase; Teacher and Priority retain their existing behavior until a later confirmed expansion. Updates pass through a `SETTINGS_MANAGE` RPC, write an audit event, and are enforced again by database functions and triggers. The Admin key-cabinet page is read-only and derives green available, yellow checked-out, and red closed states from current room, physical-key, and active-loan data.
+
+Key return is borrower-operated and completes immediately without an Admin verification step. Checkout remains race-safe at the database boundary: a room-level transaction lock and trigger permit only one `CHECKED_OUT` or `LATE` holder per room, while lost or damaged reports keep the key unavailable for operational follow-up.
+
+Booking approval is the only Admin approval boundary in the Student booking/key flow. An eligible booking-derived key request is automatically `APPROVED`; the borrower records checkout and return themselves, while Admin key screens remain read-only operational monitoring.
 The public sidebar now uses the room overview as its single catalog entry; `/rooms` is retained only as a compatibility redirect. Admin navigation includes a booking inbox backed by the RLS-protected booking details view.
 
 Authenticated screens subscribe to Supabase Realtime changes for rooms, schedules, bookings, key loans, and key incidents. These events invalidate TanStack Query caches, so an Admin approval or operational update is fetched into the user's open screen without a manual reload. Realtime publication membership is migration-managed; reconnect/focus refetch remains the fallback.
 
-The authenticated header also subscribes to the user's RLS-filtered notifications. Its unread badge is cleared only through the ownership-checked `mark_notification_read` RPC. Schedule booking ownership is returned as a boolean only, allowing green self-booking cells without exposing another user's identity.
+The authenticated header also subscribes to the user's RLS-filtered notifications. Its unread badge is cleared through ownership-checked, security-definer `mark_notification_read` and `mark_all_notifications_read` RPCs; clients never receive permission to update another user's notification. Schedule booking ownership is returned as a boolean only, allowing green self-booking cells without exposing another user's identity.
 
 The room directory and room-detail routes are public. Guests read only through dedicated `security definer` catalog and schedule RPCs; they receive active room metadata, class occupancy, generic booking occupancy, and generic room-block occupancy. Direct anonymous table access remains disabled. Authentication is isolated at `/login`, while `/admin/*` retains an explicit role guard.
 
