@@ -8,6 +8,13 @@ export function startOfWeek(input = new Date()) {
   return date
 }
 
+export function startOfSundayWeek(input = new Date()) {
+  const date = new Date(input)
+  date.setDate(date.getDate() - date.getDay())
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
 export function addDays(input: Date, days: number) {
   const result = new Date(input)
   result.setDate(result.getDate() + days)
@@ -27,4 +34,10 @@ export function formatTime(iso: string) {
 
 export function weekRange(weekStart: Date) {
   return { from: dateKey(weekStart), to: dateKey(addDays(weekStart, 6)) }
+}
+
+export function isWithinCalendarBookingWindow(slotStart: Date, now = new Date(), maxDays = 3) {
+  const lastDate = addDays(now, maxDays)
+  lastDate.setHours(23, 59, 59, 999)
+  return slotStart > now && slotStart <= lastDate
 }

@@ -12,8 +12,66 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      academic_terms: {
+        Row: {
+          academic_year: string
+          active: boolean
+          created_at: string
+          ends_on: string
+          id: string
+          starts_on: string
+          term_code: string
+          updated_at: string
+        }
+        Insert: {
+          academic_year: string
+          active?: boolean
+          created_at?: string
+          ends_on: string
+          id?: string
+          starts_on: string
+          term_code: string
+          updated_at?: string
+        }
+        Update: {
+          academic_year?: string
+          active?: boolean
+          created_at?: string
+          ends_on?: string
+          id?: string
+          starts_on?: string
+          term_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -1577,6 +1635,7 @@ export type Database = {
           description: string | null
           floor: string | null
           id: string
+          layout_key: string
           location_description: string | null
           name: string
           room_type_id: string
@@ -1595,6 +1654,7 @@ export type Database = {
           description?: string | null
           floor?: string | null
           id?: string
+          layout_key: string
           location_description?: string | null
           name: string
           room_type_id: string
@@ -1613,6 +1673,7 @@ export type Database = {
           description?: string | null
           floor?: string | null
           id?: string
+          layout_key?: string
           location_description?: string | null
           name?: string
           room_type_id?: string
@@ -2573,6 +2634,63 @@ export type Database = {
         Args: { p_reason: string; p_schedule_id: string }
         Returns: undefined
       }
+      find_academic_schedule_conflict: {
+        Args: {
+          p_day_of_week: number
+          p_effective_from: string
+          p_effective_until: string
+          p_end_time: string
+          p_room_id: string
+          p_schedule_id: string
+          p_start_time: string
+        }
+        Returns: {
+          course_code: string
+          day_of_week: number
+          end_time: string
+          start_time: string
+          subject_name: string
+        }[]
+      }
+      get_external_booking_for_edit: {
+        Args: { p_booking_id: string }
+        Returns: {
+          booking_id: string
+          ends_at: string
+          external_name: string
+          reason: string
+          starts_at: string
+        }[]
+      }
+      get_public_room_catalog: {
+        Args: never
+        Returns: {
+          academic_schedule_confirmed: boolean
+          active: boolean
+          building: string
+          capacity: number
+          code: string
+          floor: string
+          id: string
+          layout_key: string
+          name: string
+          room_type_name: string
+        }[]
+      }
+      get_public_room_schedule_events: {
+        Args: { p_range_end: string; p_range_start: string; p_room_id: string }
+        Returns: {
+          ends_at: string
+          event_type: string
+          id: string
+          is_mine: boolean
+          source_id: string
+          source_type: string
+          starts_at: string
+          status: string
+          title: string
+        }[]
+      }
       get_room_schedule_events: {
         Args: { p_range_end: string; p_range_start: string; p_room_id: string }
         Returns: {
@@ -2584,6 +2702,17 @@ export type Database = {
           starts_at: string
           status: string
           title: string
+        }[]
+      }
+      get_room_slot_permissions: {
+        Args: { p_ends_at: string; p_room_id: string; p_starts_at: string }
+        Returns: {
+          booking_reason: string
+          can_book: boolean
+          can_request_key: boolean
+          class_schedule_id: string
+          key_reason: string
+          own_booking_id: string
         }[]
       }
       has_permission: { Args: { p_permission: string }; Returns: boolean }
@@ -2603,6 +2732,7 @@ export type Database = {
           description: string | null
           floor: string | null
           id: string
+          layout_key: string
           location_description: string | null
           name: string
           room_type_id: string
@@ -2642,14 +2772,73 @@ export type Database = {
         Args: { p_booking_id: string; p_reason: string }
         Returns: Json
       }
+      report_key_damage: {
+        Args: { p_description: string; p_key_loan_id: string }
+        Returns: Json
+      }
+      report_key_issue: {
+        Args: {
+          p_condition: string
+          p_description: string
+          p_key_loan_id: string
+        }
+        Returns: Json
+      }
+      request_booking_key: {
+        Args: { p_booking_id: string; p_notes?: string }
+        Returns: Json
+      }
+      request_class_key: {
+        Args: {
+          p_class_schedule_id: string
+          p_ends_at: string
+          p_notes?: string
+          p_room_id: string
+          p_starts_at: string
+        }
+        Returns: Json
+      }
       request_key: { Args: { p_booking_id: string }; Returns: Json }
       return_key: {
         Args: { p_condition?: string; p_key_loan_id: string; p_notes?: string }
         Returns: Json
       }
+      set_room_availability: {
+        Args: { p_active: boolean; p_room_id: string }
+        Returns: boolean
+      }
       set_room_schedule_confirmation: {
         Args: { p_confirmed: boolean; p_room_id: string }
         Returns: undefined
+      }
+      update_external_booking: {
+        Args: {
+          p_booking_id: string
+          p_ends_at: string
+          p_external_name: string
+          p_reason: string
+          p_starts_at: string
+        }
+        Returns: Json
+      }
+      update_room_details: {
+        Args: {
+          p_active: boolean
+          p_capacity: number
+          p_name: string
+          p_room_id: string
+        }
+        Returns: boolean
+      }
+      update_room_details_v2: {
+        Args: {
+          p_active: boolean
+          p_capacity: number
+          p_code: string
+          p_name: string
+          p_room_id: string
+        }
+        Returns: boolean
       }
       upsert_academic_schedule: {
         Args: {
@@ -2665,6 +2854,17 @@ export type Database = {
           p_start_time: string
           p_subject_name: string
           p_teacher_id: string
+        }
+        Returns: string
+      }
+      upsert_academic_term: {
+        Args: {
+          p_academic_year: string
+          p_active: boolean
+          p_ends_on: string
+          p_starts_on: string
+          p_term_code: string
+          p_term_id: string
         }
         Returns: string
       }
@@ -2854,6 +3054,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       account_status: ["ACTIVE", "SUSPENDED", "INACTIVE"],

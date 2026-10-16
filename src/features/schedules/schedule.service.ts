@@ -18,7 +18,7 @@ export async function getScheduleRooms(): Promise<ScheduleRoom[]> {
   return rows.map((row) => {
     const roomType = row.room_types as UnknownRow | null
     return {
-      id: text(row, 'id'), code: text(row, 'code'), name: text(row, 'name'),
+      id: text(row, 'id'), code: text(row, 'code'), layoutKey: text(row, 'layout_key', text(row, 'code')), name: text(row, 'name'),
       building: nullableText(row, 'building'), floor: nullableText(row, 'floor'), capacity: num(row, 'capacity'),
       active: bool(row, 'active'), bookingEnabled: bool(row, 'booking_enabled'),
       roomTypeName: roomType ? text(roomType, 'name', 'ไม่ระบุ') : 'ไม่ระบุ',
@@ -28,7 +28,7 @@ export async function getScheduleRooms(): Promise<ScheduleRoom[]> {
 }
 
 function mapPublicRoom(row: UnknownRow): ScheduleRoom {
-  return { id: text(row, 'id'), code: text(row, 'code'), name: text(row, 'name'), building: nullableText(row, 'building'), floor: nullableText(row, 'floor'), capacity: num(row, 'capacity'), active: bool(row, 'active'), bookingEnabled: false, roomTypeName: text(row, 'room_type_name', 'ไม่ระบุ'), academicScheduleConfirmed: bool(row, 'academic_schedule_confirmed') }
+  return { id: text(row, 'id'), code: text(row, 'code'), layoutKey: text(row, 'layout_key', text(row, 'code')), name: text(row, 'name'), building: nullableText(row, 'building'), floor: nullableText(row, 'floor'), capacity: num(row, 'capacity'), active: bool(row, 'active'), bookingEnabled: false, roomTypeName: text(row, 'room_type_name', 'ไม่ระบุ'), academicScheduleConfirmed: bool(row, 'academic_schedule_confirmed') }
 }
 
 export async function getPublicScheduleRooms(): Promise<ScheduleRoom[]> {
@@ -74,7 +74,7 @@ export async function getPublicScheduleEvents(filters: ScheduleFilters): Promise
   if (!filters.roomId) return []
   const result = await callRpc<UnknownRow[]>('get_public_room_schedule_events', { p_room_id: filters.roomId, p_range_start: filters.from, p_range_end: filters.to })
   if (result.error) throw new Error(result.error.message)
-  return (result.data ?? []).map((row) => ({ id: text(row, 'id'), eventType: (text(row, 'event_type') === 'BOOKING' ? 'BOOKING' : text(row, 'event_type') === 'CLASS' ? 'CLASS' : 'BLOCK') as ScheduleEvent['eventType'], title: text(row, 'title'), startsAt: text(row, 'starts_at'), endsAt: text(row, 'ends_at'), sourceId: '', status: text(row, 'status') }))
+  return (result.data ?? []).map((row) => ({ id: text(row, 'id'), eventType: (text(row, 'event_type') === 'BOOKING' ? 'BOOKING' : text(row, 'event_type') === 'CLASS' ? 'CLASS' : 'BLOCK') as ScheduleEvent['eventType'], title: text(row, 'title'), startsAt: text(row, 'starts_at'), endsAt: text(row, 'ends_at'), sourceId: '', status: text(row, 'status'), isMine: bool(row, 'is_mine') }))
 }
 
 export async function saveAcademicSchedule(input: AcademicScheduleInput) {
@@ -124,11 +124,13 @@ export async function updateRoomAvailability(roomId: string, active: boolean) {
   if (result.error) throw new Error(result.error.message)
 }
 
-export async function updateRoomDetails(input: { roomId: string; name: string; capacity: number; active: boolean }) {
-  const result = await callRpc<boolean>('update_room_details', {
-    p_room_id: input.roomId, p_name: input.name, p_capacity: input.capacity, p_active: input.active,
+export async function updateRoomDetails(input: { roomId: string; code: string; name: string; capacity: number; active: boolean }) {
+  const result = await callRpc<boolean>('update_room_details_v2', {
+    p_room_id: input.roomId, p_code: input.code, p_name: input.name, p_capacity: input.capacity, p_active: input.active,
   })
   if (result.error) {
+    if (result.error.message.includes('ROOM_CODE_ALREADY_EXISTS')) throw new Error('รหัสห้องนี้ถูกใช้งานแล้ว')
+    if (result.error.message.includes('INVALID_ROOM_CODE')) throw new Error('รหัสห้องใช้ได้เฉพาะ A–Z, 0–9, ขีดกลาง และขีดล่าง')
     if (result.error.message.includes('ROOM_NAME_REQUIRED')) throw new Error('กรุณาระบุชื่อห้อง')
     if (result.error.message.includes('INVALID_ROOM_CAPACITY')) throw new Error('ความจุห้องต้องอยู่ระหว่าง 1–1,000 คน')
     throw new Error(result.error.message)

@@ -6,6 +6,7 @@ import { academicSchedulesQuery, scheduleKeys } from '../schedule.queries'
 import { deactivateAcademicSchedule, saveAcademicSchedule } from '../schedule.service'
 import type { AcademicSchedule, AcademicScheduleInput } from '../schedule.types'
 import { SCHEDULE_TIMES } from './WeeklySchedule'
+import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
 
 const END_TIMES = [...SCHEDULE_TIMES.slice(1), '18:30']
 const CUSTOM_RANGE = 'CUSTOM_RANGE'
@@ -46,7 +47,7 @@ function Editor({ roomId, date, time, schedule, terms, onClose }: { roomId: stri
 export function CellScheduleForm({ roomId, date, time, scheduleId, onClose }: { roomId: string; date: string; time: string; scheduleId?: string; onClose: () => void }) {
   const terms = useQuery(academicTermsQuery())
   const schedules = useQuery({ ...academicSchedulesQuery(), enabled: Boolean(scheduleId) })
-  if (terms.isPending || (scheduleId && schedules.isPending)) return <div className="schedule-dialog-backdrop"><div className="schedule-dialog-loading">กำลังโหลดข้อมูล…</div></div>
+  if (terms.isPending || (scheduleId && schedules.isPending)) return <div className="schedule-dialog-backdrop"><div className="schedule-dialog-loading"><LoadingSpinner compact label="กำลังโหลดข้อมูล…" /></div></div>
   const schedule = scheduleId ? schedules.data?.find((item) => item.id === scheduleId) : undefined
   if (terms.error || schedules.error || (scheduleId && !schedule)) return <div className="schedule-dialog-backdrop"><div className="schedule-dialog-loading"><p className="panel-error">ไม่สามารถโหลดข้อมูลตารางหรือภาคเรียนได้</p><button onClick={onClose}>ปิด</button></div></div>
   return <Editor roomId={roomId} date={date} time={time} schedule={schedule} terms={terms.data ?? []} onClose={onClose} />

@@ -8,6 +8,7 @@ export interface ScheduleEvent {
   endsAt: string
   sourceId: string
   status: string
+  isMine?: boolean
 }
 
 export interface AcademicSchedule {
@@ -35,6 +36,7 @@ export interface AcademicScheduleInput extends Omit<AcademicSchedule, 'id' | 'ro
 export interface ScheduleRoom {
   id: string
   code: string
+  layoutKey: string
   name: string
   building: string | null
   floor: string | null

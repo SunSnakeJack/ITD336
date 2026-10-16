@@ -20,6 +20,12 @@ Migration `0016_admin_room_details.sql` adds the `update_room_details` RPC. It r
 
 Migration `0017_external_booking_edit.sql` updates exact-time availability checks to expand recurring academic schedules and adds permission-checked read/update RPCs for approved external-party bookings. Updates exclude the current booking from overlap checks, retain booking history, and append an audit event.
 
+Migration `0018_room_layout_key_and_code_edit.sql` separates the immutable floor-plan `layout_key` from the editable room `code`, extends the narrow public catalog with that key, and adds the permission-checked `update_room_details_v2` RPC. The RPC validates and normalizes room codes, preserves uniqueness, updates the room identity and availability fields atomically, and appends an audit event.
+
+Migration `0019_student_booking_key_workflow.sql` adds database-owned slot permissions for S2407–S2412, manual approval and pending-overlap protection for laboratory bookings, class- and booking-derived key-request RPCs, borrower damage reporting, automatic key-request creation after booking approval, and Realtime publication membership for operational tables. Class-derived permission is currently granted to every authenticated Student or Teacher during an active class occurrence; enrollment membership is intentionally not required by the confirmed rule.
+
+Migration `0020_calendar_booking_notifications_and_key_reports.sql` changes the advance limit to Bangkok calendar days, exposes only a boolean ownership marker for privacy-safe schedule coloring, adds borrower-controlled LOST/DAMAGED reporting with incident and audit records, and publishes notifications through Realtime.
+
 Migration `0013_public_room_status_and_saturday_holiday.sql` adds `active` to the privacy-safe public room catalog so closed rooms can be rendered without exposing direct table access. It records Saturday in `CLOSED_WEEKDAYS` and rejects new or reactivated Saturday academic schedules at the database boundary.
 
 Migration `0014_academic_term_settings.sql` adds RLS-protected `academic_terms`. Authenticated users may read terms; changes require the `SETTINGS_MANAGE` permission through `upsert_academic_term`, which validates date ranges and writes an audit event. Recurring class schedules copy the selected term's year, code, and effective dates at save time so historical schedules remain stable when future term settings change.

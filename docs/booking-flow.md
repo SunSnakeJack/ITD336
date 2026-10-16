@@ -2,9 +2,11 @@
 
 1. Search active, booking-enabled rooms with `list_available_rooms(start, end)`.
 2. `create_booking` validates authentication, room state, the rolling three-day limit, 08:30–17:30 Bangkok time, schedules, blocks, and active bookings.
-3. General rooms auto-confirm. Studio, Gaming/E-sport, and E-learning remain PENDING for Admin approval. Teachers and Admins may auto-confirm Cold Room; Students cannot book it.
-4. `override_booking` lets a narrowly authorized Priority User supersede an ordinary active booking transactionally. Protected schedules and room blocks still reject the override.
-5. The eventual operations layer may transition APPROVED → IN_USE → COMPLETED through additional controlled RPCs.
+   The public UI starts each display week on Sunday and treats the limit as Bangkok calendar days: remaining times today plus every operating-hour slot through the end of the third following date. Public navigation is limited to the current and next calendar week.
+3. S2407–S2412 use manual approval: a free slot creates a PENDING booking, while a class occurrence or another active/pending booking refuses a new booking. Admin approves or rejects the request through the booking inbox.
+4. After approval, the owner can request a key from the same booking. Booking overlap and ownership remain database-enforced.
+5. `override_booking` lets a narrowly authorized Priority User supersede an ordinary active booking transactionally. Protected schedules and room blocks still reject the override.
+6. The eventual operations layer may transition APPROVED → IN_USE → COMPLETED through additional controlled RPCs.
 6. The requester or a user with `BOOKING_MANAGE` can cancel PENDING/APPROVED bookings; rows and history remain.
 
 Invalid transitions such as CANCELLED → APPROVED fail. The final exclusion constraint handles concurrent approvals even if two sessions pass an earlier read.

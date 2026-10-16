@@ -7,6 +7,7 @@ import { ScheduleExplorer } from '../../schedules/components/ScheduleExplorer'
 import { roomsQuery } from '../../schedules/schedule.queries'
 import { AdminCellActions } from '../components/AdminCellActions'
 import { AdminRoomDetailsCard } from '../components/AdminRoomDetailsCard'
+import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
 
 type CellDialog = { date: string; time: string; sourceId?: string; mode: 'choose' | 'schedule' | 'external' }
 
@@ -15,7 +16,7 @@ export function AdminRoomDetailPage() {
   const { roomId = '' } = useParams()
   const rooms = useQuery(roomsQuery())
   const room = rooms.data?.find((item) => item.id === roomId)
-  if (rooms.isPending) return <section className="content-page"><div className="empty-panel">กำลังโหลดรายละเอียดห้อง…</div></section>
+  if (rooms.isPending) return <section className="content-page"><LoadingSpinner label="กำลังโหลดรายละเอียดห้อง…" /></section>
   if (!room) return <Navigate to="/admin/rooms" replace />
   return <section className="content-page"><Link className="back-link" to="/admin/rooms">← กลับไปแผนผังห้อง</Link>
     <AdminRoomDetailsCard room={room} />
