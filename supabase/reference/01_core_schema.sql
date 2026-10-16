@@ -66,4 +66,3 @@
 -- * one_active_key_request_per_booking and one_active_loan_per_key are partial
 --   unique indexes; their latest predicates are documented in 05_key_management.sql
 -- * key_loans usage source and return evidence are constrained by 0005.
-

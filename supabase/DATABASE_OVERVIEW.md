@@ -159,4 +159,3 @@ Notification มี read state ต่อผู้ใช้และ delivery sta
 4. ตรวจ RLS, grants, fixed `search_path`, transitions, constraints และ concurrency ทุกครั้ง
 5. ใช้ dry-run ใน environment ที่ระบุชัด และห้าม push cloud โดยไม่มีคำสั่งชัดเจน
 6. ทบทวน `git diff` และยืนยันว่ามีเฉพาะเอกสารก่อน commit
-

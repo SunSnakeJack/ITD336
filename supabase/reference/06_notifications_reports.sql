@@ -43,4 +43,3 @@
 
 -- UNVERIFIED: queued EMAIL rows do not prove external delivery; no mail worker or
 -- provider state is represented by static migrations.
-

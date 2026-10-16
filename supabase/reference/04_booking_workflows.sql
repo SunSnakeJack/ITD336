@@ -53,4 +53,3 @@
 
 -- UNVERIFIED: whether an elapsed booking has already become COMPLETED depends on a
 -- caller having invoked reconciliation and on remote runtime data.
-

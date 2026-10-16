@@ -54,4 +54,3 @@
 -- get_room_slot_permissions and request_class_key 0019/0022 then 0023.
 
 -- UNVERIFIED: availability counts and the current holder are runtime-data dependent.
-

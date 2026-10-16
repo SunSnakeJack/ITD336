@@ -60,4 +60,3 @@
 
 -- UNVERIFIED: actual room rows, current term, confirmation flags and rule values are
 -- data-dependent; this reference describes only definitions and seeded intent.
-

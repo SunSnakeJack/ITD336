@@ -64,4 +64,3 @@
 -- UNVERIFIED: static migration review cannot prove remote role membership, grants
 -- introduced manually, or the remote pg_policies catalog. Compare the linked project
 -- catalog separately if operational verification is required.
-

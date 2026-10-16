@@ -44,4 +44,3 @@
 
 -- UNVERIFIED: JSON schema is enforced procedurally rather than by a JSON Schema
 -- constraint. Existing remote rows may differ from seeds if administrators changed them.
-
