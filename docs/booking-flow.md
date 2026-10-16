@@ -6,7 +6,7 @@
 3. S2407–S2412 use manual approval: a free slot creates a PENDING booking, while a class occurrence or another active/pending booking refuses a new booking. Admin approves or rejects the request through the booking inbox.
 4. After approval, the owner can request a key from the same booking. Booking overlap and ownership remain database-enforced.
 5. `override_booking` lets a narrowly authorized Priority User supersede an ordinary active booking transactionally. Protected schedules and room blocks still reject the override.
-6. The eventual operations layer may transition APPROVED → IN_USE → COMPLETED through additional controlled RPCs.
-6. The requester or a user with `BOOKING_MANAGE` can cancel PENDING/APPROVED bookings; rows and history remain.
+6. Before account or Admin booking lists are read, `reconcile_expired_bookings` transitions elapsed APPROVED/IN_USE rows to COMPLETED with history and audit evidence. The UI labels this state “สิ้นสุดแล้ว”; it does not infer NO_SHOW because attendance is unknown.
+7. The requester or a user with `BOOKING_MANAGE` can cancel a future PENDING/APPROVED booking. Both the UI and `cancel_booking` reject cancellation after `ends_at` has elapsed.
 
 Invalid transitions such as CANCELLED → APPROVED fail. The final exclusion constraint handles concurrent approvals even if two sessions pass an earlier read.

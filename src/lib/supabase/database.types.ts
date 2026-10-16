@@ -3070,6 +3070,7 @@ export type Database = {
         }
         Returns: Json
       }
+      reconcile_expired_bookings: { Args: never; Returns: number }
       reject_booking: {
         Args: { p_booking_id: string; p_reason: string }
         Returns: Json

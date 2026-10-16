@@ -38,6 +38,8 @@ Migration `0025_self_service_booking_key_approval.sql` makes eligible booking-de
 
 Migration `0026_extend_booking_close_time.sql` aligns the database operating-hours rule with the schedule grid by moving the close time to 18:30. This makes the visible 17:30 start cell a valid one-hour booking while retaining 17:30 as the final allowed start time.
 
+Migration `0027_finalize_expired_bookings.sql` adds authenticated lifecycle reconciliation for elapsed APPROVED/IN_USE bookings. It records `COMPLETED` history and a system audit event, and hardens `cancel_booking` so an elapsed reservation cannot be cancelled through a direct RPC call.
+
 Migration `0013_public_room_status_and_saturday_holiday.sql` adds `active` to the privacy-safe public room catalog so closed rooms can be rendered without exposing direct table access. It records Saturday in `CLOSED_WEEKDAYS` and rejects new or reactivated Saturday academic schedules at the database boundary.
 
 Migration `0014_academic_term_settings.sql` adds RLS-protected `academic_terms`. Authenticated users may read terms; changes require the `SETTINGS_MANAGE` permission through `upsert_academic_term`, which validates date ranges and writes an audit event. Recurring class schedules copy the selected term's year, code, and effective dates at save time so historical schedules remain stable when future term settings change.

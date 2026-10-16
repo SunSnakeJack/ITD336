@@ -19,6 +19,7 @@ import { markAllNotificationsRead, markNotificationRead } from './features/notif
 import { keyStatusLabel } from './features/keys/utils/key-status.utils'
 import { PasswordField } from './features/auth/components/PasswordField'
 import { saveRoomUsagePolicy } from './features/policies/policy.service'
+import { canCancelBooking, effectiveBookingStatus } from './features/bookings/booking-status.utils'
 
 const authStateSubscription = { unsubscribe: vi.fn() }
 function LocationProbe() { return <output>{useLocation().pathname}</output> }
@@ -300,5 +301,19 @@ describe('schedule date helpers', () => {
     expect(selectableCodes).toHaveLength(16)
     expect(selectableCodes).toEqual(expect.arrayContaining(['2401', '2406', 'STUDIO', 'ESPORT', 'ELEARNING', 'MEET-FACULTY', 'S2407', 'S2412']))
     expect(ROOM_MAP_ITEMS.some((item) => item.kind === 'reference' && item.label === 'ทางเดิน')).toBe(true)
+  })
+})
+
+describe('elapsed booking status', () => {
+  const now = new Date('2026-10-16T18:30:00+07:00').getTime()
+
+  it('presents an elapsed approved booking as completed', () => {
+    expect(effectiveBookingStatus('APPROVED','2026-10-16T18:30:00+07:00',now)).toBe('COMPLETED')
+    expect(canCancelBooking('APPROVED','2026-10-16T18:30:00+07:00',now)).toBe(false)
+  })
+
+  it('keeps a future approved booking cancellable', () => {
+    expect(effectiveBookingStatus('APPROVED','2026-10-16T19:30:00+07:00',now)).toBe('APPROVED')
+    expect(canCancelBooking('APPROVED','2026-10-16T19:30:00+07:00',now)).toBe(true)
   })
 })

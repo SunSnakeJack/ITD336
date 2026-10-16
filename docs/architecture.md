@@ -31,6 +31,8 @@ The Admin usage-policy page selects one room and configures a Guest/Student perm
 Key return is borrower-operated and completes immediately without an Admin verification step. Checkout remains race-safe at the database boundary: a room-level transaction lock and trigger permit only one `CHECKED_OUT` or `LATE` holder per room, while lost or damaged reports keep the key unavailable for operational follow-up.
 
 Booking approval is the only Admin approval boundary in the Student booking/key flow. An eligible booking-derived key request is automatically `APPROVED`; the borrower records checkout and return themselves, while Admin key screens remain read-only operational monitoring.
+
+Booking-list queries first invoke a narrow reconciliation RPC. Elapsed APPROVED/IN_USE rows become `COMPLETED` transactionally with history and audit records; UI helpers independently derive the same display state and remove cancellation controls at the exact end-time boundary.
 The public sidebar now uses the room overview as its single catalog entry; `/rooms` is retained only as a compatibility redirect. Admin navigation includes a booking inbox backed by the RLS-protected booking details view.
 
 Authenticated screens subscribe to Supabase Realtime changes for rooms, schedules, bookings, key loans, and key incidents. These events invalidate TanStack Query caches, so an Admin approval or operational update is fetched into the user's open screen without a manual reload. Realtime publication membership is migration-managed; reconnect/focus refetch remains the fallback.

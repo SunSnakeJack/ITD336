@@ -8,7 +8,7 @@ import { activeKeyLoansQuery, keyLoanKeys } from '../../keys/key.queries'
 import type { AdminKeyLoan } from '../../keys/key.types'
 import { keyStatusLabel } from '../../keys/utils/key-status.utils'
 
-const bookingLabels:Record<BookingStatus,string>={PENDING:'รออนุมัติ',APPROVED:'อนุมัติแล้ว',REJECTED:'ไม่อนุมัติ',CANCELLED:'ยกเลิก',IN_USE:'กำลังใช้งาน',COMPLETED:'เสร็จสิ้น',NO_SHOW:'ไม่มาใช้งาน',SUPERSEDED:'ถูกแทนที่'}
+const bookingLabels:Record<BookingStatus,string>={PENDING:'รออนุมัติ',APPROVED:'อนุมัติแล้ว',REJECTED:'ไม่อนุมัติ',CANCELLED:'ยกเลิก',IN_USE:'กำลังใช้งาน',COMPLETED:'สิ้นสุดแล้ว',NO_SHOW:'ไม่มาใช้งาน',SUPERSEDED:'ถูกแทนที่'}
 const formatter=new Intl.DateTimeFormat('th-TH',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Bangkok'})
 
 function keyActionLabel(status:AdminKeyLoan['status']){

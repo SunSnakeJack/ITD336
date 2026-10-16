@@ -18,5 +18,7 @@ begin
  assert position('status=''RETURNED''' in pg_get_functiondef('public.report_key_status(uuid,text,text)'::regprocedure))>0, 'self-service return does not complete immediately';
  assert position('''APPROVED''' in pg_get_functiondef('public.request_booking_key(uuid,text)'::regprocedure))>0, 'booking-key request is not automatically approved';
  assert (select rule_value#>>'{}'='18:30' from public.booking_rules where rule_key='GENERAL_CLOSE_TIME' and active), 'final 17:30-18:30 booking slot is outside operating hours';
+ assert exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='reconcile_expired_bookings'), 'expired-booking reconciliation RPC missing';
+ assert position('BOOKING_ALREADY_ENDED' in pg_get_functiondef('public.cancel_booking(uuid,text)'::regprocedure))>0, 'expired booking cancellation guard missing';
 end $$;
 rollback;

@@ -11,6 +11,7 @@ begin
  assert exists(select 1 from pg_trigger where tgname='enforce_single_room_key_holder' and not tgisinternal), 'room-level key holder trigger missing';
  assert position('''APPROVED''' in pg_get_functiondef('public.request_booking_key(uuid,text)'::regprocedure))>0, 'booking-key auto approval missing';
  assert (select rule_value#>>'{}'='18:30' from public.booking_rules where rule_key='GENERAL_CLOSE_TIME' and active), 'booking close time must include the final visible slot';
+ assert exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='reconcile_expired_bookings'), 'expired-booking reconciliation RPC missing';
  assert not has_table_privilege('authenticated','public.audit_logs','INSERT'), 'authenticated can insert audit logs';
  assert not has_table_privilege('authenticated','public.bookings','UPDATE'), 'authenticated can directly update bookings';
 end $$;
