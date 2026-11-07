@@ -48,6 +48,12 @@ begin
     'meeting-only booking RPC missing';
   assert exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='update_room_key_approval_mode'),
     'per-room approval update RPC missing';
+  assert exists(select 1 from pg_trigger where tgname='enforce_key_request_entry_rules' and not tgisinternal),
+    'key-request email and Saturday guard missing';
+  assert position('northbkk' in pg_get_functiondef('public.enforce_key_request_entry_rules()'::regprocedure))>0,
+    'university email domain is not enforced by the database';
+  assert position('SATURDAY_NOT_AVAILABLE' in pg_get_functiondef('public.enforce_key_request_entry_rules()'::regprocedure))>0,
+    'Saturday key requests are not rejected by the database';
 
   assert not has_table_privilege('anon','public.key_requests','SELECT'), 'anonymous can read key requests';
   assert not has_table_privilege('anon','public.key_requests','INSERT'), 'anonymous can insert key requests directly';

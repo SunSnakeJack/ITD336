@@ -1,6 +1,30 @@
 import { supabase, unwrap } from '../../lib/supabase/client'
 import type { RpcResult } from '../bookings/booking.types'
-import type { AdminKeyLoan, AvailableRoomKey, KeyCabinetRoom, KeyLoan, KeyLoanDetail, KeyLoanStatus, KeyUsageSource } from './key.types'
+import type { AdminKeyLoan, AvailableRoomKey, CreateKeyRequestInput, KeyCabinetRoom, KeyLoan, KeyLoanDetail, KeyLoanStatus, KeyRequestResult, KeyUsageSource } from './key.types'
+
+export async function createKeyRequest(input: CreateKeyRequestInput): Promise<KeyRequestResult> {
+  const { data, error } = await supabase.rpc('create_key_request' as never, {
+    p_room_id: input.roomId,
+    p_requester_name: input.requesterName.trim(),
+    p_requester_email: input.requesterEmail.trim().toLowerCase(),
+    p_purpose_type: input.purposeType,
+    p_purpose: input.purpose.trim(),
+    p_starts_at: input.startsAt,
+    p_ends_at: input.endsAt,
+    p_course_code: input.courseCode?.trim() || null,
+    p_course_name: input.courseName?.trim() || null,
+    p_lecturer_name: input.lecturerName?.trim() || null,
+    p_lecturer_email: input.lecturerEmail?.trim().toLowerCase() || null,
+  } as never) as unknown as { data: KeyRequestResult | null; error: { message: string } | null }
+  if (!error && data) return data
+  const message = error?.message ?? 'KEY_REQUEST_FAILED'
+  if (message.includes('KEY_REQUEST_TIME_CONFLICT') || message.includes('LEGACY_KEY_REQUEST_TIME_CONFLICT')) throw new Error('ช่วงเวลานี้มีคำขอเบิกกุญแจแล้ว')
+  if (message.includes('AUTHENTICATION_REQUIRED')) throw new Error('ห้องนี้ต้องเข้าสู่ระบบมหาวิทยาลัยก่อนส่งคำขอ')
+  if (message.includes('UNIVERSITY_EMAIL_REQUIRED')) throw new Error('กรุณาใช้อีเมลมหาวิทยาลัย @northbkk.ac.th')
+  if (message.includes('OUTSIDE_SERVICE_HOURS')) throw new Error('กรุณาเลือกเวลาระหว่าง 08:00–18:00 น.')
+  if (message.includes('SATURDAY_NOT_AVAILABLE')) throw new Error('ไม่สามารถทำรายการสำหรับวันเสาร์ได้')
+  throw new Error(message)
+}
 export const getMyKeyLoans=()=>unwrap<KeyLoan[]>(supabase.from('key_loans').select('*').order('requested_at',{ascending:false}))
 export async function getActiveKeyLoans(): Promise<AdminKeyLoan[]> {
   const rows=await unwrap<Array<KeyLoan&{room_code:string;room_name:string;key_code:string|null;returned_late:boolean|null;borrower_full_name:string|null;borrower_university_id:string|null;borrower_email:string|null}>>(supabase.from('admin_key_activity_v' as never).select('*').order('requested_at',{ascending:false}) as never)

@@ -14,7 +14,7 @@ import { getExternalBookingForEdit } from './features/bookings/external-booking.
 import { supabase } from './lib/supabase/client'
 import { PublicLayout } from './features/public/components/PublicLayout'
 import { UserBookingForm } from './features/bookings/components/UserBookingForm'
-import { reportKeyStatus, requestBookingKey } from './features/keys/key.service'
+import { createKeyRequest, reportKeyStatus, requestBookingKey } from './features/keys/key.service'
 import { markAllNotificationsRead, markNotificationRead } from './features/notifications/notification.queries'
 import { keyStatusLabel } from './features/keys/utils/key-status.utils'
 import { getBorrowerIdentity, keyCabinetLabels } from './features/keys/utils/admin-key.utils'
@@ -86,6 +86,67 @@ describe('Authentication entry point', () => {
     expect(screen.getByRole('link', { name: 'ภาพรวม' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'ค้นหาห้อง' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'การจองของฉัน' })).not.toBeInTheDocument()
+  })
+
+  it('opens the dedicated key-request entry without a service picker', async () => {
+    renderPath('/keys')
+    expect(await screen.findByRole('heading', { name: 'เบิกกุญแจห้องปฏิบัติการ' })).toBeInTheDocument()
+    expect(screen.getByText('เลือกห้องที่ต้องการเบิกกุญแจ')).toBeInTheDocument()
+    expect(screen.queryByText('เลือกบริการที่ต้องการ')).not.toBeInTheDocument()
+  })
+
+  it('maps the legacy cloud catalog to laboratory and special-room cards', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [
+      { id: 'lab-1', code: 'S2407', layout_key: 'S2407', name: 'ห้องปฏิบัติการ S2407', room_type_name: 'Computer Room', building: 'อาคาร 2', floor: '4', capacity: 30, active: true, academic_schedule_confirmed: true },
+      { id: 'special-1', code: 'STUDIO', layout_key: 'STUDIO', name: 'Studio', room_type_name: 'Studio Room', building: 'อาคาร 2', floor: '4', capacity: 10, active: true, academic_schedule_confirmed: true },
+      { id: 'meeting-1', code: 'MEETING-ROOM', layout_key: 'MEET-FACULTY', name: 'ห้องประชุม', room_type_name: 'Meeting Room', building: 'อาคาร 2', floor: '4', capacity: 10, active: true, academic_schedule_confirmed: true },
+    ], error: null } as never)
+    renderPath('/keys')
+    expect(await screen.findByRole('link', { name: /S2407/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /STUDIO/ })).toHaveTextContent('ห้องพิเศษ · ต้องเข้าสู่ระบบ')
+    expect(screen.queryByRole('link', { name: /MEETING-ROOM/ })).not.toBeInTheDocument()
+  })
+
+  it('opens an anonymous key-request form for a general laboratory', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{ id: 'room-1', code: 'S2407', layout_key: 'S2407', name: 'ห้องปฏิบัติการคอมพิวเตอร์', room_type_name: 'ห้องทั่วไป', building: 'อาคาร 2', floor: '4', capacity: 30, active: true, academic_schedule_confirmed: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: false }], error: null } as never)
+    renderPath('/keys/rooms/room-1')
+    expect(await screen.findByRole('heading', { name: 'แบบฟอร์มเบิกกุญแจ' })).toBeInTheDocument()
+    expect(screen.getByLabelText('อีเมลมหาวิทยาลัย')).toHaveAttribute('placeholder', 'name@northbkk.ac.th')
+    expect(screen.queryByRole('heading', { name: 'เข้าสู่ระบบ' })).not.toBeInTheDocument()
+  })
+
+  it('reviews an anonymous key request before sending it', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{ id: 'room-1', code: 'S2407', layout_key: 'S2407', name: 'ห้องปฏิบัติการคอมพิวเตอร์', room_type_name: 'ห้องทั่วไป', building: 'อาคาร 2', floor: '4', capacity: 30, active: true, academic_schedule_confirmed: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: false }], error: null } as never)
+    renderPath('/keys/rooms/room-1')
+    fireEvent.change(await screen.findByLabelText('ชื่อ–นามสกุล'), { target: { value: 'นักศึกษาทดสอบ' } })
+    fireEvent.change(screen.getByLabelText('อีเมลมหาวิทยาลัย'), { target: { value: 'student@northbkk.ac.th' } })
+    fireEvent.change(screen.getByLabelText('รายละเอียดวัตถุประสงค์'), { target: { value: 'ทำโครงงาน' } })
+    fireEvent.click(screen.getByRole('button', { name: 'ตรวจสอบข้อมูล' }))
+    expect(await screen.findByRole('heading', { name: 'ตรวจสอบข้อมูลคำขอ' })).toBeInTheDocument()
+    expect(screen.getByText('student@northbkk.ac.th')).toBeInTheDocument()
+    expect(supabase.rpc).toHaveBeenCalledTimes(1)
+  })
+
+  it('waits for session resolution before deciding access to a key-request form', async () => {
+    vi.mocked(supabase.auth.getSession).mockReturnValueOnce(new Promise(() => {}) as never)
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{ id: 'room-special', code: 'STUDIO', layout_key: 'STUDIO', name: 'ห้อง Studio', room_type_name: 'ห้องพิเศษ', building: 'อาคาร 2', floor: '4', capacity: 10, active: true, academic_schedule_confirmed: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: true }], error: null } as never)
+    renderPath('/keys/rooms/room-special')
+    expect(await screen.findByRole('status')).toHaveTextContent('กำลังตรวจสอบบัญชี…')
+    expect(screen.queryByRole('heading', { name: 'ห้องนี้ต้องเข้าสู่ระบบ' })).not.toBeInTheDocument()
+  })
+
+  it('keeps the special-room deep link when sending a guest to login', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{ id: 'room-special', code: 'STUDIO', layout_key: 'STUDIO', name: 'ห้อง Studio', room_type_name: 'ห้องพิเศษ', building: 'อาคาร 2', floor: '4', capacity: 10, active: true, academic_schedule_confirmed: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: true }], error: null } as never)
+    renderPath('/keys/rooms/room-special')
+    expect(await screen.findByRole('link', { name: 'เข้าสู่ระบบมหาวิทยาลัย' })).toHaveAttribute('href', '/login?returnTo=%2Fkeys%2Frooms%2Froom-special')
+  })
+
+  it('collects every database-required teaching field', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{ id: 'room-1', code: 'S2407', layout_key: 'S2407', name: 'ห้องปฏิบัติการคอมพิวเตอร์', room_type_name: 'ห้องทั่วไป', building: 'อาคาร 2', floor: '4', capacity: 30, active: true, academic_schedule_confirmed: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: false }], error: null } as never)
+    renderPath('/keys/rooms/room-1')
+    fireEvent.change(await screen.findByLabelText('วัตถุประสงค์'), { target: { value: 'TEACHING' } })
+    expect(screen.getByLabelText('ชื่อวิชา')).toBeInTheDocument()
+    expect(screen.getByLabelText('อีเมลอาจารย์ผู้สอน')).toHaveAttribute('placeholder', 'lecturer@northbkk.ac.th')
   })
 
   it('shows authenticated account paths in the public sidebar', () => {
@@ -284,6 +345,27 @@ describe('schedule date helpers', () => {
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: { id:'loan-2', status:'APPROVED' }, error: null } as never)
     await requestBookingKey('booking-1','ใช้งานตามเวลาจอง')
     expect(supabase.rpc).toHaveBeenCalledWith('request_booking_key',{p_booking_id:'booking-1',p_notes:'ใช้งานตามเวลาจอง'})
+  })
+
+  it('creates a laboratory key request through the new authoritative RPC', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: { id: 'request-1', request_code: 'KR-001', status: 'APPROVED' }, error: null } as never)
+    await createKeyRequest({
+      roomId: 'room-1', requesterName: 'นักศึกษาทดสอบ', requesterEmail: 'student@northbkk.ac.th',
+      purposeType: 'OTHER', purpose: 'ทำโครงงาน', startsAt: '2026-11-09T09:00:00+07:00', endsAt: '2026-11-09T10:00:00+07:00',
+    })
+    expect(supabase.rpc).toHaveBeenCalledWith('create_key_request', {
+      p_room_id: 'room-1', p_requester_name: 'นักศึกษาทดสอบ', p_requester_email: 'student@northbkk.ac.th',
+      p_purpose_type: 'OTHER', p_purpose: 'ทำโครงงาน', p_starts_at: '2026-11-09T09:00:00+07:00', p_ends_at: '2026-11-09T10:00:00+07:00',
+      p_course_code: null, p_course_name: null, p_lecturer_name: null, p_lecturer_email: null,
+    })
+  })
+
+  it('translates a rejected university email into a safe message', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: null, error: { message: 'UNIVERSITY_EMAIL_REQUIRED' } } as never)
+    await expect(createKeyRequest({
+      roomId: 'room-1', requesterName: 'ผู้ใช้ทดสอบ', requesterEmail: 'guest@example.com',
+      purposeType: 'OTHER', purpose: 'ทดสอบ', startsAt: '2026-11-09T09:00:00+07:00', endsAt: '2026-11-09T10:00:00+07:00',
+    })).rejects.toThrow('กรุณาใช้อีเมลมหาวิทยาลัย @northbkk.ac.th')
   })
 
   it('labels a late user-reported return for the administrator', () => {

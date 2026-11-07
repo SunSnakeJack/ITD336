@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import { LoginForm } from './features/auth/components/LoginForm'
 import { useAuthSession } from './features/auth/hooks/useAuthSession'
 import type { AuthIdentity } from './features/auth/auth.types'
@@ -21,6 +21,8 @@ import { LoadingSpinner } from './shared/components/LoadingSpinner'
 import { useRealtimeInvalidation } from './shared/hooks/useRealtimeInvalidation'
 import { UsagePolicyPage } from './features/policies/pages/UsagePolicyPage'
 import { AdminKeyCabinetPage } from './features/keys/pages/AdminKeyCabinetPage'
+import { KeyRequestRoomsPage } from './features/keys/pages/KeyRequestRoomsPage'
+import { KeyRequestFormPage } from './features/keys/pages/KeyRequestFormPage'
 
 function AdminGuard({ identity, loading, children }: { identity: AuthIdentity | null; loading: boolean; children: ReactNode }) {
   if (loading) return <main className="session-loading"><LoadingSpinner label="กำลังตรวจสอบสิทธิ์…" /></main>
@@ -37,14 +39,21 @@ function LegacyRoomRedirect() {
   return <Navigate to={roomId ? `/rooms/${roomId}` : '/'} replace />
 }
 
+function LoginRoute({ identity, loading, error }: { identity: AuthIdentity | null; loading: boolean; error: string | null }) {
+  const location = useLocation()
+  const requested = new URLSearchParams(location.search).get('returnTo')
+  const returnTo = requested?.startsWith('/keys/rooms/') && !requested.startsWith('//') ? requested : '/'
+  if (loading) return <main className="session-loading"><LoadingSpinner label="กำลังตรวจสอบบัญชี…" /></main>
+  if (identity) return <Navigate to={identity.role === 'ADMIN' ? '/admin' : returnTo} replace />
+  return <>{error && <div className="session-message" role="status">{error}</div>}<LoginForm /></>
+}
+
 export function App() {
   const { identity, loading, error, logout } = useAuthSession()
   useRealtimeInvalidation(Boolean(identity))
-  const loginDestination = identity?.role === 'ADMIN' ? '/admin' : identity ? '/' : null
-
   return <Routes>
-    <Route element={<PublicLayout identity={identity} loading={loading} onLogout={logout} />}><Route index element={<RoomSelectionPage />} /><Route path="rooms" element={<Navigate to="/" replace />} /><Route path="rooms/:roomId" element={<RoomDetailPage identity={identity} />} /><Route path="account" element={<Navigate to="/" replace />} /><Route path="account/requests" element={<AccountGuard identity={identity} loading={loading}><AccountRequestsPage /></AccountGuard>} /><Route path="account/bookings" element={<Navigate to="/account/requests" replace />} /><Route path="account/keys" element={<Navigate to="/account/requests" replace />} /><Route path="account/history" element={<AccountGuard identity={identity} loading={loading}><AccountPlaceholderPage title="ประวัติการใช้งาน" /></AccountGuard>} /></Route>
-    <Route path="login" element={loading ? <main className="session-loading"><LoadingSpinner label="กำลังตรวจสอบบัญชี…" /></main> : loginDestination ? <Navigate to={loginDestination} replace /> : <>{error && <div className="session-message" role="status">{error}</div>}<LoginForm /></>} />
+    <Route element={<PublicLayout identity={identity} loading={loading} onLogout={logout} />}><Route index element={<RoomSelectionPage />} /><Route path="keys" element={<KeyRequestRoomsPage />} /><Route path="keys/rooms/:roomId" element={<KeyRequestFormPage identity={identity} authLoading={loading} />} /><Route path="rooms" element={<Navigate to="/" replace />} /><Route path="rooms/:roomId" element={<RoomDetailPage identity={identity} />} /><Route path="account" element={<Navigate to="/" replace />} /><Route path="account/requests" element={<AccountGuard identity={identity} loading={loading}><AccountRequestsPage /></AccountGuard>} /><Route path="account/bookings" element={<Navigate to="/account/requests" replace />} /><Route path="account/keys" element={<Navigate to="/account/requests" replace />} /><Route path="account/history" element={<AccountGuard identity={identity} loading={loading}><AccountPlaceholderPage title="ประวัติการใช้งาน" /></AccountGuard>} /></Route>
+    <Route path="login" element={<LoginRoute identity={identity} loading={loading} error={error} />} />
     <Route path="admin" element={<AdminGuard identity={identity} loading={loading}><AdminLayout identity={identity as AuthIdentity} onLogout={logout} /></AdminGuard>}><Route index element={<AdminDashboardPage />} /><Route path="rooms" element={<RoomsManagementPage />} /><Route path="rooms/:roomId" element={<AdminRoomDetailPage />} /><Route path="terms" element={<AcademicTermsPage />} /><Route path="academic-schedules" element={<AcademicSchedulesPage />} /><Route path="room-schedule" element={<AdminRoomSchedulePage />} /><Route path="users" element={<AdminPlaceholderPage title="จัดการผู้ใช้งาน" />} /><Route path="bookings" element={<AdminBookingsPage />} /><Route path="keys" element={<AdminKeyCabinetPage/>}/><Route path="policies" element={<UsagePolicyPage/>}/></Route>
     <Route path="student/rooms" element={<Navigate to="/" replace />} /><Route path="student/rooms/:roomId" element={<LegacyRoomRedirect />} /><Route path="student/schedule" element={<Navigate to="/" replace />} />
     <Route path="*" element={<Navigate to="/" replace />} />

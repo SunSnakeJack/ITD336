@@ -13,6 +13,9 @@ function nullableText(row: UnknownRow, key: string) { return typeof row[key] ===
 function bool(row: UnknownRow, key: string, fallback = false) { return typeof row[key] === 'boolean' ? row[key] as boolean : fallback }
 function num(row: UnknownRow, key: string, fallback = 0) { return typeof row[key] === 'number' ? row[key] as number : fallback }
 
+const LEGACY_LAB_ROOM_TYPES = new Set(['Computer Room', 'Cold Room', 'Studio Room', 'Gaming Room', 'E-Learning Room'])
+const LEGACY_SPECIAL_LAB_TYPES = new Set(['Studio Room', 'Gaming Room', 'E-Learning Room'])
+
 export async function getScheduleRooms(): Promise<ScheduleRoom[]> {
   const rows = await unwrap<UnknownRow[]>(supabase.from('rooms').select('*, room_types(name)').order('code'))
   return rows.map((row) => {
@@ -28,7 +31,15 @@ export async function getScheduleRooms(): Promise<ScheduleRoom[]> {
 }
 
 function mapPublicRoom(row: UnknownRow): ScheduleRoom {
-  return { id: text(row, 'id'), code: text(row, 'code'), layoutKey: text(row, 'layout_key', text(row, 'code')), name: text(row, 'name'), building: nullableText(row, 'building'), floor: nullableText(row, 'floor'), capacity: num(row, 'capacity'), active: bool(row, 'active'), bookingEnabled: false, roomTypeName: text(row, 'room_type_name', 'ไม่ระบุ'), academicScheduleConfirmed: bool(row, 'academic_schedule_confirmed') }
+  const roomTypeName = text(row, 'room_type_name', 'ไม่ระบุ')
+  const explicitScope = text(row, 'usage_scope')
+  const usageScope = explicitScope === 'LABORATORY' || explicitScope === 'MEETING' || explicitScope === 'OTHER'
+    ? explicitScope
+    : LEGACY_LAB_ROOM_TYPES.has(roomTypeName) ? 'LABORATORY' : roomTypeName === 'Meeting Room' ? 'MEETING' : 'OTHER'
+  const requiresSso = typeof row.requires_sso_for_key_request === 'boolean'
+    ? row.requires_sso_for_key_request
+    : LEGACY_SPECIAL_LAB_TYPES.has(roomTypeName)
+  return { id: text(row, 'id'), code: text(row, 'code'), layoutKey: text(row, 'layout_key', text(row, 'code')), name: text(row, 'name'), building: nullableText(row, 'building'), floor: nullableText(row, 'floor'), capacity: num(row, 'capacity'), active: bool(row, 'active'), bookingEnabled: false, roomTypeName, academicScheduleConfirmed: bool(row, 'academic_schedule_confirmed'), usageScope, requiresSsoForKeyRequest: requiresSso }
 }
 
 export async function getPublicScheduleRooms(): Promise<ScheduleRoom[]> {
