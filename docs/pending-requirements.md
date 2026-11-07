@@ -1,5 +1,15 @@
 # Pending requirements
 
+## Approved baseline database migration — decisions still required
+
+- Confirm whether the approved public laboratory dashboard may expose full requester and lecturer names/email addresses to every anonymous visitor. Migration `0029` keeps `PUBLIC_KEY_HISTORY_IDENTITY_ENABLED=false`; no anonymous history view or grant is created.
+- Confirm the concrete Northbkk SSO provider, claim mapping, account-disable synchronization, and authoritative personnel source. Roles must not be inferred from an email address.
+- Confirm whether historical meeting reservations may be cancelled after their end time. The approved baseline says anytime, while the current `cancel_booking` RPC rejects elapsed bookings.
+- Confirm how a new priority booking is introduced while the legacy whole-booking exclusion constraint is active. `booking_segments` safely models partial displacement, but application cutover needs a coordinated booking RPC migration.
+- Confirm audit/history and notification retention periods, backup frequency, recovery objectives, and deletion/anonymization rules.
+- Confirm the email delivery provider, worker authentication, retry ceiling, dead-letter operating procedure, and secure-link URL host.
+- Confirm the authorized room/timetable source, JSON contract, automation identity, and handling of source deletions before enabling daily 08:00 synchronization.
+
 The following need product-owner decisions before enforcement:
 
 1. University account integration and SSO provider.
