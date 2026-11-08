@@ -54,6 +54,10 @@ begin
     'university email domain is not enforced by the database';
   assert position('SATURDAY_NOT_AVAILABLE' in pg_get_functiondef('public.enforce_key_request_entry_rules()'::regprocedure))>0,
     'Saturday key requests are not rejected by the database';
+  assert (select count(*) from public.rooms where code in('S2407','S2408','S2409','S2410','S2411','S2412','STUDIO','ESPORT','ELEARNING'))=9,
+    'mobile key-request room catalog incomplete';
+  assert not exists(select 1 from public.rooms where code in('STUDIO','ESPORT','ELEARNING') and key_approval_mode<>'ADMIN'),
+    'special room approval policy mismatch';
 
   assert not has_table_privilege('anon','public.key_requests','SELECT'), 'anonymous can read key requests';
   assert not has_table_privilege('anon','public.key_requests','INSERT'), 'anonymous can insert key requests directly';

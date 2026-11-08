@@ -18,6 +18,9 @@ export interface CreateKeyRequestInput {
   courseName?: string
   lecturerName?: string
   lecturerEmail?: string
+  requesterType?: 'STUDENT' | 'TEACHER'
+  requesterIdentifier?: string
+  referenceOptionId?: string
 }
 
 export interface KeyRequestResult {
@@ -25,3 +28,7 @@ export interface KeyRequestResult {
   request_code: string
   status: 'APPROVED' | 'PENDING_APPROVAL'
 }
+
+export interface PublicKeyRequestHistoryItem { id:string;requesterName:string;startsAt:string;endsAt:string;status:string }
+export interface KeyRequestReferenceOption { id:string;courseCode:string;courseName:string;lecturerName:string }
+export interface MyKeyRequest {id:string;requestCode:string;roomCode:string;roomName:string;roomTypeName:string;floor:string|null;startsAt:string;endsAt:string;purpose:string;purposeType:'TEACHING'|'OTHER';courseCode:string|null;lecturerName:string|null;status:string;canCancel:boolean}

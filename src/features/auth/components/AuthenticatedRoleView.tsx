@@ -7,7 +7,7 @@ interface AuthenticatedRoleViewProps {
 }
 
 export function AuthenticatedRoleView({ identity, onLogout }: AuthenticatedRoleViewProps) {
-  const roleLabel = ROLE_LABELS[identity.role]
+  const roleLabel = identity.role ? ROLE_LABELS[identity.role] : 'ผู้ใช้งาน'
 
   return (
     <section className="role-page">

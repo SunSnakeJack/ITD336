@@ -1,11 +1,11 @@
 import { type FormEvent, useState } from 'react'
 
 import { setSessionPersistence } from '../../../lib/supabase/client'
-import { signInWithPassword } from '../auth.service'
+import { signInWithGoogle, signInWithPassword } from '../auth.service'
 import { LoginBrand } from './LoginBrand'
 import { PasswordField } from './PasswordField'
 
-export function LoginForm({ embedded=false, onClose, onSuccess }: { embedded?:boolean;onClose?:()=>void;onSuccess?:()=>void }={}) {
+export function LoginForm({ embedded=false, onClose, onSuccess, returnTo='/' }: { embedded?:boolean;onClose?:()=>void;onSuccess?:()=>void;returnTo?:string }={}) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
@@ -65,7 +65,7 @@ export function LoginForm({ embedded=false, onClose, onSuccess }: { embedded?:bo
           </button>
         </form>
         <div className="or-divider"><span>OR</span></div>
-        <button className="google-button" disabled type="button">
+        <button className="google-button" onClick={() => void signInWithGoogle(returnTo)} type="button">
           <svg aria-hidden="true" viewBox="0 0 24 24">
             <path fill="#4285f4" d="M21.6 12.23c0-.72-.06-1.41-.19-2.08H12v3.93h5.38a4.6 4.6 0 0 1-2 3.02v2.55h3.24c1.89-1.74 2.98-4.3 2.98-7.42Z" />
             <path fill="#34a853" d="M12 22c2.7 0 4.96-.9 6.62-2.43l-3.24-2.55c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.12H3.06v2.63A10 10 0 0 0 12 22Z" />

@@ -14,3 +14,9 @@ port = 54323
 enabled = true
 site_url = "http://localhost:5173"
 additional_redirect_urls = ["http://localhost:5173"]
+
+[functions.email-worker]
+verify_jwt = false
+
+[functions.key-request-action]
+verify_jwt = false

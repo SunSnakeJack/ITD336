@@ -4,7 +4,7 @@ export interface AuthIdentity {
   userId: string
   fullName: string
   email: string
-  role: RoleCode
+  role: RoleCode | null
 }
 
 export const ROLE_LABELS: Record<RoleCode, string> = {

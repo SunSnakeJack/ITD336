@@ -2,7 +2,7 @@
 
 ## Approved baseline database migration — decisions still required
 
-- Confirm whether the approved public laboratory dashboard may expose full requester and lecturer names/email addresses to every anonymous visitor. Migration `0029` keeps `PUBLIC_KEY_HISTORY_IDENTITY_ENABLED=false`; no anonymous history view or grant is created.
+- Resolved 2026-11-08: anonymous visitors may see full requester names, time and status for the latest 10 key requests. Long names are visually truncated; email and university identifiers remain private.
 - Confirm the concrete Northbkk SSO provider, claim mapping, account-disable synchronization, and authoritative personnel source. Roles must not be inferred from an email address.
 - Confirm whether historical meeting reservations may be cancelled after their end time. The approved baseline says anytime, while the current `cancel_booking` RPC rejects elapsed bookings.
 - Confirm how a new priority booking is introduced while the legacy whole-booking exclusion constraint is active. `booking_segments` safely models partial displacement, but application cutover needs a coordinated booking RPC migration.

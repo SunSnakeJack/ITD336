@@ -1,25 +1,25 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
 import { publicRoomsQuery } from '../../schedules/schedule.queries'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
+import { KeyRoomCatalogCard } from '../components/KeyRoomCatalogCard'
+import type { AuthIdentity } from '../../auth/auth.types'
 
-export function KeyRequestRoomsPage() {
+export function KeyRequestRoomsPage({identity}:{identity:AuthIdentity|null}) {
   const rooms = useQuery(publicRoomsQuery())
   const laboratories = (rooms.data ?? []).filter((room) => room.usageScope === 'LABORATORY')
+  const [special, setSpecial] = useState(false)
+  const visibleRooms = laboratories.filter((room) => Boolean(room.requiresSsoForKeyRequest) === special)
 
   return <section className="key-request-entry">
     <header>
-      <span className="key-request-kicker">ระบบเบิกกุญแจ</span>
-      <h1>เบิกกุญแจห้องปฏิบัติการ</h1>
-      <p>เลือกห้องที่ต้องการเบิกกุญแจ</p>
-      <small>ทำรายการได้วันอาทิตย์–ศุกร์ เวลา 08:00–18:00 น. วันเสาร์ดูข้อมูลได้แต่ไม่สามารถทำรายการ</small>
+      <h1>เลือกกุญแจที่ต้องการเบิก</h1>
+      <p>แตะห้องเพื่อดูรายละเอียดและเลือกช่วงเวลา</p>
     </header>
+    <div className="key-room-tabs" role="tablist"><button role="tab" aria-selected={!special} onClick={() => setSpecial(false)}>ห้องปฏิบัติการ</button><button role="tab" aria-selected={special} onClick={() => setSpecial(true)}>ห้องปฏิบัติการพิเศษ</button></div>
     {rooms.isPending ? <LoadingSpinner label="กำลังโหลดข้อมูลห้อง…" /> : rooms.error ? <div className="key-request-error" role="alert"><strong>ไม่สามารถโหลดข้อมูลห้องได้</strong><button onClick={() => void rooms.refetch()}>ลองใหม่</button></div> : <div className="key-room-list">
-      {laboratories.map((room) => <Link key={room.id} to={`/keys/rooms/${room.id}`} className="key-room-card">
-        <div><strong>{room.code}</strong><span>{room.name}</span><small>{[room.building, room.floor].filter(Boolean).join(' · ')}</small></div>
-        <div><span className={room.requiresSsoForKeyRequest ? 'key-room-badge special' : 'key-room-badge'}>{room.requiresSsoForKeyRequest ? 'ห้องพิเศษ · ต้องเข้าสู่ระบบ' : 'อนุมัติอัตโนมัติ'}</span><b aria-hidden="true">›</b></div>
-      </Link>)}
-      {laboratories.length === 0 && <p className="key-room-empty">ยังไม่มีห้องปฏิบัติการที่เปิดให้ใช้งาน</p>}
+      {visibleRooms.map((room) => <KeyRoomCatalogCard key={room.id} room={room} identity={identity}/>)}
+      {visibleRooms.length === 0 && <p className="key-room-empty">ไม่พบห้องในหมวดนี้</p>}
     </div>}
   </section>
 }

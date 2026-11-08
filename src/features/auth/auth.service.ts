@@ -12,6 +12,22 @@ export const updateMyAuthProfile=(attributes:UserAttributes)=>supabase.auth.upda
 export const signInWithPassword = (email: string, password: string) =>
   supabase.auth.signInWithPassword({ email, password })
 
+export const normalizeAuthReturnTo = (returnTo: string | null | undefined) =>
+  returnTo && !returnTo.startsWith('//') && (/^\/keys(?:\/|\?|$)/.test(returnTo) || returnTo.startsWith('/account/'))
+    ? returnTo
+    : '/'
+
+export const signInWithGoogle = (returnTo = '/') => {
+  const safeReturnTo = normalizeAuthReturnTo(returnTo)
+  return supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/login?returnTo=${encodeURIComponent(safeReturnTo)}`,
+      queryParams: { hd: 'northbkk.ac.th', prompt: 'select_account' },
+    },
+  })
+}
+
 export async function getMyIdentity(userId: string): Promise<AuthIdentity> {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
@@ -28,7 +44,12 @@ export async function getMyIdentity(userId: string): Promise<AuthIdentity> {
     .eq('user_id', userId)
 
   if (assignmentError) throw new Error(assignmentError.message)
-  if (assignments.length === 0) throw new Error('บัญชีนี้ยังไม่ได้รับการกำหนดบทบาท')
+  if (assignments.length === 0) return {
+    userId: profile.id,
+    fullName: profile.full_name || profile.email,
+    email: profile.email,
+    role: null,
+  }
 
   const { data: roles, error: roleError } = await supabase
     .from('roles')
@@ -41,12 +62,10 @@ export async function getMyIdentity(userId: string): Promise<AuthIdentity> {
     .map((code) => roles.find((candidate) => candidate.code === code))
     .find((candidate) => candidate !== undefined)
 
-  if (!role) throw new Error('ไม่พบบทบาทที่ระบบรองรับสำหรับบัญชีนี้')
-
   return {
     userId: profile.id,
     fullName: profile.full_name || profile.email,
     email: profile.email,
-    role: role.code as RoleCode,
+    role: role ? role.code as RoleCode : null,
   }
 }
