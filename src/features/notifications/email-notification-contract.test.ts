@@ -11,6 +11,10 @@ const tokenFixPath=join(process.cwd(),'supabase/migrations/0042_fix_action_bundl
 const tokenFixSql=existsSync(tokenFixPath)?readFileSync(tokenFixPath,'utf8'):''
 const terminalPath=join(process.cwd(),'supabase/migrations/0043_key_request_terminal_email_notifications.sql')
 const terminalSql=existsSync(terminalPath)?readFileSync(terminalPath,'utf8'):''
+const dispatchPath=join(process.cwd(),'supabase/migrations/0044_test_email_entity_dispatch.sql')
+const dispatchSql=existsSync(dispatchPath)?readFileSync(dispatchPath,'utf8'):''
+const secureDispatchPath=join(process.cwd(),'supabase/migrations/0045_secure_email_entity_dispatch.sql')
+const secureDispatchSql=existsSync(secureDispatchPath)?readFileSync(secureDispatchPath,'utf8'):''
 
 describe('key-request email notifications',()=>{
   it('queues idempotent reminder and expiry jobs only for approved requests',()=>{
@@ -29,6 +33,14 @@ describe('key-request email notifications',()=>{
     expect(renderKeyRequestEmail('key-request-ending-soon',{...base,status:'APPROVED'}).subject).toContain('30 นาที')
     expect(renderKeyRequestEmail('key-request-ended',{...base,status:'APPROVED'}).subject).toContain('สิ้นสุด')
     expect(renderKeyRequestEmail('key-request-submitted',{...base,status:'APPROVED'}).html).toContain('ยืนยันคืนกุญแจ')
+  })
+
+  it('renders only cancel and return actions without a tracking action',()=>{
+    const email=renderKeyRequestEmail('key-request-submitted',{requestCode:'KR-1',roomName:'S2407',startsAt:'2026-11-08T10:00:00+07:00',endsAt:'2026-11-08T11:00:00+07:00',purpose:'ทดสอบ',status:'APPROVED',links:{track:'https://example.test/t',cancel:'https://example.test/c',returnKey:'https://example.test/r'}})
+    expect(email.html).toContain('ยกเลิกคำขอ')
+    expect(email.html).toContain('ยืนยันคืนกุญแจ')
+    expect(email.html).not.toContain('ติดตามสถานะ')
+    expect(email.html).not.toContain('https://example.test/t')
   })
 
   it('renders every key-request lifecycle email with Bangkok local time',()=>{
@@ -63,20 +75,69 @@ describe('key-request email notifications',()=>{
     expect(worker).toContain('RESEND_ALLOWED_RECIPIENT')
     expect(worker).toContain("'Idempotency-Key'")
     expect(worker).toContain("mode!=='test'")
+    expect(worker).toContain('PUBLIC_SITE_URL')
+    expect(worker).toContain('/key-request-action?action=')
+    expect(worker).not.toContain('/functions/v1/key-request-action?')
+  })
+
+  it('dispatches only the newly-created request outbox when cron is disabled',()=>{
+    const worker=readFileSync(join(process.cwd(),'supabase/functions/email-worker/index.ts'),'utf8')
+    const service=readFileSync(join(process.cwd(),'src/features/keys/key.service.ts'),'utf8')
+    expect(worker).toContain("db.rpc('claim_notification_outbox_entity_test'")
+    expect(worker).toContain('entityId')
+    expect(worker).toContain('dispatchToken')
+    expect(service).toContain("supabase.functions.invoke('email-worker'")
+    expect(service).toContain('dispatchToken:result.email_dispatch_token')
+    expect(dispatchSql).toContain('p_entity_id uuid')
+    expect(dispatchSql).toContain("entity_type='key_request'")
+    expect(dispatchSql).toContain('entity_id=p_entity_id')
+    expect(dispatchSql).toContain("coalesce(auth.role(),'')<>'service_role'")
+    expect(worker).toContain("isLoopbackOrigin")
+    expect(worker).not.toContain("link('TRACK'")
+    expect(worker).toContain("req.method==='OPTIONS'")
+    expect(worker).toContain("'access-control-allow-origin':'*'")
+    expect(secureDispatchSql).toContain('p_dispatch_token text')
+    expect(secureDispatchSql).toContain('email_dispatch_tokens')
+    expect(secureDispatchSql).toContain('ACTION_TOKEN_ALREADY_USED')
+    expect(secureDispatchSql).toContain('ACTION_TOKEN_EXPIRED')
+    expect(secureDispatchSql).toContain("'email_dispatch_token',v_dispatch_token")
   })
 
   it('requires confirmation before cancel or return token consumption',()=>{
     const actionPath=join(process.cwd(),'supabase/functions/key-request-action/index.ts')
     const action=existsSync(actionPath)?readFileSync(actionPath,'utf8'):''
-    expect(action).toContain("req.method==='GET'&&action!=='TRACK'")
-    expect(action).toContain('<form method="post">')
+    expect(action).toContain("req.method!=='POST'")
+    expect(action).toContain("req.method==='OPTIONS'")
     expect(action).toContain("db.rpc('consume_key_request_action'")
-    expect(action).toContain("'cache-control':'no-store'")
+    expect(action).toContain("'access-control-allow-origin':'*'")
+    expect(action).not.toContain('<form method="post">')
     const tokenSql=readFileSync(join(process.cwd(),'supabase/migrations/0030_baseline_workflow_functions.sql'),'utf8')
     expect(tokenSql).toContain("v_token.used_at is not null")
     expect(tokenSql).toContain("v_token.expires_at<=now()")
     expect(tokenSql).toContain('ACTION_TOKEN_ALREADY_USED')
     expect(tokenSql).toContain('ACTION_TOKEN_EXPIRED')
+    expect(action).toContain('ACTION_TOKEN_ALREADY_USED')
+    expect(action).toContain('KEY_REQUEST_NOT_CANCELLABLE')
+    expect(action).toContain('คำขอนี้ถูกยกเลิกแล้วหรือไม่อยู่ในสถานะที่ยกเลิกได้')
+  })
+
+  it('does not grant request cancellation authority to lecturer notices',()=>{
+    const base={requestCode:'KR-1',roomName:'S2407',startsAt:'2026-11-08T03:00:00Z',endsAt:'2026-11-08T04:00:00Z',purpose:'ทดสอบ',status:'APPROVED',links:{track:'https://example.test/t',cancel:'https://example.test/c',returnKey:'https://example.test/r'}}
+    const email=renderKeyRequestEmail('key-request-lecturer-notice',base)
+    expect(email.html).not.toContain('ยกเลิกคำขอ')
+    expect(email.html).not.toContain('https://example.test/c')
+    const worker=readFileSync(join(process.cwd(),'supabase/functions/email-worker/index.ts'),'utf8')
+    expect(worker).toContain("row.template_key!=='key-request-lecturer-notice'")
+    expect(worker).toContain('actionBundleRequired')
+  })
+
+  it('preserves cancellation history and releases the request time range',()=>{
+    const workflowSql=readFileSync(join(process.cwd(),'supabase/migrations/0030_baseline_workflow_functions.sql'),'utf8')
+    const schemaSql=readFileSync(join(process.cwd(),'supabase/migrations/0029_baseline_request_schema.sql'),'utf8')
+    expect(workflowSql).toContain("set_config('app.key_request_actor_kind','TOKEN',true)")
+    expect(workflowSql).toContain("update public.key_requests set status='CANCELLED',cancelled_at=now()")
+    expect(workflowSql).toContain("v_request.status not in('PENDING_APPROVAL','APPROVED','IN_USE')")
+    expect(schemaSql).toContain("where (status in ('PENDING_APPROVAL','APPROVED','IN_USE'))")
   })
 
   it('gives the worker narrow RPC access without granting the key request table',()=>{

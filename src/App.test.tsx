@@ -49,6 +49,7 @@ vi.mock('./lib/supabase/client', () => ({
     },
     rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
     from: vi.fn(() => { const query = { select: vi.fn(), is: vi.fn(), order: vi.fn() } as { select: ReturnType<typeof vi.fn>; is: ReturnType<typeof vi.fn>; order: ReturnType<typeof vi.fn> }; query.select.mockReturnValue(query); query.is.mockReturnValue(query); query.order.mockResolvedValue({ data: [], error: null }); return query }),
+      functions: { invoke: vi.fn() },
   },
 }))
 
@@ -85,6 +86,22 @@ describe('Authentication entry point', () => {
     expect(normalizeAuthReturnTo('/keys')).toBe('/keys')
     expect(normalizeAuthReturnTo('https://evil.example/keys')).toBe('/')
     expect(normalizeAuthReturnTo('//evil.example/keys')).toBe('/')
+  })
+
+  it('confirms and completes an email cancellation through the frontend', async () => {
+    vi.mocked(supabase.functions.invoke).mockResolvedValue({data:{ok:true,requestCode:'KR-1',status:'CANCELLED'},error:null} as never)
+    renderPath(`/key-request-action?action=CANCEL&token=${'a'.repeat(64)}`)
+    expect(await screen.findByRole('heading',{name:'ยืนยันการยกเลิกคำขอ'})).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button',{name:'ยืนยันการยกเลิก'}))
+    expect(await screen.findByRole('heading',{name:'ยกเลิกคำขอสำเร็จ'})).toBeInTheDocument()
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('key-request-action',{body:{action:'CANCEL',token:'a'.repeat(64)}})
+  })
+
+  it('shows an expired secure-link error without changing a request', async () => {
+    vi.mocked(supabase.functions.invoke).mockResolvedValue({data:{ok:false,code:'ACTION_TOKEN_EXPIRED',message:'ลิงก์หมดอายุแล้ว'},error:null} as never)
+    renderPath(`/key-request-action?action=CANCEL&token=${'b'.repeat(64)}`)
+    fireEvent.click(await screen.findByRole('button',{name:'ยืนยันการยกเลิก'}))
+    expect(await screen.findByRole('alert')).toHaveTextContent('ลิงก์หมดอายุแล้ว')
   })
 
   it('shows an email-matched legacy request as read-only history', async () => {

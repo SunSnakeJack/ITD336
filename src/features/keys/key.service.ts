@@ -8,7 +8,7 @@ export async function cancelMyKeyRequest(id:string){const{data,error}=await supa
 export async function getKeyRequestReferenceOptions():Promise<KeyRequestReferenceOption[]>{const {data,error}=await supabase.rpc('get_public_key_request_options' as never) as unknown as {data:Array<{id:string;course_code:string;course_name:string;lecturer_name:string}>|null;error:{message:string}|null};if(error)throw new Error(error.message);return(data??[]).map((row)=>({id:row.id,courseCode:row.course_code,courseName:row.course_name,lecturerName:row.lecturer_name}))}
 
 export async function createKeyRequest(input: CreateKeyRequestInput): Promise<KeyRequestResult> {
-  if(input.requesterType&&input.requesterIdentifier){const {data,error}=await supabase.rpc('create_key_request_v2' as never,{p_room_id:input.roomId,p_requester_name:input.requesterName.trim(),p_requester_email:input.requesterEmail.trim().toLowerCase(),p_requester_type:input.requesterType,p_requester_identifier:input.requesterIdentifier.trim(),p_purpose_type:input.purposeType,p_purpose:input.purpose.trim(),p_starts_at:input.startsAt,p_ends_at:input.endsAt,p_reference_option_id:input.referenceOptionId??null} as never) as unknown as {data:KeyRequestResult|null;error:{message:string}|null};if(!error&&data)return data;if(error)throwKeyRequestError(error.message)}
+  if(input.requesterType&&input.requesterIdentifier){const {data,error}=await supabase.rpc('create_key_request_v2' as never,{p_room_id:input.roomId,p_requester_name:input.requesterName.trim(),p_requester_email:input.requesterEmail.trim().toLowerCase(),p_requester_type:input.requesterType,p_requester_identifier:input.requesterIdentifier.trim(),p_purpose_type:input.purposeType,p_purpose:input.purpose.trim(),p_starts_at:input.startsAt,p_ends_at:input.endsAt,p_reference_option_id:input.referenceOptionId??null} as never) as unknown as {data:KeyRequestResult|null;error:{message:string}|null};if(!error&&data)return dispatchCreatedRequestEmail(data);if(error)throwKeyRequestError(error.message)}
   const { data, error } = await supabase.rpc('create_key_request' as never, {
     p_room_id: input.roomId,
     p_requester_name: input.requesterName.trim(),
@@ -22,9 +22,14 @@ export async function createKeyRequest(input: CreateKeyRequestInput): Promise<Ke
     p_lecturer_name: input.lecturerName?.trim() || null,
     p_lecturer_email: input.lecturerEmail?.trim().toLowerCase() || null,
   } as never) as unknown as { data: KeyRequestResult | null; error: { message: string } | null }
-  if (!error && data) return data
+  if (!error && data) return dispatchCreatedRequestEmail(data)
   const message = error?.message ?? 'KEY_REQUEST_FAILED'
   throwKeyRequestError(message)
+}
+async function dispatchCreatedRequestEmail(result:KeyRequestResult):Promise<KeyRequestResult>{
+  const{error}=await supabase.functions.invoke('email-worker',{body:{entityId:result.id,dispatchToken:result.email_dispatch_token}})
+  if(error)console.error('KEY_REQUEST_EMAIL_DISPATCH_FAILED',error.message)
+  return result
 }
 function throwKeyRequestError(message:string):never{
   if (message.includes('KEY_REQUEST_TIME_CONFLICT') || message.includes('LEGACY_KEY_REQUEST_TIME_CONFLICT')) throw new Error('ช่วงเวลานี้มีคำขอเบิกกุญแจแล้ว')

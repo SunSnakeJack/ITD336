@@ -32,6 +32,7 @@ import { KeyRequestFormPage } from "./features/keys/pages/KeyRequestFormPage";
 import { KeyRequestRoomDetailPage } from "./features/keys/pages/KeyRequestRoomDetailPage";
 import { AccountProfilePage } from "./features/public/pages/AccountProfilePage";
 import { AccountKeyRequestHistoryPage } from "./features/keys/pages/AccountKeyRequestHistoryPage";
+import { KeyRequestActionPage } from "./features/keys/pages/KeyRequestActionPage";
 
 function AdminGuard({
   identity,
@@ -128,6 +129,7 @@ export function App() {
       >
         <Route index element={<RoomSelectionPage />} />
         <Route path="keys" element={<KeyRequestRoomsPage identity={identity} />} />
+        <Route path="key-request-action" element={<KeyRequestActionPage />} />
         <Route
           path="keys/rooms/:roomId"
           element={<KeyRequestRoomDetailPage identity={identity} />}

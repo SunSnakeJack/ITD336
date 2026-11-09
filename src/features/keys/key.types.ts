@@ -27,6 +27,7 @@ export interface KeyRequestResult {
   id: string
   request_code: string
   status: 'APPROVED' | 'PENDING_APPROVAL'
+  email_dispatch_token: string
 }
 
 export interface PublicKeyRequestHistoryItem { id:string;requesterName:string;startsAt:string;endsAt:string;status:string }
