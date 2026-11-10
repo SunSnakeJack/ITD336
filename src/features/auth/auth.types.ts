@@ -5,6 +5,7 @@ export interface AuthIdentity {
   fullName: string
   email: string
   role: RoleCode | null
+  avatarUrl?: string
 }
 
 export const ROLE_LABELS: Record<RoleCode, string> = {

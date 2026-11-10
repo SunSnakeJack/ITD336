@@ -15,6 +15,8 @@ const dispatchPath=join(process.cwd(),'supabase/migrations/0044_test_email_entit
 const dispatchSql=existsSync(dispatchPath)?readFileSync(dispatchPath,'utf8'):''
 const secureDispatchPath=join(process.cwd(),'supabase/migrations/0045_secure_email_entity_dispatch.sql')
 const secureDispatchSql=existsSync(secureDispatchPath)?readFileSync(secureDispatchPath,'utf8'):''
+const scopedRetryPath=join(process.cwd(),'supabase/migrations/0049_scoped_terminal_email_retry.sql')
+const scopedRetrySql=existsSync(scopedRetryPath)?readFileSync(scopedRetryPath,'utf8'):''
 
 describe('key-request email notifications',()=>{
   it('queues idempotent reminder and expiry jobs only for approved requests',()=>{
@@ -92,7 +94,9 @@ describe('key-request email notifications',()=>{
     expect(dispatchSql).toContain("entity_type='key_request'")
     expect(dispatchSql).toContain('entity_id=p_entity_id')
     expect(dispatchSql).toContain("coalesce(auth.role(),'')<>'service_role'")
-    expect(worker).toContain("isLoopbackOrigin")
+    expect(worker).toContain('const siteUrl=publicSiteUrl')
+    expect(worker).not.toContain('isLoopbackOrigin')
+    expect(worker).not.toContain("req.headers.get('origin')")
     expect(worker).not.toContain("link('TRACK'")
     expect(worker).toContain("req.method==='OPTIONS'")
     expect(worker).toContain("'access-control-allow-origin':'*'")
@@ -101,6 +105,28 @@ describe('key-request email notifications',()=>{
     expect(secureDispatchSql).toContain('ACTION_TOKEN_ALREADY_USED')
     expect(secureDispatchSql).toContain('ACTION_TOKEN_EXPIRED')
     expect(secureDispatchSql).toContain("'email_dispatch_token',v_dispatch_token")
+  })
+
+  it('sends terminal confirmation emails without requiring a public site URL',()=>{
+    const worker=readFileSync(join(process.cwd(),'supabase/functions/email-worker/index.ts'),'utf8')
+    expect(worker).toContain("!['key-request-lecturer-notice','key-request-cancelled','key-request-returned','key-request-ended'].includes(row.template_key)")
+    expect(worker).toContain("if(actionBundleRequired&&!siteUrl)throw new Error('PUBLIC_SITE_URL_REQUIRED')")
+    expect(worker).not.toContain('if(!url||!serviceKey||!resendKey||!siteUrl)')
+  })
+
+  it('claims one terminal confirmation outbox atomically for a service-role scoped retry',()=>{
+    const worker=readFileSync(join(process.cwd(),'supabase/functions/email-worker/index.ts'),'utf8')
+    expect(scopedRetrySql).toContain('create or replace function public.claim_terminal_notification_outbox_retry')
+    expect(scopedRetrySql).toContain("p_template_key not in('key-request-cancelled','key-request-returned')")
+    expect(scopedRetrySql).toContain('for update skip locked limit 1')
+    expect(scopedRetrySql).toContain("coalesce(auth.role(),'')<>'service_role'")
+    expect(scopedRetrySql).toContain('grant execute on function public.claim_terminal_notification_outbox_retry(text,text,uuid,text) to service_role')
+    expect(scopedRetrySql).not.toContain('to anon')
+    expect(scopedRetrySql).not.toContain('to authenticated')
+    expect(worker).toContain("db.rpc('claim_terminal_notification_outbox_retry'")
+    expect(worker).toContain("templateKey==='key-request-cancelled'||templateKey==='key-request-returned'")
+    const direct=readFileSync(join(process.cwd(),'supabase/functions/direct-email-cancel/index.ts'),'utf8')
+    expect(direct).toContain("body:JSON.stringify({entityId:requestId,templateKey:'key-request-cancelled'})")
   })
 
   it('requires confirmation before cancel or return token consumption',()=>{
@@ -118,7 +144,9 @@ describe('key-request email notifications',()=>{
     expect(tokenSql).toContain('ACTION_TOKEN_EXPIRED')
     expect(action).toContain('ACTION_TOKEN_ALREADY_USED')
     expect(action).toContain('KEY_REQUEST_NOT_CANCELLABLE')
+    expect(action).toContain('KEY_REQUEST_NOT_RETURNABLE')
     expect(action).toContain('คำขอนี้ถูกยกเลิกแล้วหรือไม่อยู่ในสถานะที่ยกเลิกได้')
+    expect(action).toContain('คำขอนี้ยังไม่อยู่ในสถานะที่คืนกุญแจได้')
   })
 
   it('does not grant request cancellation authority to lecturer notices',()=>{
@@ -127,7 +155,7 @@ describe('key-request email notifications',()=>{
     expect(email.html).not.toContain('ยกเลิกคำขอ')
     expect(email.html).not.toContain('https://example.test/c')
     const worker=readFileSync(join(process.cwd(),'supabase/functions/email-worker/index.ts'),'utf8')
-    expect(worker).toContain("row.template_key!=='key-request-lecturer-notice'")
+    expect(worker).toContain("!['key-request-lecturer-notice','key-request-cancelled','key-request-returned','key-request-ended'].includes(row.template_key)")
     expect(worker).toContain('actionBundleRequired')
   })
 

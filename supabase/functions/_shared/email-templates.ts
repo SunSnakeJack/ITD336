@@ -1,4 +1,4 @@
-export interface KeyRequestEmailData{requestCode:string;roomName:string;startsAt:string;endsAt:string;purpose:string;status:string;reason?:string|null;links:{track:string;cancel:string;returnKey:string}}
+export interface KeyRequestEmailData{requestCode:string;roomName:string;startsAt:string;endsAt:string;purpose:string;status:string;reason?:string|null;links:{track:string;cancel:string;returnKey:string};gmailAction?:{name:string;url:string}|null}
 export interface RenderedEmail{subject:string;html:string}
 const escapeHtml=(value:string)=>value.replace(/[&<>'"]/g,(char)=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]??char))
 const button=(label:string,url:string)=>`<a href="${escapeHtml(url)}" style="display:inline-block;margin:8px 8px 0 0;padding:10px 16px;background:#111;color:#fff;text-decoration:none;border-radius:6px">${label}</a>`
@@ -9,5 +9,6 @@ export function renderKeyRequestEmail(templateKey:string,data:KeyRequestEmailDat
  const detail=`<p><b>รหัสคำขอ:</b> ${escapeHtml(data.requestCode)}</p><p><b>ห้อง:</b> ${escapeHtml(data.roomName)}</p><p><b>เวลา:</b> ${escapeHtml(formatBangkokDateTime(data.startsAt))} – ${escapeHtml(formatBangkokDateTime(data.endsAt))} (Asia/Bangkok)</p><p><b>วัตถุประสงค์:</b> ${escapeHtml(data.purpose)}</p>`;const reason=data.reason?`<p><b>เหตุผล:</b> ${escapeHtml(data.reason)}</p>`:'';let actions=''
  if(!['key-request-lecturer-notice','key-request-rejected','key-request-cancelled','key-request-returned','key-request-ended'].includes(templateKey))actions+=button('ยกเลิกคำขอ',data.links.cancel)
  if(['key-request-approved','key-request-ending-soon','key-request-ended'].includes(templateKey)||(templateKey==='key-request-submitted'&&!pending))actions+=button('ยืนยันคืนกุญแจ',data.links.returnKey)
- return{subject,html:`<!doctype html><html lang="th"><body style="font-family:Arial,sans-serif;color:#111"><h2>${escapeHtml(subject)}</h2>${detail}${reason}<div>${actions}</div><p style="color:#64748b;font-size:12px">อีเมลอัตโนมัติจากระบบ ITD336</p></body></html>`}
+ const gmailMarkup=data.gmailAction?`<script type="application/ld+json">${JSON.stringify({'@context':'https://schema.org','@type':'EmailMessage',potentialAction:{'@type':'ConfirmAction',name:data.gmailAction.name,handler:{'@type':'HttpActionHandler',url:data.gmailAction.url,method:'http://schema.org/HttpRequestMethod/POST'}},description:subject}).replace(/</g,'\\u003c')}</script>`:''
+ return{subject,html:`<!doctype html><html lang="th"><head>${gmailMarkup}</head><body style="font-family:Arial,sans-serif;color:#111"><h2>${escapeHtml(subject)}</h2>${detail}${reason}<div>${actions}</div><p style="color:#64748b;font-size:12px">อีเมลอัตโนมัติจากระบบ ITD336</p></body></html>`}
 }

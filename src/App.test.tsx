@@ -88,20 +88,38 @@ describe('Authentication entry point', () => {
     expect(normalizeAuthReturnTo('//evil.example/keys')).toBe('/')
   })
 
-  it('confirms and completes an email cancellation through the frontend', async () => {
+  it('automatically completes an email cancellation through the frontend', async () => {
     vi.mocked(supabase.functions.invoke).mockResolvedValue({data:{ok:true,requestCode:'KR-1',status:'CANCELLED'},error:null} as never)
     renderPath(`/key-request-action?action=CANCEL&token=${'a'.repeat(64)}`)
-    expect(await screen.findByRole('heading',{name:'ยืนยันการยกเลิกคำขอ'})).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button',{name:'ยืนยันการยกเลิก'}))
     expect(await screen.findByRole('heading',{name:'ยกเลิกคำขอสำเร็จ'})).toBeInTheDocument()
     expect(supabase.functions.invoke).toHaveBeenCalledWith('key-request-action',{body:{action:'CANCEL',token:'a'.repeat(64)}})
+    expect(supabase.functions.invoke).toHaveBeenCalledTimes(1)
+  })
+
+  it('automatically completes an email return through the frontend', async () => {
+    vi.mocked(supabase.functions.invoke).mockResolvedValue({data:{ok:true,requestCode:'KR-2',status:'RETURNED'},error:null} as never)
+    renderPath(`/key-request-action?action=RETURN&token=${'c'.repeat(64)}`)
+    expect(await screen.findByRole('heading',{name:'ยืนยันคืนกุญแจสำเร็จ'})).toBeInTheDocument()
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('key-request-action',{body:{action:'RETURN',token:'c'.repeat(64)}})
+    expect(supabase.functions.invoke).toHaveBeenCalledTimes(1)
   })
 
   it('shows an expired secure-link error without changing a request', async () => {
     vi.mocked(supabase.functions.invoke).mockResolvedValue({data:{ok:false,code:'ACTION_TOKEN_EXPIRED',message:'ลิงก์หมดอายุแล้ว'},error:null} as never)
     renderPath(`/key-request-action?action=CANCEL&token=${'b'.repeat(64)}`)
-    fireEvent.click(await screen.findByRole('button',{name:'ยืนยันการยกเลิก'}))
     expect(await screen.findByRole('alert')).toHaveTextContent('ลิงก์หมดอายุแล้ว')
+  })
+
+  it.each([
+    ['ACTION_TOKEN_ALREADY_USED','ลิงก์นี้ถูกใช้งานแล้ว'],
+    ['INVALID_ACTION_TOKEN','ลิงก์ไม่ถูกต้อง'],
+    ['KEY_REQUEST_NOT_CANCELLABLE','คำขอนี้ถูกยกเลิกแล้วหรือไม่อยู่ในสถานะที่ยกเลิกได้'],
+    ['KEY_REQUEST_NOT_RETURNABLE','คำขอนี้ยังไม่อยู่ในสถานะที่คืนกุญแจได้'],
+  ])('shows the backend result for %s',async(code,message)=>{
+    vi.mocked(supabase.functions.invoke).mockResolvedValue({data:{ok:false,code,message},error:null} as never)
+    renderPath(`/key-request-action?action=CANCEL&token=${'d'.repeat(64)}`)
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    expect(supabase.functions.invoke).toHaveBeenCalledTimes(1)
   })
 
   it('shows an email-matched legacy request as read-only history', async () => {
@@ -166,7 +184,7 @@ describe('Authentication entry point', () => {
   it('opens the dedicated key-request entry without a service picker', async () => {
     renderPath('/keys')
     expect(await screen.findByRole('heading', { name: 'เลือกกุญแจที่ต้องการเบิก' })).toBeInTheDocument()
-    expect(document.querySelector('.key-mobile-header')).toHaveTextContent('โลโก้')
+    expect(screen.getByRole('img',{name:'IT KeySpace'})).toBeInTheDocument()
     expect(document.querySelector('.public-sidebar.key-mode')).not.toBeInTheDocument()
     expect(screen.getByText('แตะห้องเพื่อดูรายละเอียดและเลือกช่วงเวลา')).toBeInTheDocument()
     expect(screen.queryByText('เลือกบริการที่ต้องการ')).not.toBeInTheDocument()
@@ -467,6 +485,34 @@ describe('Authentication entry point', () => {
     expect(screen.getByRole('link', { name: 'การจองและกุญแจ' })).toHaveAttribute('href', '/account/requests')
     expect(screen.getByRole('link', { name: 'ประวัติการใช้งาน' })).toHaveAttribute('href', '/account/history')
     expect(screen.queryByRole('link', { name: 'ค้นหาห้อง' })).not.toBeInTheDocument()
+  })
+
+  it('shows the branded key header with account identity and an outline notification bell', () => {
+    const identity = { userId: 'user-1', fullName: 'นายปิติพัฒน์ ชื่อยาวสำหรับทดสอบ', email: 'pitiphat.jo@northbkk.ac.th', role: null, avatarUrl: 'https://example.test/avatar.png' }
+    const client=new QueryClient({defaultOptions:{queries:{retry:false}}})
+    client.setQueryData(['notifications','unread'],[{id:'notice-1'}])
+    render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/keys']}><Routes><Route element={<PublicLayout identity={identity} loading={false} onLogout={vi.fn()} />}><Route path="keys" element={<div>หน้ากุญแจ</div>} /></Route></Routes></MemoryRouter></QueryClientProvider>)
+    expect(screen.getByRole('img',{name:'IT KeySpace'})).toHaveAttribute('src',expect.stringContaining('.ico'))
+    expect(screen.getByRole('img',{name:'รูปโปรไฟล์ของ นายปิติพัฒน์ ชื่อยาวสำหรับทดสอบ'})).toHaveAttribute('src','https://example.test/avatar.png')
+    expect(screen.getByText('นายปิติพัฒน์ ชื่อยาวสำหรับทดสอบ')).toBeInTheDocument()
+    expect(screen.getByText('อาจารย์')).toBeInTheDocument()
+    expect(screen.getByRole('button',{name:/การแจ้งเตือน/}).querySelector('svg')).toBeInTheDocument()
+    expect(screen.getByTestId('notification-dot')).toBeInTheDocument()
+    fireEvent.error(screen.getByRole('img',{name:'รูปโปรไฟล์ของ นายปิติพัฒน์ ชื่อยาวสำหรับทดสอบ'}))
+    expect(screen.getByTestId('avatar-fallback')).toBeInTheDocument()
+  })
+
+  it('shows a neutral fallback avatar before login', () => {
+    render(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={['/keys']}><Routes><Route element={<PublicLayout identity={null} loading={false} onLogout={vi.fn()} />}><Route path="keys" element={<div>หน้ากุญแจ</div>} /></Route></Routes></MemoryRouter></QueryClientProvider>)
+    expect(screen.getByTestId('guest-avatar')).toHaveClass('guest')
+  })
+
+  it('shows the account email when the authenticated display name is blank', () => {
+    const identity = { userId: 'user-1', fullName: '   ', email: 'sufeeyan.tale@northbkk.ac.th', role: null }
+    render(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={['/keys']}><Routes><Route element={<PublicLayout identity={identity} loading={false} onLogout={vi.fn()} />}><Route path="keys" element={<div>หน้ากุญแจ</div>} /></Route></Routes></MemoryRouter></QueryClientProvider>)
+
+    expect(screen.getByText('sufeeyan.tale@northbkk.ac.th')).toHaveClass('key-account-name')
+    expect(screen.getByText('นักศึกษา')).toHaveClass('key-account-role')
   })
 
   it('keeps the current key-request path when a guest signs in from the user menu', () => {

@@ -1,0 +1,91 @@
+.key-mobile-header .key-header-logo {
+  align-items: center;
+  display: flex;
+  flex: 0 1 auto;
+  height: 36px;
+  overflow: hidden;
+  width: clamp(72px, 22vw, 108px);
+}
+
+.key-mobile-header .key-header-logo img {
+  display: block;
+  height: auto;
+  max-height: 34px;
+  object-fit: contain;
+  width: 100%;
+}
+
+.key-mobile-header .key-header-account {
+  gap: .25rem;
+}
+
+.key-mobile-header .key-account-button {
+  min-height: 44px;
+  max-width: 175px;
+}
+
+.key-avatar-photo,
+.key-mobile-header .key-avatar {
+  border-radius: 50%;
+  flex: 0 0 28px;
+  height: 28px;
+  max-height: 28px;
+  max-width: 28px;
+  min-height: 28px;
+  min-width: 28px;
+  object-fit: cover;
+  width: 28px;
+}
+
+.key-mobile-header .key-avatar.guest {
+  background: #e5e7eb;
+  color: #64748b;
+}
+
+.key-account-copy {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  justify-content: center;
+  line-height: 1.15;
+  min-width: 0;
+  text-align: left;
+}
+
+.key-account-copy strong {
+  color: #111827;
+  display: block;
+  font-size: .75rem;
+  font-weight: 600;
+  max-width: 125px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.key-mobile-header .key-account-name {
+  display: block;
+}
+
+.key-account-copy small {
+  color: #64748b;
+  font-size: .65rem;
+}
+
+@media (max-width: 480px) {
+  .key-mobile-header {
+    height: 52px;
+    min-height: 52px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .key-mobile-header .key-header-account {
+    gap: 10px;
+  }
+
+  .key-mobile-header .key-account-button {
+    gap: 7px;
+  }
+}

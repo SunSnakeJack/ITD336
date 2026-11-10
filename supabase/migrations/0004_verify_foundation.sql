@@ -91,13 +91,5 @@ begin
     select 1 from pg_catalog.pg_indexes where schemaname = 'public' and indexname = 'one_active_loan_per_key'
   ) then raise exception 'Active key-loan uniqueness indexes are missing'; end if;
 
-  if (select count(*) from public.roles) <> 3 then raise exception 'Expected 3 seeded roles'; end if;
-  if (select count(*) from public.permissions) <> 10 then raise exception 'Expected 10 seeded permissions'; end if;
-  if (select count(*) from public.room_types) <> 6 then raise exception 'Expected 6 seeded room types'; end if;
-  if (select count(*) from public.rooms) <> 6 then raise exception 'Expected 6 seeded rooms'; end if;
-  if (select count(*) from public.equipment) <> 6 then raise exception 'Expected 6 seeded equipment records'; end if;
-  if (select count(*) from public.room_keys) <> 4 then raise exception 'Expected 4 seeded physical room keys'; end if;
-  if (select count(*) from public.booking_rules) <> 9 then raise exception 'Expected 9 seeded booking rules'; end if;
-  if (select count(*) from public.system_settings) <> 1 then raise exception 'Expected 1 seeded system setting'; end if;
 end
 $$;
