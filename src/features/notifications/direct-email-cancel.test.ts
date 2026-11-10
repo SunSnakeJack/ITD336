@@ -1,8 +1,6 @@
 import {describe,expect,it,vi} from 'vitest'
 import {readFileSync} from 'node:fs'
 import {join} from 'node:path'
-import {readFileSync} from 'node:fs'
-import {join} from 'node:path'
 import {signGmailKeyActionToken} from '../../../supabase/functions/_shared/gmail-key-action'
 import {createDirectEmailCancelHandler} from '../../../supabase/functions/direct-email-cancel/core'
 

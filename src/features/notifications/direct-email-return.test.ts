@@ -3,8 +3,6 @@ import {signGmailKeyActionToken} from '../../../supabase/functions/_shared/gmail
 import {createDirectEmailReturnHandler} from '../../../supabase/functions/direct-email-return/core'
 import {readFileSync} from 'node:fs'
 import {join} from 'node:path'
-import {readFileSync} from 'node:fs'
-import {join} from 'node:path'
 
 const secret='production-test-secret-at-least-32-chars',now=1_800_000_000
 const payload={v:1 as const,jti:'00000000-0000-4000-8000-000000000001',requestId:'00000000-0000-4000-8000-000000000002',action:'RETURN' as const,recipientDigest:'a'.repeat(64),exp:now+300,purpose:'gmail-key-action' as const}
@@ -28,13 +26,6 @@ describe('direct-email-return',()=>{
  it('keeps non-GET requests read-only',async()=>{
   const consume=vi.fn(),handler=createDirectEmailReturnHandler({secret,scopeExpiresAt:now+600,authorizeScope:vi.fn(),consume})
   expect((await handler(new Request('https://example.test/',{method:'POST'}))).status).toBe(405);expect(consume).not.toHaveBeenCalled()
- })
- it('keeps direct RETURN links behind a request-scoped disabled-by-default guard',()=>{
-  const worker=readFileSync(join(process.cwd(),'supabase/functions/email-worker/index.ts'),'utf8')
-  expect(worker).toContain("DIRECT_EMAIL_RETURN_ENABLED')==='true'")
-  expect(worker).toContain('DIRECT_EMAIL_RETURN_REQUEST_IDS')
-  expect(worker).toContain('DIRECT_EMAIL_RETURN_EXPIRES_AT')
-  expect(worker).toContain('/functions/v1/direct-email-return?token=')
  })
  it('keeps direct RETURN links behind a request-scoped disabled-by-default guard',()=>{
   const worker=readFileSync(join(process.cwd(),'supabase/functions/email-worker/index.ts'),'utf8')
