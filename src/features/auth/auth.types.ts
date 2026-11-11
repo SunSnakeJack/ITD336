@@ -3,6 +3,7 @@ export type RoleCode = 'STUDENT' | 'TEACHER' | 'STAFF' | 'ADMIN' | 'PRIORITY_USE
 export interface AuthIdentity {
   userId: string
   fullName: string
+  givenName?: string
   email: string
   role: RoleCode | null
   avatarUrl?: string

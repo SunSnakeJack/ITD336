@@ -1,0 +1,350 @@
+@media (max-width: 520px) {
+  .key-room-detail .sr-only {
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  .student-shell.public-shell:has(.key-room-detail),
+  .public-main:has(.key-room-detail) {
+    background: #fff;
+  }
+
+  .key-room-detail {
+    max-width: none;
+    padding: 16px;
+  }
+
+  .key-room-detail .back-link {
+    color: #5a5a5a;
+    display: inline-flex;
+    font-size: 11px;
+    margin-bottom: 14px;
+    text-decoration: none;
+  }
+
+  .key-room-detail .key-detail-heading {
+    margin-bottom: 18px;
+  }
+
+  .key-room-detail .key-detail-heading h1 {
+    font-size: 20px;
+    margin: 0 0 4px;
+  }
+
+  .key-room-detail .key-detail-heading > p {
+    color: #737373;
+    font-size: 11px;
+    margin: 0;
+  }
+
+  .key-detail-metadata {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 7px;
+  }
+
+  .key-detail-metadata span {
+    background: #f7f7f7;
+    border-radius: 999px;
+    color: #737373;
+    font-size: 9px;
+    padding: 4px 7px;
+  }
+
+  .key-room-detail .key-detail-card {
+    border: 1px solid rgb(220 220 220 / 50%);
+    border-radius: 12px;
+    box-shadow: 2px 2px 2px rgb(212 212 212 / 60%);
+    gap: 16px;
+    margin: 0 0 16px;
+    padding: 12px;
+  }
+
+  .key-room-detail .key-room-information {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  @media (max-width: 360px) {
+    .key-room-detail .key-room-information {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .key-room-detail .key-room-photo {
+    background: #f5f7fb;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 4px rgb(0 0 0 / 12%);
+    min-height: 174px;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .key-room-photo-image {
+    border-radius: 8px;
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  .key-room-facts h2,
+  .key-history h2,
+  .key-schedule-heading h2 {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .key-room-facts {
+    display: grid;
+    gap: 12px;
+  }
+
+  .key-room-facts p {
+    border: .5px solid #dcdcdc;
+    border-radius: 8px;
+    box-shadow: 2px 2px 2px rgb(220 220 220 / 60%);
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 12px;
+  }
+
+  .key-room-facts small {
+    color: #737373;
+    font-size: 12px;
+  }
+
+  .key-room-facts strong {
+    font-size: 13px;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+
+  .key-room-information footer strong {
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .key-room-information footer span {
+    color: #737373;
+    font-size: 12px;
+  }
+
+  .key-room-detail .key-history {
+    display: block;
+  }
+
+  .key-history-date {
+    color: #5a5a5a;
+    display: block;
+    font-size: 12px;
+    margin: 14px 0;
+  }
+
+  .key-history ul {
+    display: grid;
+    gap: 8px;
+  }
+
+  .key-history li {
+    align-items: center;
+    background: #f5f8ff;
+    border-left: 3px solid #1954d8;
+    border-radius: 5px;
+    display: flex;
+    font-size: 12px;
+    gap: 8px;
+    justify-content: space-between;
+    padding: 9px;
+  }
+
+  .key-history li span {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .key-history li time {
+    color: #8b8b8b;
+    flex: 0 0 auto;
+  }
+
+  .key-detail-empty {
+    color: #858585;
+    font-size: 12px;
+    margin: 18px 0 8px;
+    text-align: center;
+  }
+
+  .key-room-detail .key-schedule-card {
+    display: block;
+  }
+
+  .key-room-detail .key-schedule-heading {
+    align-items: initial;
+    display: grid;
+    gap: 7px;
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: initial;
+  }
+
+  .key-schedule-heading time,
+  .key-schedule-heading p {
+    color: #697586;
+    font-size: 12px;
+    margin: 0;
+  }
+
+  .key-room-detail .key-schedule-heading time {
+    white-space: normal;
+  }
+
+  .key-schedule-heading p {
+    line-height: 1.55;
+    margin-top: 10px;
+  }
+
+  .key-slot-legend {
+    display: flex;
+    gap: 14px;
+    margin: 14px 0;
+  }
+
+  .key-slot-legend span {
+    align-items: center;
+    color: #697586;
+    display: flex;
+    font-size: 10px;
+    gap: 5px;
+  }
+
+  .key-slot-legend i {
+    background: #f6f7f9;
+    border: 1px solid #e4e8ee;
+    border-radius: 3px;
+    height: 9px;
+    width: 9px;
+  }
+
+  .key-slot-legend span:nth-child(2) i {
+    background: #fbeeee;
+    border-color: #f0dcdc;
+  }
+
+  .key-slot-legend span:nth-child(3) i {
+    background: #e2edff;
+    border-color: #316bcc;
+  }
+
+  .key-room-detail .key-slot-grid {
+    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .key-room-detail .key-slot-grid button {
+    background: #f6f7f9;
+    border: 1.5px solid #e4e8ee;
+    border-radius: 12px;
+    min-height: 68px;
+    padding: 8px 4px;
+  }
+
+  .key-room-detail .key-slot-grid button strong {
+    font-size: 18px;
+  }
+
+  .key-room-detail .key-slot-grid button small {
+    color: #697586;
+    font-size: 12px;
+  }
+
+  .key-room-detail .key-slot-grid button.unavailable {
+    background: #fbeeee;
+    border-color: #f0dcdc;
+    color: #a36363;
+  }
+
+  .key-room-detail .key-slot-grid button.unavailable small {
+    color: #a36363;
+  }
+
+  .key-room-detail .key-slot-grid button.selected {
+    background: #e2edff;
+    border-color: #316bcc;
+    color: #316bcc;
+  }
+
+  .key-room-detail .key-slot-grid button.selected small {
+    color: #316bcc;
+  }
+
+  .key-selected-time {
+    margin-top: 14px;
+  }
+
+  .key-room-detail .key-time-summary {
+    gap: 8px;
+  }
+
+  .key-room-detail .key-time-summary span {
+    color: #697586;
+    padding: 8px 12px;
+  }
+
+  .key-room-detail .key-time-summary strong {
+    font-size: 18px;
+    margin-top: 2px;
+  }
+
+  .key-reset-selection {
+    background: #fff;
+    border: 1px solid #e4e8ee;
+    border-radius: 8px;
+    color: #697586;
+    display: block;
+    font: inherit;
+    font-size: 12px;
+    margin: 12px auto 0;
+    min-height: 40px;
+    padding: 0 14px;
+  }
+
+  .key-room-detail > .primary-action {
+    background: #0a0147 !important;
+    border: 0;
+    border-radius: 6px;
+    color: #fff;
+    min-height: 40px;
+    padding: 11px;
+  }
+
+  .key-room-detail > button.primary-action:disabled,
+  .key-room-detail > .primary-action[aria-disabled="true"] {
+    background: #858585 !important;
+    opacity: .55;
+  }
+}
+
+.key-room-photo {
+  overflow: hidden;
+  padding: 0;
+}
+
+.key-room-photo-image {
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+

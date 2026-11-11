@@ -1,0 +1,278 @@
+@media (max-width: 480px) {
+  .student-shell.public-shell:has(.key-room-catalog-page),
+  .public-main:has(.key-room-catalog-page) {
+    background: #fff;
+  }
+
+  .key-room-catalog-page {
+    max-width: none;
+    padding: 12px 16px 40px;
+  }
+
+  .key-room-catalog-page .key-room-catalog-intro {
+    margin-bottom: 18px;
+  }
+
+  .key-room-catalog-page .key-room-catalog-intro h1 {
+    color: #0a0047;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+
+  .key-room-catalog-page .key-room-catalog-intro p {
+    color: #737373;
+    font-size: 11px;
+    margin: 0;
+  }
+
+  .key-room-catalog-page .key-room-tabs {
+    margin: 0 0 24px;
+  }
+
+  .key-room-catalog-page .key-room-tabs button {
+    border-bottom-width: 1px;
+    font-size: 14px;
+    min-height: 42px;
+    padding: 8px 4px 12px;
+  }
+
+  .key-room-catalog-page .key-room-tabs button[aria-selected="true"] {
+    border-bottom-width: 3px;
+    font-weight: 400;
+  }
+
+  .key-room-catalog-page .key-room-list {
+    gap: 16px;
+  }
+
+  .key-room-catalog-page .key-room-catalog-card {
+    border: 1px solid rgb(220 220 220 / 50%);
+    border-radius: 8px;
+    box-shadow: 2px 2px 2px rgb(212 212 212 / 60%);
+    color: #000;
+    padding: 12px;
+  }
+
+  .key-room-catalog-page .key-room-catalog-card > header {
+    align-items: center;
+  }
+
+  .key-room-catalog-page .key-room-identity {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .key-room-catalog-page .key-room-identity > img {
+    flex: 0 0 27px;
+    height: 27px;
+    width: 27px;
+  }
+
+  .key-room-catalog-page .key-room-identity > span {
+    display: grid;
+    min-width: 0;
+  }
+
+  .key-room-catalog-page .key-room-identity strong {
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  .key-room-catalog-page .key-room-name,
+  .key-room-catalog-page .key-room-location {
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .key-room-catalog-page .key-room-location {
+    display: none;
+  }
+
+  .key-room-catalog-page .key-room-name {
+    display: none;
+  }
+
+  .key-room-catalog-page .key-room-badge {
+    background: #f6f7f9;
+    color: #00b504;
+    flex: 0 0 auto;
+    font-size: 10px !important;
+    font-weight: 400;
+    padding: 4px 10px;
+  }
+
+  .key-room-catalog-page .key-room-badge.unavailable {
+    background: #f6f7f9;
+    color: #e11d48;
+  }
+
+  .key-room-catalog-page .key-free-times {
+    gap: 6px;
+    margin-top: 16px;
+  }
+
+  .key-room-catalog-page .key-free-times > small {
+    color: #737373;
+    font-size: 11px;
+  }
+
+  .key-room-catalog-page .key-free-times > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .key-room-catalog-page .key-free-times span {
+    border: .2px solid #000;
+    border-radius: 4px;
+    color: #000;
+    font-size: 10px;
+    font-weight: 300;
+    padding: 6px;
+  }
+
+  .key-room-catalog-page .key-card-events {
+    border-top: .2px solid #dcdcdc;
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+
+  .key-room-catalog-page .key-card-events p {
+    background: #f5f8ff;
+    border-left: 2px solid #120080;
+    border-radius: 4px;
+    color: #120080;
+    font-size: 12px;
+    gap: 8px;
+    margin: 0 0 8px;
+    min-height: 27px;
+    padding: 6px;
+  }
+
+  .key-room-catalog-page .key-card-events p:last-child {
+    margin-bottom: 0;
+  }
+
+  .key-room-catalog-page .key-card-events p span {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .key-room-catalog-page .key-card-events time {
+    color: #8b8b8b;
+    flex: 0 0 auto;
+  }
+
+  .key-room-catalog-page .key-card-events > p:only-child:not(:has(time)) {
+    background: transparent;
+    border: 0 !important;
+    color: #858585;
+    justify-content: center;
+  }
+
+  .key-room-catalog-page .key-room-catalog-card footer {
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .key-room-catalog-page .key-room-catalog-card footer > a:first-child {
+    align-items: center;
+    display: flex;
+    font-size: 11px;
+    gap: 6px;
+    justify-self: end;
+    text-decoration: none;
+  }
+
+  .key-room-catalog-page .key-room-catalog-card footer > a:first-child img {
+    height: 11px;
+    width: 11px;
+  }
+
+  .key-room-catalog-page .key-room-catalog-card footer .primary-action {
+    align-items: center;
+    background: linear-gradient(90deg, #0a0047 0 87%, #fff200 100%) !important;
+    border: 0 !important;
+    border-radius: 6px;
+    display: flex;
+    font-size: 12px;
+    font-weight: 500;
+    justify-content: center;
+    min-height: 36px;
+    padding: 6px 12px;
+    position: relative;
+    text-decoration: none;
+  }
+
+  .key-room-catalog-page .key-room-catalog-card footer .primary-action img {
+    height: 10px;
+    position: absolute;
+    right: 14px;
+    width: 7px;
+  }
+
+  .key-room-catalog-page .key-room-catalog-card footer .primary-action:focus,
+  .key-room-catalog-page .key-room-catalog-card footer .primary-action:focus-visible {
+    border: 0 !important;
+    outline: 0;
+    box-shadow: inset 0 0 0 2px #fff;
+  }
+
+  .key-room-catalog-page .key-room-catalog-card footer .primary-action:disabled {
+    background: #858585 !important;
+    color: #fff;
+  }
+
+  .key-room-catalog-page .key-room-catalog-card.disabled {
+    filter: none;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .key-room-catalog-page .key-room-catalog-card.disabled .key-room-identity,
+  .key-room-catalog-page .key-room-catalog-card.disabled .key-free-times,
+  .key-room-catalog-page .key-room-catalog-card.disabled .key-card-events,
+  .key-room-catalog-page .key-room-catalog-card.disabled footer > a:first-child {
+    filter: grayscale(1);
+    opacity: .55;
+  }
+}
+
+.key-room-catalog-page .key-room-identity {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.key-room-catalog-page .key-room-identity > img {
+  flex: 0 0 27px;
+  height: 27px;
+  width: 27px;
+}
+
+.key-room-catalog-page .key-room-identity > span {
+  display: grid;
+  min-width: 0;
+}
+
+.key-room-catalog-page .key-card-events p span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.key-room-catalog-page .key-card-events time {
+  flex: 0 0 auto;
+}

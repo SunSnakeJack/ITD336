@@ -1,0 +1,376 @@
+@media (max-width: 520px) {
+  .student-shell.public-shell:has(.key-booking-form-page),
+  .public-main:has(.key-booking-form-page) {
+    background: #fff;
+  }
+
+  .key-booking-form-page {
+    box-sizing: border-box;
+    max-width: none;
+    padding: 14px 16px 24px;
+  }
+
+  .key-booking-form-page .back-link {
+    color: #5a5a5a;
+    display: inline-flex;
+    font-size: 10px;
+    margin-bottom: 14px;
+    text-decoration: none;
+  }
+
+  .key-booking-form-page > header {
+    margin-bottom: 18px;
+  }
+
+  .key-booking-form-page > header h1 {
+    color: #0a0047;
+    font-size: 18px;
+    margin: 0 0 5px;
+  }
+
+  .key-booking-form-page > header p {
+    color: #0c3ba9;
+    font-size: 10px;
+    margin: 0;
+  }
+
+  .key-booking-form-page .key-stepper {
+    margin: 0 18px 14px;
+  }
+
+  .key-booking-form-page .key-stepper b {
+    background: #b8b8b8;
+    color: #fff;
+    font-size: 16px;
+    height: 24px;
+    width: 24px;
+  }
+
+  .key-booking-form-page .key-stepper b[aria-current='step'] {
+    background: #0a0047;
+    border: 2px solid #0e38aa;
+  }
+
+  .key-booking-form-page .key-request-form {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    gap: 12px;
+    padding: 0;
+  }
+
+  .key-booking-form-page .key-form-section,
+  .key-booking-form-page .key-purpose-options {
+    background: #fff;
+    border: 1px solid rgb(220 220 220 / 50%);
+    border-radius: 12px;
+    box-shadow: 2px 2px 2px rgb(212 212 212 / 60%);
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 12px;
+  }
+
+  .key-booking-form-page .key-form-section h2,
+  .key-booking-form-page .key-purpose-options legend {
+    color: #0a0047;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+    padding: 0;
+  }
+
+  .key-booking-form-page .key-purpose-options legend {
+    margin-bottom: 12px;
+  }
+
+  .key-booking-form-page .key-request-form label,
+  .key-booking-form-page .app-select-label {
+    color: #0e38aa;
+    font-size: 12px;
+    font-weight: 400;
+  }
+
+  .key-booking-form-page .key-identity-row,
+  .key-booking-form-page .key-time-row {
+    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+
+  .key-booking-form-page input:not([type='radio']),
+  .key-booking-form-page select,
+  .key-booking-form-page textarea,
+  .key-booking-form-page .app-select-trigger {
+    border: 1px solid #f3f3f3;
+    border-radius: 8px;
+    box-shadow: 2px 2px 2px rgb(196 196 196 / 60%);
+    color: #0a0047;
+    font-size: 14px;
+    min-height: 38px;
+    padding: 8px 12px;
+  }
+
+  .key-booking-form-page input::placeholder,
+  .key-booking-form-page textarea::placeholder {
+    color: #b8b8b8;
+  }
+
+  .key-booking-form-page input[readonly] {
+    background: #fff !important;
+    color: #737373 !important;
+  }
+
+  .key-booking-form-page .key-purpose-choice {
+    color: #0e38aa;
+    font-size: 13px;
+  }
+
+  .key-booking-form-page .key-purpose-choice input {
+    accent-color: #0e38aa;
+    height: 17px !important;
+    width: 17px !important;
+  }
+
+  .key-purpose-fields,
+  .key-other-purpose-fields {
+    background: #fff;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 4%);
+    display: grid;
+    gap: 10px;
+    margin: 6px 0 12px 26px;
+    padding: 10px;
+  }
+
+  .key-purpose-row {
+    align-items: center;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 85px 1fr;
+  }
+
+  .key-purpose-row label {
+    color: #0e38aa;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .key-purpose-input-wrap {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .key-purpose-input-wrap input,
+  .key-purpose-input-wrap select {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .key-other-purpose-fields label {
+    color: #0e38aa;
+    display: grid;
+    font-size: 12px;
+    gap: 6px;
+  }
+
+  .key-other-purpose-fields textarea {
+    box-sizing: border-box;
+    resize: vertical;
+    width: 100%;
+  }
+
+  .key-section-icon {
+    flex-shrink: 0;
+    height: 18px;
+    stroke: #0a0047;
+    width: 18px;
+  }
+
+  .key-booking-form-page .key-form-actions {
+    gap: 10px;
+  }
+
+  .key-booking-form-page .key-form-actions > a,
+  .key-booking-form-page .key-form-actions > button {
+    align-items: center;
+    border-radius: 6px;
+    display: flex;
+    font-size: 12px;
+    justify-content: center;
+    min-height: 40px;
+  }
+
+  .key-booking-form-page .key-form-actions > a {
+    border-color: #0b3ba9;
+    color: #0b3ba9;
+  }
+
+  .key-booking-form-page .key-form-actions .primary-action {
+    background: linear-gradient(90deg, #0a0047 88%, #fff200) !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #fff;
+    gap: 10px;
+    outline: none !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .key-booking-form-page .key-review-stepper b:nth-of-type(-n + 2),
+  .key-booking-form-page .key-success-stepper b,
+  .key-booking-form-page .key-success-stepper i {
+    background: #10005b;
+    border-color: #10005b;
+    color: #fff;
+  }
+
+  .key-booking-form-page .key-review-stepper i:first-of-type {
+    border-color: #10005b;
+  }
+
+  .key-booking-form-page .key-review-stepper b[aria-current='step'] {
+    outline: 2px solid #0e38aa;
+    outline-offset: 1px;
+  }
+
+  .key-booking-form-page .key-success-stepper b[aria-current='step'] {
+    outline: 2px solid #e8dc00;
+    outline-offset: 1px;
+  }
+
+  .key-booking-form-page .key-review-actions button:first-child {
+    border-color: #1748bf;
+    color: #1748bf;
+  }
+
+  .key-booking-form-page .key-review-actions .primary-action,
+  .key-booking-form-page .key-request-success > .primary-action {
+    background: linear-gradient(90deg, #10005b 88%, #e8dc00);
+    border: 0;
+    color: #fff;
+  }
+
+  .key-booking-form-page .key-success-symbol {
+    align-items: center;
+    border: 4px solid #00c853;
+    border-radius: 50%;
+    color: #00a844;
+    display: inline-flex;
+    font-size: 32px;
+    font-weight: 800;
+    height: 48px;
+    justify-content: center;
+    line-height: 1;
+    width: 48px;
+  }
+
+  .key-booking-form-page .key-request-success.pending .key-success-symbol {
+    border: 0;
+    color: #f5a300;
+    font-size: 44px;
+  }
+
+  .key-booking-form-page .key-request-success.pending .key-success-card h1 {
+    color: #f29b00;
+  }
+
+  .key-booking-form-page .key-success-card > p,
+  .key-booking-form-page .key-success-card dt {
+    color: #1748bf;
+  }
+
+  .key-booking-form-page .key-success-card dd {
+    color: #10005b;
+  }
+}
+
+.key-booking-form-page .key-form-actions .primary-action {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.key-purpose-fields,
+.key-other-purpose-fields {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 4%);
+  display: grid;
+  gap: 10px;
+  margin: 6px 0 12px 26px;
+  padding: 10px;
+}
+
+.key-purpose-row {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 85px 1fr;
+}
+
+.key-purpose-row label {
+  color: #0e38aa;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.key-purpose-input-wrap {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.key-purpose-input-wrap input,
+.key-purpose-input-wrap select {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.key-other-purpose-fields label {
+  color: #0e38aa;
+  display: grid;
+  font-size: 12px;
+  gap: 6px;
+}
+
+.key-other-purpose-fields textarea {
+  box-sizing: border-box;
+  resize: vertical;
+  width: 100%;
+}
+
+.key-section-icon {
+  flex-shrink: 0;
+  height: 18px;
+  stroke: #0a0047;
+  width: 18px;
+}
+
+@media (max-width: 390px) {
+  .key-purpose-fields,
+  .key-other-purpose-fields {
+    margin: 6px 0 12px 8px;
+    padding: 8px;
+  }
+
+  .key-purpose-row {
+    gap: 8px;
+    grid-template-columns: minmax(68px, auto) 1fr;
+  }
+}
+
+@media (max-width: 340px) {
+  .key-purpose-row {
+    gap: 4px;
+    grid-template-columns: 1fr;
+  }
+
+  .key-booking-form-page .key-stepper {
+    margin: 0 4px 14px;
+  }
+}
+
+

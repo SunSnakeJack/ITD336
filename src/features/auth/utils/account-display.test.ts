@@ -13,8 +13,18 @@ describe('account display', () => {
   })
 
   it('uses the full name and valid picture returned by Google SSO', () => {
-    expect(mergeSsoProfile({fullName:'student@northbkk.ac.th'}, {full_name:'สุฟียาน ตาเละห์',picture:'https://lh3.googleusercontent.com/avatar'})).toEqual({fullName:'สุฟียาน ตาเละห์',avatarUrl:'https://lh3.googleusercontent.com/avatar'})
-    expect(mergeSsoProfile({fullName:'เดิม'}, {name:'ชื่อจาก Google',avatar_url:'not-a-url'})).toEqual({fullName:'ชื่อจาก Google',avatarUrl:undefined})
+    expect(mergeSsoProfile({fullName:'student@northbkk.ac.th'}, {full_name:'สุฟียาน ตาเละห์',picture:'https://lh3.googleusercontent.com/avatar'})).toEqual({fullName:'สุฟียาน ตาเละห์',givenName:'สุฟียาน',avatarUrl:'https://lh3.googleusercontent.com/avatar'})
+    expect(mergeSsoProfile({fullName:'เดิม'}, {name:'ชื่อจาก Google',avatar_url:'not-a-url'})).toEqual({fullName:'ชื่อจาก Google',givenName:'ชื่อจาก',avatarUrl:undefined})
+  })
+
+  it('keeps the full name but exposes the Google SSO given name for compact UI', () => {
+    expect(mergeSsoProfile(
+      { fullName: 'ชื่อจากโปรไฟล์', email: 'sufeeyan.tale@northbkk.ac.th' },
+      { given_name: 'Sufeeyan', name: 'Sufeeyan Taleh' },
+    )).toMatchObject({
+      fullName: 'Sufeeyan Taleh',
+      givenName: 'Sufeeyan',
+    })
   })
 
   it('falls back to the account email when SSO and profile names are blank', () => {
@@ -23,6 +33,7 @@ describe('account display', () => {
       { full_name: ' ', name: '' },
     )).toEqual({
       fullName: 'sufeeyan.tale@northbkk.ac.th',
+      givenName: 'sufeeyan.tale',
       avatarUrl: undefined,
     })
   })

@@ -9,9 +9,9 @@
 
 .key-mobile-header .key-header-logo img {
   display: block;
-  height: auto;
-  max-height: 34px;
-  object-fit: contain;
+  height: 34px;
+  object-fit: cover;
+  object-position: center;
   width: 100%;
 }
 
@@ -75,17 +75,91 @@
 
 @media (max-width: 480px) {
   .key-mobile-header {
-    height: 52px;
-    min-height: 52px !important;
+    border-bottom-color: #0a0047;
+    height: 50px;
+    min-height: 50px !important;
     padding-left: 12px !important;
     padding-right: 12px !important;
   }
 
+  .key-mobile-header .key-header-logo {
+    flex: 0 0 99px;
+    height: 36px;
+    width: 99px;
+  }
+
+  .key-mobile-header .key-header-logo img {
+    height: 36px;
+    max-width: none;
+    object-fit: cover;
+    object-position: center;
+    width: 99px;
+  }
+
   .key-mobile-header .key-header-account {
-    gap: 10px;
+    gap: 8px;
+    margin-left: auto;
   }
 
   .key-mobile-header .key-account-button {
-    gap: 7px;
+    gap: 5px;
+    min-height: 36px;
+    padding: 0;
+  }
+
+  .key-mobile-header .notification-bell > button {
+    height: 30px;
+    width: 24px;
+  }
+
+  .key-mobile-header .notification-bell > button > svg {
+    height: 24px;
+    stroke: #0a0047;
+    width: 24px;
+  }
+
+  .key-mobile-header .notification-bell > button > span {
+    height: 7px;
+    right: -1px;
+    top: 1px;
+    width: 7px;
+  }
+
+  .key-mobile-header .key-avatar-photo,
+  .key-mobile-header .key-avatar {
+    background: #0a0047;
+    color: #fff;
+    flex-basis: 30px;
+    height: 30px;
+    max-height: 30px;
+    max-width: 30px;
+    min-height: 30px;
+    min-width: 30px;
+    width: 30px;
+  }
+
+  .key-mobile-header .key-avatar svg {
+    height: 18px;
+    width: 18px;
+  }
+
+  .key-mobile-header .key-account-copy {
+    gap: 2px;
+    line-height: 1;
+  }
+
+  .key-mobile-header .key-account-copy strong,
+  .key-mobile-header .key-account-copy small {
+    color: #000;
+    font-size: 10px;
+    max-width: 68px;
+  }
+
+  .key-mobile-header .key-account-copy strong {
+    font-weight: 500;
+  }
+
+  .key-mobile-header .key-account-copy small {
+    font-weight: 300;
   }
 }

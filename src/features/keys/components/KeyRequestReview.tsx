@@ -41,7 +41,7 @@ export function KeyRequestReview({
         <h1>ตรวจสอบข้อมูล</h1>
         <p>กรุณาตรวจสอบข้อมูลให้เรียบร้อยก่อนกดยืนยัน</p>
       </header>
-      <div className="key-stepper key-review-stepper" aria-label="ขั้นตอนการเบิกกุญแจ"><b>1</b><i /><b>2</b><i /><b>3</b></div>
+      <div className="key-stepper key-review-stepper" aria-label="ขั้นตอนการเบิกกุญแจ"><b>1</b><i /><b aria-current="step">2</b><i /><b>3</b></div>
       <section className="key-review-card">
         <h2><svg className="key-review-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M5 20c0-4 3-7 7-7s7 3 7 7"/></svg>ข้อมูลผู้เบิกกุญแจ</h2>
         <dl>
