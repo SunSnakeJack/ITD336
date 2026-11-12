@@ -13,7 +13,7 @@ export const signInWithPassword = (email: string, password: string) =>
   supabase.auth.signInWithPassword({ email, password })
 
 export const normalizeAuthReturnTo = (returnTo: string | null | undefined) =>
-  returnTo && !returnTo.startsWith('//') && (/^\/keys(?:\/|\?|$)/.test(returnTo) || returnTo.startsWith('/account/'))
+  returnTo && !returnTo.startsWith('//') && (/^\/(?:keys|meeting-room)(?:\/|\?|$)/.test(returnTo) || returnTo.startsWith('/account/'))
     ? returnTo
     : '/'
 

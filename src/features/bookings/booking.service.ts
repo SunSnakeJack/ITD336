@@ -23,6 +23,7 @@ export async function createBooking(input: CreateBookingInput) {
     if (message.includes('OUTSIDE_OPERATING_HOURS')) throw new Error('ช่วงเวลานี้อยู่นอกเวลาที่เปิดให้ใช้งานห้อง')
     if (message.includes('ROOM_BOOKING_DISABLED')) throw new Error('ห้องนี้ปิดรับการจองชั่วคราว')
     if (message.includes('INVALID_TIME_RANGE')) throw new Error('กรุณาเลือกช่วงเวลาในอนาคตให้ถูกต้อง')
+    if (message.includes('BOOKING_ROLE_REQUIRED')) throw new Error('บัญชีนี้ไม่มีสิทธิ์จองห้องประชุม กรุณาใช้บัญชีอาจารย์')
     throw error
   }
 }

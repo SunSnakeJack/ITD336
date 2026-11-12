@@ -12,6 +12,7 @@ interface SelectFieldProps<T extends string> {
   options: Array<SelectFieldOption<T>>
   onChange: (value: T) => void
   error?: string
+  placement?: 'bottom' | 'top'
 }
 
 export function SelectField<T extends string>({
@@ -21,6 +22,7 @@ export function SelectField<T extends string>({
   options,
   onChange,
   error,
+  placement = 'bottom',
 }: SelectFieldProps<T>) {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
@@ -62,7 +64,7 @@ export function SelectField<T extends string>({
         </svg>
       </button>
       {open && (
-        <ul className="app-select-options" id={listId} role="listbox" aria-label={`ตัวเลือก${label}`}>
+        <ul className={`app-select-options placement-${placement}`} id={listId} role="listbox" aria-label={`ตัวเลือก${label}`}>
           {options.map((option) => (
             <li key={option.value}>
               <button

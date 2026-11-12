@@ -292,6 +292,14 @@
   outline: none !important;
 }
 
+.key-review-actions .review-confirm-action {
+  background: linear-gradient(90deg, #10005b 88%, #e8dc00) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: #fff;
+  outline: none !important;
+}
+
 .key-purpose-fields,
 .key-other-purpose-fields {
   background: #fff;
@@ -347,6 +355,46 @@
   height: 18px;
   stroke: #0a0047;
   width: 18px;
+}
+
+.key-booking-form-page .key-section-heading {
+  align-items: center;
+  display: flex;
+  font-size: 14px;
+  gap: 6px;
+  line-height: 1.25;
+}
+
+.key-booking-form-page .key-section-heading .key-section-icon {
+  height: 16px;
+  width: 16px;
+}
+
+.key-booking-form-page .key-other-purpose-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.key-booking-form-page .key-other-purpose-field label {
+  display: block;
+}
+
+.key-booking-form-page .key-other-purpose-field textarea {
+  box-sizing: border-box;
+  min-height: 42px;
+  resize: vertical;
+  width: 100%;
+}
+
+.key-booking-form-page .key-purpose-select-row {
+  min-width: 0;
+}
+
+.key-booking-form-page .app-select-options.placement-top {
+  bottom: calc(100% + 4px);
+  margin: 0;
+  top: auto;
 }
 
 @media (max-width: 390px) {

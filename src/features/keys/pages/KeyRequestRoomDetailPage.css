@@ -154,6 +154,14 @@
     gap: 8px;
   }
 
+  .key-history .key-history-scroll {
+    max-height: 123px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+    scrollbar-gutter: stable;
+  }
+
   .key-history li {
     align-items: center;
     background: #f5f8ff;

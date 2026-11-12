@@ -1,0 +1,45 @@
+.meeting-booking-form .app-select-options.placement-top {
+  bottom: 48px;
+  margin: 0 0 .2rem;
+  max-height: min(240px, 42vh);
+  top: auto;
+}
+
+.booking-error-overlay {
+  align-items: center;
+  background: rgb(0 0 0 / 45%);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: fixed;
+  z-index: 130;
+}
+
+.booking-error-overlay [role='dialog'] {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgb(5 12 40 / 25%);
+  box-sizing: border-box;
+  display: grid;
+  gap: .75rem;
+  max-width: 360px;
+  padding: 1.25rem;
+  position: relative;
+  text-align: center;
+  width: 100%;
+}
+
+.booking-error-overlay [aria-label='ปิด'] {
+  background: transparent;
+  border: 0;
+  font-size: 1.4rem;
+  position: absolute;
+  right: .75rem;
+  top: .5rem;
+}
+
+.booking-error-overlay h2,
+.booking-error-overlay p { margin: 0; }
+.booking-error-overlay p { color: #475569; line-height: 1.6; }
+.booking-error-overlay .primary-action { background: #10005b; }

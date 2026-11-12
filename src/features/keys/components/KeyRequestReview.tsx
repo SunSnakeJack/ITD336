@@ -64,7 +64,7 @@ export function KeyRequestReview({
       </section>
       <div className="key-review-actions">
         <button type="button" onClick={onBack}>ย้อนกลับ</button>
-        <button className="primary-action" type="button" disabled={submitting} onClick={onConfirm}>
+        <button className="primary-action review-confirm-action" type="button" disabled={submitting} onClick={onConfirm}>
           {submitting ? 'กำลังส่งคำขอ…' : 'ยืนยันการเบิก'}
         </button>
       </div>

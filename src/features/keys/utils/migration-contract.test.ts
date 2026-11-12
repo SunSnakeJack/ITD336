@@ -11,6 +11,8 @@ const legacyHistoryPath = join(process.cwd(), 'supabase/migrations/0038_key_requ
 const legacyHistorySql = existsSync(legacyHistoryPath) ? readFileSync(legacyHistoryPath, 'utf8') : ''
 const cancellableHistoryPath = join(process.cwd(), 'supabase/migrations/0039_cancellable_key_request_history.sql')
 const cancellableHistorySql = existsSync(cancellableHistoryPath) ? readFileSync(cancellableHistoryPath, 'utf8') : ''
+const profileNameAndReturnPath = join(process.cwd(), 'supabase/migrations/0052_profile_names_and_key_request_return.sql')
+const profileNameAndReturnSql = existsSync(profileNameAndReturnPath) ? readFileSync(profileNameAndReturnPath, 'utf8') : ''
 
 describe('key-request room catalog migration', () => {
   it('supplies the required room layout key before conflict resolution', () => {
@@ -70,5 +72,24 @@ describe('key-request room catalog migration', () => {
     expect(cancellableHistorySql).toContain('v_request.authenticated_user_id=v_actor')
     expect(cancellableHistorySql).toContain('lower(v_request.requester_email)=lower(v_email)')
     expect(cancellableHistorySql).toContain('join public.room_types rt')
+  })
+
+  it('stores split profile and requester names without removing the full-name columns', () => {
+    expect(profileNameAndReturnSql).toContain('add column if not exists first_name text')
+    expect(profileNameAndReturnSql).toContain('add column if not exists last_name text')
+    expect(profileNameAndReturnSql).toContain('add column if not exists requester_first_name text')
+    expect(profileNameAndReturnSql).toContain('add column if not exists requester_last_name text')
+    expect(profileNameAndReturnSql).toContain('coalesce(r.requester_first_name,r.requester_name)')
+  })
+
+  it('returns an owned key request through a guarded authenticated RPC', () => {
+    expect(profileNameAndReturnSql).toContain('function public.return_my_key_request(p_key_request_id uuid)')
+    expect(profileNameAndReturnSql).toContain('v_request.authenticated_user_id=v_actor')
+    expect(profileNameAndReturnSql).toContain('lower(v_request.requester_email)=lower(v_email)')
+    expect(profileNameAndReturnSql).toContain("v_request.status not in('APPROVED','IN_USE')")
+    expect(profileNameAndReturnSql).toContain('now()<v_request.starts_at')
+    expect(profileNameAndReturnSql).toContain("status='RETURNED',returned_at=now()")
+    expect(profileNameAndReturnSql).toContain("'KEY_REQUEST_RETURNED'")
+    expect(profileNameAndReturnSql).toContain('grant execute on function public.return_my_key_request(uuid) to authenticated')
   })
 })
