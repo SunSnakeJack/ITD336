@@ -6,20 +6,17 @@ export interface StaffNavigationItem {
 }
 
 export const staffNavigation: StaffNavigationItem[] = [
-  { label: 'ภาพรวมระบบ', to: '/staff', icon: '⌂' },
-  { label: 'ข้อมูลห้อง', to: '/staff/rooms', icon: '▦' },
-  { label: 'จัดการผู้ใช้งาน', to: '/staff/users', icon: '♙' },
-  { label: 'จัดการการเบิกกุญแจ', to: '/staff/key-requests', icon: '⌘' },
-  { label: 'จัดการห้องประชุม', to: '/staff/meeting-rooms', icon: '▤' },
-  { label: 'ประวัติการใช้งาน', to: '/staff/history/labs', match: '/staff/history', icon: '◷' },
-  { label: 'Dashboard', to: '/staff/dashboard/labs', match: '/staff/dashboard', icon: '◫' },
-  { label: 'รายงานและ Export', to: '/staff/reports/labs', match: '/staff/reports', icon: '⇩' },
-  { label: 'ตั้งค่าระบบ', to: '/staff/settings', icon: '⚙' },
+  { label: 'จัดการผู้ใช้งาน', to: '/staff/users', icon: '👤' },
+  { label: 'จัดการข้อมูลห้อง', to: '/staff/rooms', icon: '▦' },
+  { label: 'แดชบอร์ด', to: '/staff/usage-dashboard', icon: '▥' },
+  { label: 'การตั้งค่าสิทธิ์', to: '/staff/settings', icon: '⚙' },
 ]
 
 export const staffRoutePaths = [
   '/staff',
   '/staff/rooms',
+  '/staff/rooms/new',
+  '/staff/rooms/:roomId/edit',
   '/staff/rooms/:roomId',
   '/staff/settings',
   '/staff/users',
@@ -36,12 +33,13 @@ export const staffRoutePaths = [
   '/staff/dashboard/meetings',
   '/staff/reports/labs',
   '/staff/reports/meetings',
+  '/staff/usage-dashboard',
 ] as const
 
 export const staffPageTitles: Record<string, string> = {
   '/staff': 'ภาพรวมระบบ',
-  '/staff/rooms': 'ข้อมูลห้อง',
-  '/staff/settings': 'ตั้งค่าระบบ',
+  '/staff/rooms': 'จัดการข้อมูลห้อง',
+  '/staff/settings': 'การตั้งค่าสิทธิ์',
   '/staff/users': 'จัดการผู้ใช้งาน',
   '/staff/key-requests': 'จัดการการเบิกกุญแจ',
   '/staff/meeting-rooms': 'จัดการห้องประชุม',
@@ -51,9 +49,11 @@ export const staffPageTitles: Record<string, string> = {
   '/staff/dashboard/meetings': 'Dashboard ห้องประชุม',
   '/staff/reports/labs': 'รายงานการใช้ห้องปฏิบัติการ',
   '/staff/reports/meetings': 'รายงานการใช้ห้องประชุม',
+  '/staff/usage-dashboard': 'แดชบอร์ด',
 }
 
 export function getStaffPageTitle(pathname: string) {
+  if (/^\/staff\/rooms\/(new|[^/]+\/edit)$/.test(pathname)) return 'แบบฟอร์มข้อมูลห้อง'
   if (/^\/staff\/rooms\/[^/]+$/.test(pathname)) return 'รายละเอียดห้อง'
   if (/^\/staff\/users\/(new|[^/]+\/edit)$/.test(pathname)) return 'แบบฟอร์มผู้ใช้งาน'
   if (/^\/staff\/key-requests\/[^/]+$/.test(pathname)) return 'รายละเอียดคำขอเบิกกุญแจ'

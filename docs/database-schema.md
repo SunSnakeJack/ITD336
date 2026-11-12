@@ -18,6 +18,8 @@ Migration `0012_admin_room_map_management.sql` adds the general classroom type a
 
 Migration `0016_admin_room_details.sql` adds the `update_room_details` RPC. It requires `ROOM_MANAGE`, validates the room name and capacity, keeps `active` and `booking_enabled` aligned, and records the before/after change in `audit_logs`.
 
+Migration `0057_admin_room_management.sql` adds optional room image, computer type, and display type metadata. Existing `equipment` and `room_equipment` relations remain the source of truth for equipment. Permission-checked editor/detail RPCs create or update a room and replace its equipment assignments transactionally, validate room codes/types/quantities, and append audit events.
+
 Migration `0017_external_booking_edit.sql` updates exact-time availability checks to expand recurring academic schedules and adds permission-checked read/update RPCs for approved external-party bookings. Updates exclude the current booking from overlap checks, retain booking history, and append an audit event.
 
 Migration `0018_room_layout_key_and_code_edit.sql` separates the immutable floor-plan `layout_key` from the editable room `code`, extends the narrow public catalog with that key, and adds the permission-checked `update_room_details_v2` RPC. The RPC validates and normalizes room codes, preserves uniqueness, updates the room identity and availability fields atomically, and appends an audit event.
@@ -61,3 +63,9 @@ A `key_loan` identifies its room and is authorized by one of `BOOKING`, `CLASS_S
 `notifications` belong to users and have channel-specific `notification_deliveries`. `booking_rules`, `system_settings`, and `holidays` keep uncertain policy configurable. `audit_logs` capture controlled business events and cannot be inserted by normal clients.
 
 Enumerations constrain operational states. Foreign keys default to restrictive deletion or `set null`; only join/delivery records use cascade where loss of the parent makes them meaningless.
+
+## Staff usage reporting
+
+Migration `0058_staff_usage_dashboard.sql` adds an explicit report category to room types and an authorized consolidated history RPC. Meeting usage comes from completed/active `bookings`; laboratory usage comes from the current `key_requests` flow and legacy operational `key_loans`. Cancelled and rejected records are excluded, and no report sample data is stored in the database.
+
+Migration `0059_past_key_request_setting.sql` stores the elapsed-slot exception in `system_settings`. A database trigger rejects past same-day key requests while disabled; authorized settings managers may enable the exception through an audited RPC. Schedule conflicts and service-hour constraints remain unchanged.

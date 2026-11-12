@@ -76,10 +76,20 @@ export function useAuthSession(): AuthSessionState {
       }, 0)
     })
 
+    let identityChannel:ReturnType<typeof supabase.channel>|null=null
+    void supabase.auth.getSession().then(({data})=>{
+      const userId=data.session?.user.id
+      if(!active||!userId)return
+      identityChannel=supabase.channel(`identity:${userId}`).on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:`id=eq.${userId}`},()=>{
+        void resolveIdentity(data.session).then((nextIdentity)=>{if(active)setIdentity(nextIdentity)}).catch(()=>undefined)
+      }).subscribe()
+    })
+
     return () => {
       active = false
       window.clearTimeout(expiryTimer)
       listener.subscription.unsubscribe()
+      if(identityChannel)void supabase.removeChannel(identityChannel)
     }
   }, [])
 

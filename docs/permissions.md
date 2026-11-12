@@ -6,4 +6,12 @@ V2 makes `STAFF` read-only with `ROOM_READ_ALL`, `SCHEDULE_READ_ALL`, `OCCUPANCY
 
 Role membership cannot be written by browser clients. Critical tables revoke direct mutation even though RLS is enabled. Profile self-update is column-granted only for name, university ID, and phone, preventing account-status or organization spoofing. Staff transitions are still validated inside RPCs; possession of a role label alone grants nothing.
 
-Use a trusted administrative service/SQL session to assign roles. Never expose the service-role key to a browser.
+The staff user directory and role editor use narrowly scoped `ADMIN`-authorized RPCs. Role replacement is transactional, validates every requested role, records an audit event, and prevents removing the final Admin role. Browser clients still cannot mutate `user_roles` directly. Never expose the service-role key to a browser.
+
+Member invitations and account suspension/reactivation run through the JWT-protected `admin-user-management` Edge Function. It verifies the caller's active Admin role before using Supabase Auth Admin APIs. The existing `on_auth_user_created` trigger creates `profiles` automatically; browser clients never create Auth users directly. `INACTIVE` is a recoverable soft removal that preserves bookings and audit history.
+
+Staff room creation and editing require `ROOM_MANAGE`. The browser sends room and equipment form state to guarded RPCs; it cannot write `rooms` or `room_equipment` directly. Each successful create or update records an audit event.
+
+The consolidated usage dashboard calls `get_staff_usage_history`, which requires `REPORT_READ` or `ROOM_MANAGE`. The RPC exposes only the fields required for authorized reporting and does not grant direct browser access to profile, booking, or key-loan tables.
+
+Changing the elapsed key-request slot exception requires `SETTINGS_MANAGE`. Reading its boolean value is public because it contains no sensitive data and is required for consistent catalog UI; the database insert trigger remains the enforcement boundary.

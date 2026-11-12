@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       academic_terms: {
@@ -71,6 +46,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      announcements: {
+        Row: {
+          active: boolean
+          audience: string
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          title: string
+          updated_at: string
+          visible_from: string
+          visible_until: string | null
+        }
+        Insert: {
+          active?: boolean
+          audience?: string
+          body: string
+          created_at?: string
+          created_by: string
+          id?: string
+          title: string
+          updated_at?: string
+          visible_from?: string
+          visible_until?: string | null
+        }
+        Update: {
+          active?: boolean
+          audience?: string
+          body?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          visible_from?: string
+          visible_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_logs: {
         Row: {
@@ -218,6 +240,137 @@ export type Database = {
           },
         ]
       }
+      booking_segments: {
+        Row: {
+          booking_id: string
+          created_at: string
+          displaced_by_booking_id: string | null
+          displacement_reason: string | null
+          ends_at: string
+          id: string
+          room_id: string
+          segment_status: string
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          displaced_by_booking_id?: string | null
+          displacement_reason?: string | null
+          ends_at: string
+          id?: string
+          room_id: string
+          segment_status?: string
+          starts_at: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          displaced_by_booking_id?: string | null
+          displacement_reason?: string | null
+          ends_at?: string
+          id?: string
+          room_id?: string
+          segment_status?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_segments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_details_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_report_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "staff_pending_bookings_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "user_booking_history_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_displaced_by_booking_id_fkey"
+            columns: ["displaced_by_booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_details_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_displaced_by_booking_id_fkey"
+            columns: ["displaced_by_booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_report_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_displaced_by_booking_id_fkey"
+            columns: ["displaced_by_booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_displaced_by_booking_id_fkey"
+            columns: ["displaced_by_booking_id"]
+            isOneToOne: false
+            referencedRelation: "staff_pending_bookings_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_displaced_by_booking_id_fkey"
+            columns: ["displaced_by_booking_id"]
+            isOneToOne: false
+            referencedRelation: "user_booking_history_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "operational_room_summary_v"
+            referencedColumns: ["room_id"]
+          },
+          {
+            foreignKeyName: "booking_segments_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "room_current_status_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_segments_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_status_history: {
         Row: {
           booking_id: string
@@ -305,6 +458,7 @@ export type Database = {
           id: string
           is_priority: boolean
           notes: string | null
+          origin_booking_id: string | null
           override_reason: string | null
           purpose: string
           requester_id: string
@@ -328,6 +482,7 @@ export type Database = {
           id?: string
           is_priority?: boolean
           notes?: string | null
+          origin_booking_id?: string | null
           override_reason?: string | null
           purpose: string
           requester_id: string
@@ -351,6 +506,7 @@ export type Database = {
           id?: string
           is_priority?: boolean
           notes?: string | null
+          origin_booking_id?: string | null
           override_reason?: string | null
           purpose?: string
           requester_id?: string
@@ -388,6 +544,41 @@ export type Database = {
             columns: ["external_party_id"]
             isOneToOne: false
             referencedRelation: "external_parties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_origin_booking_id_fkey"
+            columns: ["origin_booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_details_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_origin_booking_id_fkey"
+            columns: ["origin_booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_report_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_origin_booking_id_fkey"
+            columns: ["origin_booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_origin_booking_id_fkey"
+            columns: ["origin_booking_id"]
+            isOneToOne: false
+            referencedRelation: "staff_pending_bookings_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_origin_booking_id_fkey"
+            columns: ["origin_booking_id"]
+            isOneToOne: false
+            referencedRelation: "user_booking_history_v"
             referencedColumns: ["id"]
           },
           {
@@ -589,6 +780,38 @@ export type Database = {
           },
         ]
       }
+      email_dispatch_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          key_request_id: string
+          token_digest: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          key_request_id: string
+          token_digest: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          key_request_id?: string
+          token_digest?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_dispatch_tokens_key_request_id_fkey"
+            columns: ["key_request_id"]
+            isOneToOne: true
+            referencedRelation: "key_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipment: {
         Row: {
           code: string
@@ -647,6 +870,60 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gmail_action_test_nonces: {
+        Row: {
+          consumed_at: string
+          expires_at: string
+          nonce_digest: string
+        }
+        Insert: {
+          consumed_at?: string
+          expires_at: string
+          nonce_digest: string
+        }
+        Update: {
+          consumed_at?: string
+          expires_at?: string
+          nonce_digest?: string
+        }
+        Relationships: []
+      }
+      gmail_key_action_tokens: {
+        Row: {
+          created_at: string
+          outbox_id: string
+          recipient_email_digest: string
+          secure_action_token_id: string
+        }
+        Insert: {
+          created_at?: string
+          outbox_id: string
+          recipient_email_digest: string
+          secure_action_token_id: string
+        }
+        Update: {
+          created_at?: string
+          outbox_id?: string
+          recipient_email_digest?: string
+          secure_action_token_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gmail_key_action_tokens_outbox_id_fkey"
+            columns: ["outbox_id"]
+            isOneToOne: true
+            referencedRelation: "notification_outbox"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gmail_key_action_tokens_secure_action_token_id_fkey"
+            columns: ["secure_action_token_id"]
+            isOneToOne: true
+            referencedRelation: "secure_action_tokens"
             referencedColumns: ["id"]
           },
         ]
@@ -1130,6 +1407,213 @@ export type Database = {
           },
         ]
       }
+      key_request_reference_options: {
+        Row: {
+          active: boolean
+          course_code: string
+          course_name: string
+          id: string
+          lecturer_email: string
+          lecturer_name: string
+        }
+        Insert: {
+          active?: boolean
+          course_code: string
+          course_name: string
+          id?: string
+          lecturer_email: string
+          lecturer_name: string
+        }
+        Update: {
+          active?: boolean
+          course_code?: string
+          course_name?: string
+          id?: string
+          lecturer_email?: string
+          lecturer_name?: string
+        }
+        Relationships: []
+      }
+      key_request_status_history: {
+        Row: {
+          actor_kind: string
+          actor_user_id: string | null
+          created_at: string
+          id: number
+          key_request_id: string
+          metadata: Json
+          new_status: string
+          previous_status: string | null
+          reason: string | null
+        }
+        Insert: {
+          actor_kind: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: never
+          key_request_id: string
+          metadata?: Json
+          new_status: string
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Update: {
+          actor_kind?: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: never
+          key_request_id?: string
+          metadata?: Json
+          new_status?: string
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "key_request_status_history_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_request_status_history_key_request_id_fkey"
+            columns: ["key_request_id"]
+            isOneToOne: false
+            referencedRelation: "key_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      key_requests: {
+        Row: {
+          approval_mode: string
+          authenticated_user_id: string | null
+          cancelled_at: string | null
+          course_code: string | null
+          course_name: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_reason: string | null
+          ends_at: string
+          id: string
+          lecturer_email: string | null
+          lecturer_name: string | null
+          purpose: string
+          purpose_type: string
+          request_code: string
+          requester_email: string
+          requester_first_name: string | null
+          requester_identifier: string | null
+          requester_last_name: string | null
+          requester_name: string
+          requester_type: string | null
+          returned_at: string | null
+          room_id: string
+          starts_at: string
+          status: string
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          approval_mode: string
+          authenticated_user_id?: string | null
+          cancelled_at?: string | null
+          course_code?: string | null
+          course_name?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_reason?: string | null
+          ends_at: string
+          id?: string
+          lecturer_email?: string | null
+          lecturer_name?: string | null
+          purpose: string
+          purpose_type: string
+          request_code?: string
+          requester_email: string
+          requester_first_name?: string | null
+          requester_identifier?: string | null
+          requester_last_name?: string | null
+          requester_name: string
+          requester_type?: string | null
+          returned_at?: string | null
+          room_id: string
+          starts_at: string
+          status: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          approval_mode?: string
+          authenticated_user_id?: string | null
+          cancelled_at?: string | null
+          course_code?: string | null
+          course_name?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_reason?: string | null
+          ends_at?: string
+          id?: string
+          lecturer_email?: string | null
+          lecturer_name?: string | null
+          purpose?: string
+          purpose_type?: string
+          request_code?: string
+          requester_email?: string
+          requester_first_name?: string | null
+          requester_identifier?: string | null
+          requester_last_name?: string | null
+          requester_name?: string
+          requester_type?: string | null
+          returned_at?: string | null
+          room_id?: string
+          starts_at?: string
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "key_requests_authenticated_user_id_fkey"
+            columns: ["authenticated_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_requests_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "operational_room_summary_v"
+            referencedColumns: ["room_id"]
+          },
+          {
+            foreignKeyName: "key_requests_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "room_current_status_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_requests_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_deliveries: {
         Row: {
           channel: Database["public"]["Enums"]["delivery_channel"]
@@ -1167,6 +1651,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_outbox: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          lease_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          next_attempt_at: string
+          notification_type: string
+          payload: Json
+          provider_message_id: string | null
+          recipient_email: string
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          lease_expires_at?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          notification_type: string
+          payload?: Json
+          provider_message_id?: string | null
+          recipient_email: string
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          template_key: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          lease_expires_at?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          notification_type?: string
+          payload?: Json
+          provider_message_id?: string | null
+          recipient_email?: string
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -1268,11 +1824,13 @@ export type Database = {
           account_status: Database["public"]["Enums"]["account_status"]
           created_at: string
           email: string
+          first_name: string | null
           full_name: string
           id: string
           identity_provider: string | null
           identity_subject: string | null
           identity_verified_at: string | null
+          last_name: string | null
           organization_id: string | null
           phone: string | null
           university_id: string | null
@@ -1282,11 +1840,13 @@ export type Database = {
           account_status?: Database["public"]["Enums"]["account_status"]
           created_at?: string
           email: string
+          first_name?: string | null
           full_name?: string
           id: string
           identity_provider?: string | null
           identity_subject?: string | null
           identity_verified_at?: string | null
+          last_name?: string | null
           organization_id?: string | null
           phone?: string | null
           university_id?: string | null
@@ -1296,11 +1856,13 @@ export type Database = {
           account_status?: Database["public"]["Enums"]["account_status"]
           created_at?: string
           email?: string
+          first_name?: string | null
           full_name?: string
           id?: string
           identity_provider?: string | null
           identity_subject?: string | null
           identity_verified_at?: string | null
+          last_name?: string | null
           organization_id?: string | null
           phone?: string | null
           university_id?: string | null
@@ -1608,30 +2170,42 @@ export type Database = {
           booking_policy: Database["public"]["Enums"]["booking_policy"]
           code: string
           created_at: string
+          default_key_approval_mode: string
           description: string | null
           id: string
           name: string
+          report_category: string | null
+          requires_sso_for_key_request: boolean
           student_booking_allowed: boolean
+          usage_scope: string
         }
         Insert: {
           active?: boolean
           booking_policy?: Database["public"]["Enums"]["booking_policy"]
           code: string
           created_at?: string
+          default_key_approval_mode?: string
           description?: string | null
           id?: string
           name: string
+          report_category?: string | null
+          requires_sso_for_key_request?: boolean
           student_booking_allowed?: boolean
+          usage_scope?: string
         }
         Update: {
           active?: boolean
           booking_policy?: Database["public"]["Enums"]["booking_policy"]
           code?: string
           created_at?: string
+          default_key_approval_mode?: string
           description?: string | null
           id?: string
           name?: string
+          report_category?: string | null
+          requires_sso_for_key_request?: boolean
           student_booking_allowed?: boolean
+          usage_scope?: string
         }
         Relationships: []
       }
@@ -1725,10 +2299,14 @@ export type Database = {
           building: string | null
           capacity: number
           code: string
+          computer_type: string | null
           created_at: string
           description: string | null
+          display_type: string | null
           floor: string | null
           id: string
+          image_url: string | null
+          key_approval_mode: string
           layout_key: string
           location_description: string | null
           name: string
@@ -1744,10 +2322,14 @@ export type Database = {
           building?: string | null
           capacity: number
           code: string
+          computer_type?: string | null
           created_at?: string
           description?: string | null
+          display_type?: string | null
           floor?: string | null
           id?: string
+          image_url?: string | null
+          key_approval_mode?: string
           layout_key: string
           location_description?: string | null
           name: string
@@ -1763,10 +2345,14 @@ export type Database = {
           building?: string | null
           capacity?: number
           code?: string
+          computer_type?: string | null
           created_at?: string
           description?: string | null
+          display_type?: string | null
           floor?: string | null
           id?: string
+          image_url?: string | null
+          key_approval_mode?: string
           layout_key?: string
           location_description?: string | null
           name?: string
@@ -1789,6 +2375,186 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      secure_action_tokens: {
+        Row: {
+          action: string
+          created_at: string
+          expires_at: string
+          id: string
+          key_request_id: string
+          token_digest: string
+          used_at: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          key_request_id: string
+          token_digest: string
+          used_at?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          key_request_id?: string
+          token_digest?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "secure_action_tokens_key_request_id_fkey"
+            columns: ["key_request_id"]
+            isOneToOne: false
+            referencedRelation: "key_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_change_impacts: {
+        Row: {
+          admin_notified_at: string | null
+          booking_id: string | null
+          change_type: string
+          created_at: string
+          details: Json
+          id: number
+          room_id: string | null
+          sync_run_id: string
+        }
+        Insert: {
+          admin_notified_at?: string | null
+          booking_id?: string | null
+          change_type: string
+          created_at?: string
+          details?: Json
+          id?: never
+          room_id?: string | null
+          sync_run_id: string
+        }
+        Update: {
+          admin_notified_at?: string | null
+          booking_id?: string | null
+          change_type?: string
+          created_at?: string
+          details?: Json
+          id?: never
+          room_id?: string | null
+          sync_run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_change_impacts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_details_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_change_impacts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_report_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_change_impacts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_change_impacts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "staff_pending_bookings_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_change_impacts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "user_booking_history_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_change_impacts_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "operational_room_summary_v"
+            referencedColumns: ["room_id"]
+          },
+          {
+            foreignKeyName: "sync_change_impacts_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "room_current_status_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_change_impacts_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_change_impacts_sync_run_id_fkey"
+            columns: ["sync_run_id"]
+            isOneToOne: false
+            referencedRelation: "sync_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_runs: {
+        Row: {
+          checksum: string | null
+          completed_at: string | null
+          error_count: number
+          id: string
+          inserted_count: number
+          metadata: Json
+          source_reference: string | null
+          source_type: string
+          started_at: string
+          status: string
+          unchanged_count: number
+          updated_count: number
+        }
+        Insert: {
+          checksum?: string | null
+          completed_at?: string | null
+          error_count?: number
+          id?: string
+          inserted_count?: number
+          metadata?: Json
+          source_reference?: string | null
+          source_type: string
+          started_at?: string
+          status?: string
+          unchanged_count?: number
+          updated_count?: number
+        }
+        Update: {
+          checksum?: string | null
+          completed_at?: string | null
+          error_count?: number
+          id?: string
+          inserted_count?: number
+          metadata?: Json
+          source_reference?: string | null
+          source_type?: string
+          started_at?: string
+          status?: string
+          unchanged_count?: number
+          updated_count?: number
+        }
+        Relationships: []
       }
       system_settings: {
         Row: {
@@ -2534,6 +3300,22 @@ export type Database = {
           },
         ]
       }
+      key_request_history_compat_v: {
+        Row: {
+          created_at: string | null
+          ends_at: string | null
+          id: string | null
+          requester_email: string | null
+          requester_name: string | null
+          requester_user_id: string | null
+          returned_at: string | null
+          room_id: string | null
+          source_kind: string | null
+          starts_at: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
       operational_room_summary_v: {
         Row: {
           available_key_count: number | null
@@ -2832,6 +3614,10 @@ export type Database = {
         Args: { p_booking_id: string; p_reason: string }
         Returns: Json
       }
+      cancel_my_key_request: {
+        Args: { p_key_request_id: string }
+        Returns: Json
+      }
       check_room_availability: {
         Args: {
           p_ends_at: string
@@ -2854,12 +3640,216 @@ export type Database = {
         }
         Returns: Json
       }
+      claim_notification_outbox: {
+        Args: { p_limit?: number; p_worker_id: string }
+        Returns: {
+          attempt_count: number
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          lease_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          next_attempt_at: string
+          notification_type: string
+          payload: Json
+          provider_message_id: string | null
+          recipient_email: string
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          template_key: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notification_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_notification_outbox_entity_test:
+        | {
+            Args: {
+              p_dispatch_token: string
+              p_entity_id: string
+              p_limit?: number
+              p_recipient: string
+              p_worker_id: string
+            }
+            Returns: {
+              attempt_count: number
+              created_at: string
+              entity_id: string
+              entity_type: string
+              id: string
+              idempotency_key: string
+              last_error: string | null
+              lease_expires_at: string | null
+              locked_at: string | null
+              locked_by: string | null
+              max_attempts: number
+              next_attempt_at: string
+              notification_type: string
+              payload: Json
+              provider_message_id: string | null
+              recipient_email: string
+              scheduled_at: string
+              sent_at: string | null
+              status: string
+              template_key: string
+              updated_at: string
+            }[]
+            SetofOptions: {
+              from: "*"
+              to: "notification_outbox"
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
+        | {
+            Args: {
+              p_entity_id: string
+              p_limit?: number
+              p_recipient: string
+              p_worker_id: string
+            }
+            Returns: {
+              attempt_count: number
+              created_at: string
+              entity_id: string
+              entity_type: string
+              id: string
+              idempotency_key: string
+              last_error: string | null
+              lease_expires_at: string | null
+              locked_at: string | null
+              locked_by: string | null
+              max_attempts: number
+              next_attempt_at: string
+              notification_type: string
+              payload: Json
+              provider_message_id: string | null
+              recipient_email: string
+              scheduled_at: string
+              sent_at: string | null
+              status: string
+              template_key: string
+              updated_at: string
+            }[]
+            SetofOptions: {
+              from: "*"
+              to: "notification_outbox"
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
+      claim_notification_outbox_test: {
+        Args: { p_limit?: number; p_recipient: string; p_worker_id: string }
+        Returns: {
+          attempt_count: number
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          lease_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          next_attempt_at: string
+          notification_type: string
+          payload: Json
+          provider_message_id: string | null
+          recipient_email: string
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          template_key: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notification_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_terminal_notification_outbox_retry: {
+        Args: {
+          p_entity_id: string
+          p_recipient: string
+          p_template_key: string
+          p_worker_id: string
+        }
+        Returns: {
+          attempt_count: number
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          lease_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          next_attempt_at: string
+          notification_type: string
+          payload: Json
+          provider_message_id: string | null
+          recipient_email: string
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          template_key: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notification_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      complete_notification_outbox: {
+        Args: {
+          p_error?: string
+          p_outbox_id: string
+          p_provider_message_id?: string
+          p_succeeded: boolean
+        }
+        Returns: undefined
+      }
       confirm_key_return: {
         Args: {
           p_key_loan_id: string
           p_notes?: string
           p_reported_return_at?: string
         }
+        Returns: Json
+      }
+      consume_gmail_action_test_nonce: {
+        Args: { p_expires_at: string; p_jti: string }
+        Returns: boolean
+      }
+      consume_gmail_key_action: {
+        Args: {
+          p_action: string
+          p_key_request_id: string
+          p_outbox_id: string
+          p_raw_token: string
+          p_recipient_digest: string
+        }
+        Returns: Json
+      }
+      consume_key_request_action: {
+        Args: { p_action: string; p_raw_token: string }
         Returns: Json
       }
       create_booking: {
@@ -2885,6 +3875,47 @@ export type Database = {
         }
         Returns: Json
       }
+      create_key_request: {
+        Args: {
+          p_course_code?: string
+          p_course_name?: string
+          p_ends_at: string
+          p_lecturer_email?: string
+          p_lecturer_name?: string
+          p_purpose: string
+          p_purpose_type: string
+          p_requester_email: string
+          p_requester_name: string
+          p_room_id: string
+          p_starts_at: string
+        }
+        Returns: Json
+      }
+      create_key_request_v2: {
+        Args: {
+          p_ends_at: string
+          p_purpose: string
+          p_purpose_type: string
+          p_reference_option_id?: string
+          p_requester_email: string
+          p_requester_identifier: string
+          p_requester_name: string
+          p_requester_type: string
+          p_room_id: string
+          p_starts_at: string
+        }
+        Returns: Json
+      }
+      create_meeting_booking: {
+        Args: {
+          p_ends_at: string
+          p_notes?: string
+          p_purpose: string
+          p_room_id: string
+          p_starts_at: string
+        }
+        Returns: Json
+      }
       create_notification: {
         Args: {
           p_entity_id: string
@@ -2896,9 +3927,23 @@ export type Database = {
         }
         Returns: string
       }
+      create_priority_booking_override: {
+        Args: {
+          p_displaced_booking_id: string
+          p_ends_at: string
+          p_purpose: string
+          p_reason: string
+          p_starts_at: string
+        }
+        Returns: Json
+      }
       deactivate_academic_schedule: {
         Args: { p_reason: string; p_schedule_id: string }
         Returns: undefined
+      }
+      decide_key_request: {
+        Args: { p_decision: string; p_key_request_id: string; p_reason: string }
+        Returns: Json
       }
       find_academic_schedule_conflict: {
         Args: {
@@ -2930,6 +3975,32 @@ export type Database = {
           room_name: string
         }[]
       }
+      get_admin_role_options: {
+        Args: never
+        Returns: {
+          code: string
+          name: string
+        }[]
+      }
+      get_admin_room_detail: { Args: { p_room_id: string }; Returns: Json }
+      get_admin_room_editor_options: { Args: never; Returns: Json }
+      get_admin_user_directory: {
+        Args: never
+        Returns: {
+          account_status: Database["public"]["Enums"]["account_status"]
+          email: string
+          full_name: string
+          role_codes: string[]
+          role_names: string[]
+          user_id: string
+        }[]
+      }
+      get_direct_cancel_sent_outbox: {
+        Args: { p_key_request_id: string; p_recipient_email: string }
+        Returns: {
+          outbox_id: string
+        }[]
+      }
       get_external_booking_for_edit: {
         Args: { p_booking_id: string }
         Returns: {
@@ -2938,6 +4009,57 @@ export type Database = {
           external_name: string
           reason: string
           starts_at: string
+        }[]
+      }
+      get_key_request_email_context: {
+        Args: { p_key_request_id: string }
+        Returns: {
+          decision_reason: string
+          ends_at: string
+          purpose: string
+          request_code: string
+          room_name: string
+          starts_at: string
+          status: string
+        }[]
+      }
+      get_my_key_requests: {
+        Args: never
+        Returns: {
+          can_cancel: boolean
+          can_return: boolean
+          course_code: string
+          ends_at: string
+          floor: string
+          id: string
+          lecturer_name: string
+          purpose: string
+          purpose_type: string
+          request_code: string
+          room_code: string
+          room_name: string
+          room_type_name: string
+          starts_at: string
+          status: string
+        }[]
+      }
+      get_public_key_request_history: {
+        Args: { p_limit?: number; p_room_id: string }
+        Returns: {
+          ends_at: string
+          id: string
+          requester_name: string
+          starts_at: string
+          status: string
+        }[]
+      }
+      get_public_key_request_options: {
+        Args: never
+        Returns: {
+          course_code: string
+          course_name: string
+          id: string
+          lecturer_name: string
         }[]
       }
       get_public_room_catalog: {
@@ -2952,7 +4074,9 @@ export type Database = {
           id: string
           layout_key: string
           name: string
+          requires_sso_for_key_request: boolean
           room_type_name: string
+          usage_scope: string
         }[]
       }
       get_public_room_schedule_events: {
@@ -3018,9 +4142,41 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_staff_usage_history: {
+        Args: never
+        Returns: {
+          ends_at: string
+          purpose: string
+          returned_at: string
+          room_category: string
+          room_code: string
+          room_id: string
+          room_name: string
+          source: string
+          starts_at: string
+          status: string
+          transaction_id: string
+          user_name: string
+        }[]
+      }
       get_usage_permission_policy: { Args: never; Returns: Json }
       has_permission: { Args: { p_permission: string }; Returns: boolean }
       has_role: { Args: { p_role: string }; Returns: boolean }
+      issue_gmail_key_action_token: {
+        Args: {
+          p_action: string
+          p_expires_at: string
+          p_key_request_id: string
+          p_outbox_id: string
+          p_raw_token: string
+          p_recipient_email: string
+        }
+        Returns: boolean
+      }
+      issue_key_request_action_bundle: {
+        Args: { p_expires_at: string; p_key_request_id: string }
+        Returns: Json
+      }
       list_available_rooms: {
         Args: { p_ends_at: string; p_starts_at: string }
         Returns: {
@@ -3032,10 +4188,14 @@ export type Database = {
           building: string | null
           capacity: number
           code: string
+          computer_type: string | null
           created_at: string
           description: string | null
+          display_type: string | null
           floor: string | null
           id: string
+          image_url: string | null
+          key_approval_mode: string
           layout_key: string
           location_description: string | null
           name: string
@@ -3074,6 +4234,15 @@ export type Database = {
         Returns: Json
       }
       reconcile_expired_bookings: { Args: never; Returns: number }
+      register_key_request_action_token: {
+        Args: {
+          p_action: string
+          p_expires_at: string
+          p_key_request_id: string
+          p_raw_token: string
+        }
+        Returns: string
+      }
       reject_booking: {
         Args: { p_booking_id: string; p_reason: string }
         Returns: Json
@@ -3117,6 +4286,34 @@ export type Database = {
         Args: { p_condition?: string; p_key_loan_id: string; p_notes?: string }
         Returns: Json
       }
+      return_my_key_request: {
+        Args: { p_key_request_id: string }
+        Returns: Json
+      }
+      save_admin_room: {
+        Args: {
+          p_active: boolean
+          p_booking_enabled: boolean
+          p_building: string
+          p_capacity: number
+          p_code: string
+          p_computer_type: string
+          p_description: string
+          p_display_type: string
+          p_equipment?: Json
+          p_floor: string
+          p_image_url: string
+          p_location_description: string
+          p_name: string
+          p_room_id: string
+          p_room_type_id: string
+        }
+        Returns: string
+      }
+      set_admin_user_roles: {
+        Args: { p_role_codes: string[]; p_user_id: string }
+        Returns: Json
+      }
       set_room_availability: {
         Args: { p_active: boolean; p_room_id: string }
         Returns: boolean
@@ -3154,6 +4351,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_room_key_approval_mode: {
+        Args: { p_mode: string; p_room_id: string }
+        Returns: undefined
+      }
       update_room_usage_policy: {
         Args: { p_policy: Json; p_room_id: string }
         Returns: boolean
@@ -3187,6 +4388,18 @@ export type Database = {
           p_starts_on: string
           p_term_code: string
           p_term_id: string
+        }
+        Returns: string
+      }
+      upsert_announcement: {
+        Args: {
+          p_active: boolean
+          p_audience: string
+          p_body: string
+          p_id: string
+          p_title: string
+          p_visible_from: string
+          p_visible_until: string
         }
         Returns: string
       }
@@ -3376,9 +4589,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       account_status: ["ACTIVE", "SUSPENDED", "INACTIVE"],

@@ -156,12 +156,11 @@ describe('Authentication entry point', () => {
       .mockResolvedValueOnce({data:[{id:'active-1',request_code:'KR-4',room_code:'S2407',room_name:'ห้อง S2407',room_type_name:'Computer Room',floor:'4',starts_at:'2026-11-08T15:00:00+07:00',ends_at:'2026-11-08T18:00:00+07:00',purpose:'ทดสอบ',purpose_type:'OTHER',course_code:null,lecturer_name:null,status:'APPROVED',can_cancel:true,can_return:true}],error:null} as never)
       .mockResolvedValueOnce({data:{id:'active-1',status:'RETURNED'},error:null} as never)
       .mockResolvedValueOnce({data:[],error:null} as never)
-    vi.spyOn(window,'confirm').mockReturnValue(true)
-
     render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><AccountKeyRequestHistoryPage/></QueryClientProvider>)
     const returnButton=await screen.findByRole('button',{name:'ยืนยันการคืนกุญแจ'})
     expect(returnButton.closest('footer')).toHaveClass('equal-actions')
     fireEvent.click(returnButton)
+    fireEvent.click(screen.getAllByRole('button',{name:'ยืนยันการคืนกุญแจ'}).at(-1)!)
 
     await waitFor(()=>expect(supabase.rpc).toHaveBeenCalledWith('return_my_key_request',{p_key_request_id:'active-1'}))
     await waitFor(()=>expect(supabase.rpc).toHaveBeenCalledTimes(3))
@@ -796,7 +795,7 @@ describe('Authentication entry point', () => {
   })
 
   it('shows the branded key header with account identity and an outline notification bell', () => {
-    const identity = { userId: 'user-1', fullName: 'นายปิติพัฒน์ ชื่อยาวสำหรับทดสอบ', email: 'pitiphat.jo@northbkk.ac.th', role: null, avatarUrl: 'https://example.test/avatar.png' }
+    const identity = { userId: 'user-1', fullName: 'นายปิติพัฒน์ ชื่อยาวสำหรับทดสอบ', email: 'pitiphat.jo@northbkk.ac.th', role: 'TEACHER' as const, avatarUrl: 'https://example.test/avatar.png' }
     const client=new QueryClient({defaultOptions:{queries:{retry:false}}})
     client.setQueryData(['notifications','unread'],[{id:'notice-1'}])
     render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/keys']}><Routes><Route element={<PublicLayout identity={identity} loading={false} onLogout={vi.fn()} />}><Route path="keys" element={<div>หน้ากุญแจ</div>} /></Route></Routes></MemoryRouter></QueryClientProvider>)
@@ -827,7 +826,7 @@ describe('Authentication entry point', () => {
     render(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={['/keys']}><Routes><Route element={<PublicLayout identity={identity} loading={false} onLogout={vi.fn()} />}><Route path="keys" element={<div>หน้ากุญแจ</div>} /></Route></Routes></MemoryRouter></QueryClientProvider>)
 
     expect(screen.getByText('sufeeyan.tale')).toHaveClass('key-account-name')
-    expect(screen.getByText('นักศึกษา')).toHaveClass('key-account-role')
+    expect(screen.getByText('ยังไม่ได้กำหนดบทบาท')).toHaveClass('key-account-role')
   })
 
   it('keeps the current key-request path when a guest signs in from the user menu', () => {

@@ -1,0 +1,10 @@
+import { useState } from 'react'
+import type { StaffRoleOption } from '../types/staff-user.types'
+
+interface Props{roles:StaffRoleOption[];pending:boolean;error?:string;onClose:()=>void;onSave:(input:{fullName:string;email:string;roleCodes:string[]})=>void}
+
+export function StaffAddUserDialog({roles,pending,error,onClose,onSave}:Props){
+ const[fullName,setFullName]=useState('');const[email,setEmail]=useState('');const[selected,setSelected]=useState<Set<string>>(new Set());const[validation,setValidation]=useState('')
+ const submit=()=>{if(!fullName.trim()||!/^\S+@\S+\.\S+$/.test(email.trim())){setValidation('กรุณากรอกชื่อและอีเมลให้ถูกต้อง');return}onSave({fullName:fullName.trim(),email:email.trim(),roleCodes:[...selected]})}
+ return <div className="staff-role-dialog-backdrop" role="presentation"><section className="staff-role-dialog" role="dialog" aria-modal="true" aria-labelledby="staff-add-user-title"><header><div><h2 id="staff-add-user-title">เพิ่มสมาชิกใหม่</h2><p>ระบบจะส่งคำเชิญไปยังอีเมลที่ระบุ</p></div><button type="button" aria-label="ปิด" disabled={pending} onClick={onClose}>×</button></header><div className="staff-add-user-fields"><label>ชื่อ–นามสกุล<input value={fullName} onChange={(event)=>setFullName(event.target.value)} /></label><label>อีเมล<input type="email" value={email} onChange={(event)=>setEmail(event.target.value)} /></label></div><div className="staff-role-options">{roles.map((role)=><label key={role.code}><input type="checkbox" checked={selected.has(role.code)} onChange={()=>setSelected((current)=>{const next=new Set(current);if(next.has(role.code))next.delete(role.code);else next.add(role.code);return next})}/><span><strong>{role.name}</strong><small>{role.code}</small></span></label>)}</div>{(validation||error)&&<p className="staff-role-error" role="alert">{validation||error}</p>}<footer><button type="button" disabled={pending} onClick={onClose}>ยกเลิก</button><button className="staff-button" type="button" disabled={pending} onClick={submit}>{pending?'กำลังส่งคำเชิญ…':'ส่งคำเชิญ'}</button></footer></section></div>
+}

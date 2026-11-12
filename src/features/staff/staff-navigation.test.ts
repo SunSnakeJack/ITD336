@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { staffNavigation, staffRoutePaths } from './staff-navigation'
 
 describe('staff navigation contract', () => {
-  it('registers all 16 required staff screens exactly once', () => {
+  it('registers all required staff screens exactly once', () => {
     expect(staffRoutePaths).toEqual([
       '/staff',
       '/staff/rooms',
+      '/staff/rooms/new',
+      '/staff/rooms/:roomId/edit',
       '/staff/rooms/:roomId',
       '/staff/settings',
       '/staff/users',
@@ -22,13 +24,13 @@ describe('staff navigation contract', () => {
       '/staff/dashboard/meetings',
       '/staff/reports/labs',
       '/staff/reports/meetings',
+      '/staff/usage-dashboard',
     ])
   })
 
   it('keeps primary navigation concise while linking every module', () => {
     expect(staffNavigation.map((item) => item.label)).toEqual([
-      'ภาพรวมระบบ', 'ข้อมูลห้อง', 'จัดการผู้ใช้งาน', 'จัดการการเบิกกุญแจ',
-      'จัดการห้องประชุม', 'ประวัติการใช้งาน', 'Dashboard', 'รายงานและ Export', 'ตั้งค่าระบบ',
+      'จัดการผู้ใช้งาน', 'จัดการข้อมูลห้อง', 'แดชบอร์ด', 'การตั้งค่าสิทธิ์',
     ])
     expect(staffNavigation.every((item) => item.to.startsWith('/staff'))).toBe(true)
   })

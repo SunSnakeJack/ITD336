@@ -55,4 +55,10 @@ describe('key catalog Bangkok time', () => {
     const evening = new Date('2026-11-08T18:01:00+07:00')
     expect(isSlotElapsedForBangkokDate('18:00', '2026-11-08', evening)).toBe(true)
   })
+
+  it('keeps elapsed slots available only when the managed exception is enabled',()=>{
+    const afternoon=new Date('2026-11-08T13:30:00+07:00')
+    expect(isSlotElapsedForBangkokDate('08:00','2026-11-08',afternoon,true)).toBe(false)
+    expect(freeRangesForBangkokDay([],'2026-11-08',afternoon,true)).toEqual(['08:00–18:00 น.'])
+  })
 })

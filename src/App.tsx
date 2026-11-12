@@ -36,11 +36,12 @@ import { KeyRequestActionPage } from "./features/keys/pages/KeyRequestActionPage
 import { MeetingRoomDetailPage, MeetingRoomEntryPage } from "./features/meeting-rooms/pages/MeetingRoomDetailPage";
 import { MeetingRoomRequestPage } from "./features/meeting-rooms/pages/MeetingRoomRequestPage";
 import { StaffLayout } from "./features/staff/components/StaffLayout";
-import { StaffHomePage, StaffRoomDetailPage, StaffRoomsPage, StaffSettingsPage } from "./features/staff/pages/StaffOverviewPages";
+import { StaffHomePage, StaffRoomDetailPage, StaffRoomFormPage, StaffRoomsPage, StaffSettingsPage } from "./features/staff/pages/StaffOverviewPages";
 import { StaffKeyRequestDetailPage, StaffKeyRequestsPage, StaffMeetingRoomFormPage, StaffMeetingRoomsPage, StaffUserFormPage, StaffUsersPage } from "./features/staff/pages/StaffManagementPages";
 import { StaffLabHistoryPage, StaffMeetingHistoryPage } from "./features/staff/pages/StaffHistoryPages";
 import { StaffLabDashboardPage, StaffMeetingDashboardPage } from "./features/staff/pages/StaffDashboardPages";
 import { StaffLabReportPage, StaffMeetingReportPage } from "./features/staff/pages/StaffReportPages";
+import { StaffUsageDashboardPage } from "./features/staff/pages/StaffUsageDashboardPage";
 
 function AdminGuard({
   identity,
@@ -224,6 +225,8 @@ export function App() {
       >
         <Route index element={<StaffHomePage />} />
         <Route path="rooms" element={<StaffRoomsPage />} />
+        <Route path="rooms/new" element={<StaffRoomFormPage />} />
+        <Route path="rooms/:roomId/edit" element={<StaffRoomFormPage />} />
         <Route path="rooms/:roomId" element={<StaffRoomDetailPage />} />
         <Route path="settings" element={<StaffSettingsPage />} />
         <Route path="users" element={<StaffUsersPage />} />
@@ -240,6 +243,7 @@ export function App() {
         <Route path="dashboard/meetings" element={<StaffMeetingDashboardPage />} />
         <Route path="reports/labs" element={<StaffLabReportPage />} />
         <Route path="reports/meetings" element={<StaffMeetingReportPage />} />
+        <Route path="usage-dashboard" element={<StaffUsageDashboardPage />} />
       </Route>
       <Route path="student/rooms" element={<Navigate to="/" replace />} />
       <Route path="student/rooms/:roomId" element={<LegacyRoomRedirect />} />

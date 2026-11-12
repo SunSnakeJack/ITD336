@@ -2,6 +2,8 @@ import { supabase, unwrap } from '../../lib/supabase/client'
 import type { RpcResult } from '../bookings/booking.types'
 import type { AdminKeyLoan, AvailableRoomKey, CreateKeyRequestInput, KeyCabinetRoom, KeyLoan, KeyLoanDetail, KeyLoanStatus, KeyRequestResult, KeyUsageSource, PublicKeyRequestHistoryItem, KeyRequestReferenceOption, MyKeyRequest } from './key.types'
 
+export async function getAllowPastKeyRequestSlots(){const{data,error}=await supabase.rpc('get_key_request_allow_past_slots' as never)as unknown as{data:boolean|null;error:{message:string}|null};if(error)throw new Error(error.message);return data===true}
+
 export async function getPublicKeyRequestHistory(roomId:string):Promise<PublicKeyRequestHistoryItem[]>{const {data,error}=await supabase.rpc('get_public_key_request_history' as never,{p_room_id:roomId,p_limit:10} as never) as unknown as {data:Array<{id:string;requester_name:string;starts_at:string;ends_at:string;status:string}>|null;error:{message:string}|null};if(error)throw new Error(error.message);return(data??[]).map((row)=>({id:row.id,requesterName:row.requester_name,startsAt:row.starts_at,endsAt:row.ends_at,status:row.status}))}
 export async function getMyKeyRequests():Promise<MyKeyRequest[]>{const{data,error}=await supabase.rpc('get_my_key_requests' as never) as unknown as{data:Array<{id:string;request_code:string;room_code:string;room_name:string;room_type_name:string;floor:string|null;starts_at:string;ends_at:string;purpose:string;purpose_type:'TEACHING'|'OTHER';course_code:string|null;lecturer_name:string|null;status:string;can_cancel:boolean;can_return:boolean}>|null;error:{message:string}|null};if(error)throw new Error(error.message);return(data??[]).map((row)=>({id:row.id,requestCode:row.request_code,roomCode:row.room_code,roomName:row.room_name,roomTypeName:row.room_type_name,floor:row.floor,startsAt:row.starts_at,endsAt:row.ends_at,purpose:row.purpose,purposeType:row.purpose_type,courseCode:row.course_code,lecturerName:row.lecturer_name,status:row.status,canCancel:row.can_cancel,canReturn:row.can_return}))}
 export async function cancelMyKeyRequest(id:string){const{data,error}=await supabase.rpc('cancel_my_key_request' as never,{p_key_request_id:id} as never) as unknown as{data:{id:string;status:string}|null;error:{message:string}|null};if(error)throw new Error(error.message);return data}
@@ -33,6 +35,7 @@ async function dispatchCreatedRequestEmail(result:KeyRequestResult):Promise<KeyR
   return result
 }
 function throwKeyRequestError(message:string):never{
+  if(message.includes('KEY_REQUEST_PAST_SLOT_DISABLED'))throw new Error('ช่วงเวลานี้ผ่านไปแล้วและระบบยังไม่อนุญาตให้เบิกย้อนหลัง')
   if (message.includes('KEY_REQUEST_TIME_CONFLICT') || message.includes('LEGACY_KEY_REQUEST_TIME_CONFLICT')) throw new Error('ช่วงเวลานี้มีคำขอเบิกกุญแจแล้ว')
   if (message.includes('AUTHENTICATION_REQUIRED')) throw new Error('ห้องนี้ต้องเข้าสู่ระบบมหาวิทยาลัยก่อนส่งคำขอ')
   if (message.includes('UNIVERSITY_EMAIL_REQUIRED')) throw new Error('กรุณาใช้อีเมลมหาวิทยาลัย @northbkk.ac.th')

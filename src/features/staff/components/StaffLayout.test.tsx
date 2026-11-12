@@ -23,7 +23,7 @@ describe('StaffLayout', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: 'ข้อมูลห้อง' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'จัดการข้อมูลห้อง' })).toBeInTheDocument()
     const drawer = screen.getByTestId('staff-sidebar')
     expect(drawer).not.toHaveClass('is-open')
     fireEvent.click(screen.getByRole('button', { name: 'เปิดเมนู' }))

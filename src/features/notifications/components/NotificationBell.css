@@ -1,0 +1,13 @@
+.notification-menu > button.is-unread{background:#f5f7ff;border-left:3px solid #1748bf}
+.notification-menu > button.is-read{background:#fff;color:#64748b}
+
+@media(max-width:520px){
+  .key-mobile-header .notification-menu{
+    left:auto;
+    max-height:min(420px,calc(100vh - 70px));
+    position:fixed;
+    right:12px;
+    top:56px;
+    width:calc(100vw - 24px);
+  }
+}

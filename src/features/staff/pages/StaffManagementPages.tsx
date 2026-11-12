@@ -1,18 +1,28 @@
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { adminBookingsQuery } from '../../bookings/booking.queries'
 import { activeKeyLoansQuery } from '../../keys/key.queries'
 import { getBorrowerIdentity } from '../../keys/utils/admin-key.utils'
 import { roomsQuery } from '../../rooms/room.queries'
+import { ConfirmDialog } from '../../../shared/components/ConfirmDialog'
+import { StaffAddUserDialog } from '../components/StaffAddUserDialog'
 import { BackendLimitation, StaffPage, StaffQueryState, StatusBadge } from '../components/StaffPage'
+import { StaffRoleDialog } from '../components/StaffRoleDialog'
+import { inviteStaffUser, setStaffUserRoles, setStaffUserStatus } from '../staff-user.service'
+import { staffRoleOptionsQuery, staffUserDirectoryQuery, staffUserKeys } from '../staff-user.queries'
+import type { StaffUserDirectoryItem } from '../types/staff-user.types'
 import { bangkokDateTime, isMeetingRoom } from '../utils/staff-analytics'
+import './StaffUserManagement.css'
 
 export function StaffUsersPage() {
-  return <StaffPage eyebrow="User Management" title="จัดการผู้ใช้งาน" description="ข้อมูลผู้ใช้และบทบาทต้องถูกจำกัดด้วยสิทธิ์จาก Backend" actions={<span className="staff-button" aria-disabled="true">เพิ่มผู้ใช้งาน</span>}>
-    <BackendLimitation title="Blocked by Backend Authorization">โปรเจกต์ยังไม่มี service หรือ RPC สำหรับผู้ดูแลในการค้นหา เพิ่ม หรือแก้ไข profile และ role อย่างปลอดภัย จึงไม่ query ตารางผู้ใช้โดยตรงหรือเปิดปุ่มเปลี่ยนสิทธิ์</BackendLimitation>
-    <div className="staff-section staff-state"><div><strong>ยังไม่สามารถแสดงรายชื่อผู้ใช้ได้</strong><p>ต้องเพิ่ม ADMIN-authorized RPC พร้อม RLS และ audit logging ก่อนเชื่อมหน้านี้</p></div></div>
-  </StaffPage>
+  const query=useQuery(staffUserDirectoryQuery());const roles=useQuery(staffRoleOptionsQuery());const client=useQueryClient();const[editing,setEditing]=useState<StaffUserDirectoryItem|null>(null);const[adding,setAdding]=useState(false);const[statusAction,setStatusAction]=useState<{user:StaffUserDirectoryItem;status:StaffUserDirectoryItem['accountStatus']}|null>(null)
+  const save=useMutation({mutationFn:setStaffUserRoles,onSuccess:async()=>{await client.invalidateQueries({queryKey:staffUserKeys.directory});setEditing(null)}})
+  const invite=useMutation({mutationFn:inviteStaffUser,onSuccess:async()=>{await client.invalidateQueries({queryKey:staffUserKeys.directory});setAdding(false)}})
+  const status=useMutation({mutationFn:setStaffUserStatus,onSuccess:async()=>{await client.invalidateQueries({queryKey:staffUserKeys.directory});setStatusAction(null)}})
+  const PencilIcon=()=> <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z"/><path d="m13.5 7 3.5 3.5"/></svg>
+  const EraserIcon=()=> <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m7 20-4-4L14 5l5 5-10 10H7Z"/><path d="m11 8 5 5"/><path d="M7 20h13"/></svg>
+  return <StaffPage eyebrow="User Management" title="จัดการผู้ใช้งาน" description="รายชื่อผู้ใช้และบทบาททั้งหมดที่บัญชีได้รับ" actions={<button className="staff-button" type="button" onClick={()=>{invite.reset();setAdding(true)}}>เพิ่มสมาชิกใหม่</button>}><StaffQueryState loading={query.isPending||roles.isPending} error={query.error||roles.error} empty={!query.data?.length} emptyText="ยังไม่มีผู้ใช้งานในระบบ"><div className="staff-table-wrap"><table className="staff-table staff-user-table"><thead><tr><th>ชื่อ–นามสกุล</th><th>อีเมล</th><th>บทบาท</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>{query.data?.map((user)=><tr key={user.id}><td><strong>{user.fullName||'ยังไม่มีชื่อ'}</strong></td><td>{user.email}</td><td><div className="staff-role-list">{user.roleCodes.length?user.roleCodes.map((code,index)=><span className="staff-role-badge" key={code}>{user.roleNames[index]||code}</span>):<span className="staff-role-empty">ยังไม่ได้กำหนด</span>}</div></td><td><StatusBadge status={user.accountStatus}/></td><td><div className="staff-user-actions"><button type="button" aria-label={`แก้ไขบทบาท ${user.fullName}`} title="แก้ไขบทบาท" onClick={()=>{save.reset();setEditing(user)}}><PencilIcon/></button>{user.accountStatus==='ACTIVE'?<><button className="suspend" type="button" aria-label={`ระงับบัญชี ${user.fullName}`} title="ระงับบัญชี" onClick={()=>setStatusAction({user,status:'SUSPENDED'})}>Ⅱ</button><button className="inactive" type="button" aria-label={`ปิดใช้งานบัญชี ${user.fullName}`} title="ปิดใช้งานบัญชี" onClick={()=>setStatusAction({user,status:'INACTIVE'})}><EraserIcon/></button></>:<button className="activate" type="button" aria-label={`เปิดใช้งานบัญชี ${user.fullName}`} onClick={()=>setStatusAction({user,status:'ACTIVE'})}>เปิดใช้งาน</button>}</div></td></tr>)}</tbody></table></div></StaffQueryState>{editing&&<StaffRoleDialog user={editing} roles={roles.data??[]} pending={save.isPending} error={save.error?.message} onClose={()=>setEditing(null)} onSave={(roleCodes)=>save.mutate({userId:editing.id,roleCodes})}/>} {adding&&<StaffAddUserDialog roles={roles.data??[]} pending={invite.isPending} error={invite.error?.message} onClose={()=>setAdding(false)} onSave={(input)=>invite.mutate(input)}/>} {statusAction&&<ConfirmDialog title={statusAction.status==='ACTIVE'?'เปิดใช้งานบัญชี':statusAction.status==='SUSPENDED'?'ระงับบัญชี':'ปิดใช้งานบัญชี'} message={`${statusAction.user.fullName} จะ${statusAction.status==='ACTIVE'?'กลับเข้าสู่ระบบได้ตามปกติ':statusAction.status==='SUSPENDED'?'ถูกระงับและออกจากระบบ':'ไม่สามารถเข้าสู่ระบบ แต่ประวัติจะยังคงอยู่'}`} confirmLabel="ยืนยัน" danger={statusAction.status!=='ACTIVE'} pending={status.isPending} onClose={()=>setStatusAction(null)} onConfirm={()=>status.mutate({userId:statusAction.user.id,status:statusAction.status})}/>}</StaffPage>
 }
 
 export function StaffUserFormPage() {

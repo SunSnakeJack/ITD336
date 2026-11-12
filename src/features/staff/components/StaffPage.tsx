@@ -17,6 +17,6 @@ export function BackendLimitation({ title, children }: { title: string; children
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  const labels: Record<string, string> = { ACTIVE: 'เปิดใช้งาน', INACTIVE: 'ปิดใช้งาน', PENDING: 'รออนุมัติ', REQUESTED: 'รอดำเนินการ', APPROVED: 'อนุมัติแล้ว', REJECTED: 'ไม่อนุมัติ', CANCELLED: 'ยกเลิก', CHECKED_OUT: 'กำลังถือกุญแจ', RETURN_REPORTED: 'รอตรวจรับ', RETURNED: 'คืนแล้ว', COMPLETED: 'เสร็จสิ้น', IN_USE: 'กำลังใช้งาน', LATE: 'เกินกำหนด', LOST: 'สูญหาย', DAMAGED: 'ชำรุด', NO_SHOW: 'ไม่มาใช้งาน', SUPERSEDED: 'ถูกแทนที่' }
+  const labels: Record<string, string> = { ACTIVE: 'เปิดใช้งาน', SUSPENDED: 'ระงับบัญชี', INACTIVE: 'ปิดใช้งาน', PENDING: 'รออนุมัติ', REQUESTED: 'รอดำเนินการ', APPROVED: 'อนุมัติแล้ว', REJECTED: 'ไม่อนุมัติ', CANCELLED: 'ยกเลิก', CHECKED_OUT: 'กำลังถือกุญแจ', RETURN_REPORTED: 'รอตรวจรับ', RETURNED: 'คืนแล้ว', COMPLETED: 'เสร็จสิ้น', IN_USE: 'กำลังใช้งาน', LATE: 'เกินกำหนด', LOST: 'สูญหาย', DAMAGED: 'ชำรุด', NO_SHOW: 'ไม่มาใช้งาน', SUPERSEDED: 'ถูกแทนที่' }
   return <span className={`staff-badge staff-badge-${status.toLowerCase()}`}>{labels[status] ?? status}</span>
 }

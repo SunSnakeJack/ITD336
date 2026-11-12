@@ -10,11 +10,11 @@ const minuteOfDay = (value: string) => {
 }
 const clock = (value: number) => `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
 
-export function freeRangesForBangkokDay(events: Array<{ startsAt: string; endsAt: string }>, date: string, now: Date = new Date()) {
+export function freeRangesForBangkokDay(events: Array<{ startsAt: string; endsAt: string }>, date: string, now: Date = new Date(), allowPastSlots = false) {
   const ranges: string[] = []
   const [currentHour, currentMinute] = bangkokClock(now).split(':').map(Number)
   const roundedCurrentMinute = Math.ceil((currentHour * 60 + currentMinute) / 30) * 30
-  let cursor = date === bangkokDateKey(now) ? Math.max(480, roundedCurrentMinute) : 480
+  let cursor = date === bangkokDateKey(now) && !allowPastSlots ? Math.max(480, roundedCurrentMinute) : 480
   if (cursor >= 1080) return ranges
   const active = events.filter((event) => bangkokDateKey(event.startsAt) === date).sort((a, b) => a.startsAt.localeCompare(b.startsAt))
   for (const event of active) {
@@ -27,7 +27,8 @@ export function freeRangesForBangkokDay(events: Array<{ startsAt: string; endsAt
   return ranges
 }
 
-export function isSlotElapsedForBangkokDate(time: string, date: string, now: Date = new Date()): boolean {
+export function isSlotElapsedForBangkokDate(time: string, date: string, now: Date = new Date(), allowPastSlots = false): boolean {
+  if (allowPastSlots) return false
   const today = bangkokDateKey(now)
   if (date < today) return true
   if (date > today) return false

@@ -4,7 +4,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import type { AuthIdentity } from '../../auth/auth.types'
 import { publicRoomsQuery, publicScheduleEventsQuery } from '../../schedules/schedule.queries'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
-import { publicKeyRequestHistoryQuery } from '../key.queries'
+import { keyRequestTimingPolicyQuery, publicKeyRequestHistoryQuery } from '../key.queries'
 import { bangkokClock, isSlotElapsedForBangkokDate } from '../utils/key-catalog-time'
 import { isSelectableRange, isTimeSelected } from '../utils/key-slot-selection'
 import { GoogleSsoModal } from '../../auth/components/GoogleSsoModal'
@@ -23,6 +23,7 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
   const date = useMemo(bangkokDate, [])
   const events = useQuery(publicScheduleEventsQuery({ roomId, from: date, to: date }))
   const history = useQuery(publicKeyRequestHistoryQuery(roomId))
+  const timingPolicy=useQuery(keyRequestTimingPolicyQuery())
   const [start, setStart] = useState<string | null>(null)
   const [end, setEnd] = useState<string | null>(null)
   const [showLogin, setShowLogin] = useState(false)
@@ -36,7 +37,7 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
   const occupied = (time: string) => (events.data ?? []).some((event) => time >= bangkokClock(event.startsAt) && time < bangkokClock(event.endsAt))
   const isUnavailable = (time: string) => {
     const target = time === '18:00' ? '17:30' : time
-    return occupied(target) || isSlotElapsedForBangkokDate(target, date)
+    return occupied(target) || isSlotElapsedForBangkokDate(target, date, new Date(), timingPolicy.data??false)
   }
   const selectSlot = (time: string) => {
     if (isUnavailable(time)){setSelectionNotice('ช่วงเวลานี้ไม่ว่าง กรุณาเลือกเวลาอื่น');return}

@@ -9,14 +9,16 @@ import { GoogleSsoModal } from '../../auth/components/GoogleSsoModal'
 import keyRoomIcon from '../../../assets/key-room.svg'
 import externalLinkIcon from '../../../assets/external-link.svg'
 import keyActionArrow from '../../../assets/key-action-arrow.svg'
+import { keyRequestTimingPolicyQuery } from '../key.queries'
 
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
 
 export function KeyRoomCatalogCard({room,identity}:{room:ScheduleRoom;identity:AuthIdentity|null}){
   const date=today()
   const events=useQuery(publicScheduleEventsQuery({roomId:room.id,from:date,to:date}))
+  const timingPolicy=useQuery(keyRequestTimingPolicyQuery())
   const [loginOpen,setLoginOpen]=useState(false)
-  const available=events.isSuccess?freeRangesForBangkokDay(events.data,date):[]
+  const available=events.isSuccess?freeRangesForBangkokDay(events.data,date,new Date(),timingPolicy.data??false):[]
   const requestStart=available[0]?.slice(0,5)??'08:00'
   const requestStartMinutes=Number(requestStart.slice(0,2))*60+Number(requestStart.slice(3,5))
   const requestEndMinutes=requestStartMinutes+30
