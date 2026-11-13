@@ -20,6 +20,12 @@ Migration `0016_admin_room_details.sql` adds the `update_room_details` RPC. It r
 
 Migration `0057_admin_room_management.sql` adds optional room image, computer type, and display type metadata. Existing `equipment` and `room_equipment` relations remain the source of truth for equipment. Permission-checked editor/detail RPCs create or update a room and replace its equipment assignments transactionally, validate room codes/types/quantities, and append audit events.
 
+Migration `0060_public_room_presentation.sql` extends the permission-filtered public room catalog with the existing room description, image URL, and equipment names. The internal administrative room name is not exposed by this RPC; public screens use the room code, description, and room type.
+
+Migration `0061_admin_room_soft_delete.sql` adds the permission-checked `set_admin_room_active` RPC. Staff room removal is recoverable: it changes `rooms.active` instead of deleting the row and records `ROOM_DEACTIVATED` or `ROOM_REACTIVATED` in the audit log.
+
+Migration `0062_room_image_storage.sql` creates the public `room-images` bucket with a 5 MB image-only limit and restricts writes to accounts with `ROOM_MANAGE`. Migration `0063_staff_key_request_queue.sql` exposes the current `key_requests` approval queue to existing `KEY_MANAGE` or `BOOKING_APPROVE` permissions; state transitions continue through `decide_key_request`.
+
 Migration `0017_external_booking_edit.sql` updates exact-time availability checks to expand recurring academic schedules and adds permission-checked read/update RPCs for approved external-party bookings. Updates exclude the current booking from overlap checks, retain booking history, and append an audit event.
 
 Migration `0018_room_layout_key_and_code_edit.sql` separates the immutable floor-plan `layout_key` from the editable room `code`, extends the narrow public catalog with that key, and adds the permission-checked `update_room_details_v2` RPC. The RPC validates and normalizes room codes, preserves uniqueness, updates the room identity and availability fields atomically, and appends an audit event.
@@ -69,3 +75,5 @@ Enumerations constrain operational states. Foreign keys default to restrictive d
 Migration `0058_staff_usage_dashboard.sql` adds an explicit report category to room types and an authorized consolidated history RPC. Meeting usage comes from completed/active `bookings`; laboratory usage comes from the current `key_requests` flow and legacy operational `key_loans`. Cancelled and rejected records are excluded, and no report sample data is stored in the database.
 
 Migration `0059_past_key_request_setting.sql` stores the elapsed-slot exception in `system_settings`. A database trigger rejects past same-day key requests while disabled; authorized settings managers may enable the exception through an audited RPC. Schedule conflicts and service-hour constraints remain unchanged.
+
+Migration `0065_admin_user_profile_management.sql` adds an ADMIN-only directory RPC that exposes the existing split profile names and an audited profile-update RPC. Normal clients cannot use these functions to assign roles or elevate privileges; role and account-status transitions remain controlled by their existing services.

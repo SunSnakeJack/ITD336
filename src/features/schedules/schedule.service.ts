@@ -12,6 +12,7 @@ function text(row: UnknownRow, key: string, fallback = '') { return typeof row[k
 function nullableText(row: UnknownRow, key: string) { return typeof row[key] === 'string' ? row[key] as string : null }
 function bool(row: UnknownRow, key: string, fallback = false) { return typeof row[key] === 'boolean' ? row[key] as boolean : fallback }
 function num(row: UnknownRow, key: string, fallback = 0) { return typeof row[key] === 'number' ? row[key] as number : fallback }
+function textArray(row:UnknownRow,key:string){return Array.isArray(row[key])?(row[key] as unknown[]).filter((value):value is string=>typeof value==='string'):[]}
 
 const LEGACY_LAB_ROOM_TYPES = new Set(['Computer Room', 'Cold Room', 'Studio Room', 'Gaming Room', 'E-Learning Room'])
 const LEGACY_SPECIAL_LAB_TYPES = new Set(['Studio Room', 'Gaming Room', 'E-Learning Room'])
@@ -39,7 +40,7 @@ function mapPublicRoom(row: UnknownRow): ScheduleRoom {
   const requiresSso = typeof row.requires_sso_for_key_request === 'boolean'
     ? row.requires_sso_for_key_request
     : LEGACY_SPECIAL_LAB_TYPES.has(roomTypeName)
-  return { id: text(row, 'id'), code: text(row, 'code'), layoutKey: text(row, 'layout_key', text(row, 'code')), name: text(row, 'name'), building: nullableText(row, 'building'), floor: nullableText(row, 'floor'), capacity: num(row, 'capacity'), active: bool(row, 'active'), bookingEnabled: false, roomTypeName, academicScheduleConfirmed: bool(row, 'academic_schedule_confirmed'), usageScope, requiresSsoForKeyRequest: requiresSso }
+  return { id: text(row, 'id'), code: text(row, 'code'), layoutKey: text(row, 'layout_key', text(row, 'code')), name: text(row, 'name'), building: nullableText(row, 'building'), floor: nullableText(row, 'floor'), capacity: num(row, 'capacity'), active: bool(row, 'active'), bookingEnabled: false, roomTypeName,description:nullableText(row,'description'),imageUrl:nullableText(row,'image_url'),equipment:textArray(row,'equipment'), academicScheduleConfirmed: bool(row, 'academic_schedule_confirmed'), usageScope, requiresSsoForKeyRequest: requiresSso }
 }
 
 export async function getPublicScheduleRooms(): Promise<ScheduleRoom[]> {

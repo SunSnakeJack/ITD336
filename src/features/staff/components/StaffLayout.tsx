@@ -6,10 +6,12 @@ import '../staff.css'
 
 export function StaffLayout({ identity, onLogout }: { identity: AuthIdentity; onLogout: () => Promise<void> }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
   const location = useLocation()
   const title = getStaffPageTitle(location.pathname)
-
-  useEffect(() => setDrawerOpen(false), [location.pathname])
+  const dashboardActive = location.pathname === '/staff/usage-dashboard'
+  const usersActive = location.pathname === '/staff/users'
+  useEffect(() => { setDrawerOpen(false); setAccountOpen(false) }, [location.pathname])
 
   return <div className="staff-shell">
     <button className={`staff-backdrop ${drawerOpen ? 'is-open' : ''}`} aria-label="ปิดเมนูจากพื้นหลัง" tabIndex={drawerOpen ? 0 : -1} onClick={() => setDrawerOpen(false)} />
@@ -20,18 +22,22 @@ export function StaffLayout({ identity, onLogout }: { identity: AuthIdentity; on
         <button className="staff-drawer-close" aria-label="ปิดเมนู" onClick={() => setDrawerOpen(false)}>×</button>
       </div>
       <nav aria-label="เมนูระบบเจ้าหน้าที่">
-        {staffNavigation.map((item) => <NavLink key={item.label} to={item.to} end={item.to === '/staff'} className={() => {
+        {(['หลัก', 'จัดการ', 'ระบบ'] as const).map(group => <div className="staff-nav-group" key={group}><span className="staff-nav-label">{group}</span>{staffNavigation.filter(item => item.group === group).map((item) => <NavLink key={item.label} to={item.to} end={item.to === '/staff'} className={() => {
           const active = item.match ? location.pathname.startsWith(item.match) : item.to === '/staff' ? location.pathname === item.to : location.pathname.startsWith(item.to)
           return active ? 'active' : ''
-        }}><span aria-hidden="true">{item.icon}</span>{item.label}</NavLink>)}
+        }}><span aria-hidden="true">{item.icon}</span>{item.label}</NavLink>)}</div>)}
       </nav>
-      <div className="staff-sidebar-foot"><span>สิทธิ์ปัจจุบัน</span><strong>ผู้ดูแลระบบ</strong><Link to="/admin">ไปยังระบบ Admin เดิม</Link></div>
+      <div className="staff-sidebar-account">
+        {accountOpen && <div className="staff-sidebar-account-menu"><button type="button" aria-label="ออกจากระบบ" onClick={() => void onLogout()}>ออกจากระบบ</button></div>}
+        <button className="staff-sidebar-foot" type="button" aria-label="เปิดเมนูบัญชี" aria-expanded={accountOpen} onClick={() => setAccountOpen(value => !value)}><span className="staff-sidebar-avatar" aria-hidden="true">{identity.fullName.slice(0, 2)}</span><span className="staff-sidebar-identity"><strong>{identity.fullName}</strong><em>ผู้ดูแลระบบ</em></span></button>
+      </div>
     </aside>
     <div className="staff-workspace">
-      <header className="staff-topbar">
+      <header className="staff-topbar" data-testid="staff-topbar">
         <button className="staff-menu-button" aria-label="เปิดเมนู" onClick={() => setDrawerOpen(true)}>☰</button>
-        <div className="staff-title"><small><Link to="/staff">ระบบเจ้าหน้าที่</Link> / {title}</small><h1>{title}</h1></div>
-        <div className="staff-account"><span><strong>{identity.fullName}</strong><small>{identity.email}</small></span><button onClick={() => void onLogout()}>ออกจากระบบ</button></div>
+        <div className="staff-topbar-title"><small>{dashboardActive ? 'USAGE DASHBOARD' : usersActive ? 'USER MANAGEMENT' : 'ระบบเจ้าหน้าที่'}</small><h1>{dashboardActive ? 'ภาพรวมการใช้งาน' : title}</h1></div>
+        {dashboardActive && <button className="staff-topbar-export" type="button" aria-label="Export PDF" onClick={() => window.print()}>⇩ Export PDF</button>}
+        {usersActive && <Link className="staff-topbar-export staff-topbar-add" to="/staff/users?dialog=add">+ เพิ่มสมาชิกใหม่</Link>}
       </header>
       <main className="staff-main"><Outlet /></main>
     </div>

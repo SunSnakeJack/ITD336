@@ -5,7 +5,7 @@ import { signInWithGoogle, signInWithPassword } from '../auth.service'
 import { LoginBrand } from './LoginBrand'
 import { PasswordField } from './PasswordField'
 
-export function LoginForm({ embedded=false, onClose, onSuccess, returnTo='/' }: { embedded?:boolean;onClose?:()=>void;onSuccess?:()=>void;returnTo?:string }={}) {
+export function LoginForm({ embedded=false, onClose, onSuccess, returnTo='/keys' }: { embedded?:boolean;onClose?:()=>void;onSuccess?:()=>void;returnTo?:string }={}) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)

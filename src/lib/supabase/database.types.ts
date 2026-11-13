@@ -3975,6 +3975,24 @@ export type Database = {
           room_name: string
         }[]
       }
+      get_admin_key_request_queue: {
+        Args: never
+        Returns: {
+          decision_reason: string
+          ends_at: string
+          id: string
+          purpose: string
+          request_code: string
+          requester_email: string
+          requester_name: string
+          room_code: string
+          room_name: string
+          starts_at: string
+          status: string
+          submitted_at: string
+        }[]
+      }
+      get_admin_key_request_timing_setting: { Args: never; Returns: boolean }
       get_admin_role_options: {
         Args: never
         Returns: {
@@ -3990,6 +4008,19 @@ export type Database = {
           account_status: Database["public"]["Enums"]["account_status"]
           email: string
           full_name: string
+          role_codes: string[]
+          role_names: string[]
+          user_id: string
+        }[]
+      }
+      get_admin_user_directory_v2: {
+        Args: never
+        Returns: {
+          account_status: Database["public"]["Enums"]["account_status"]
+          email: string
+          first_name: string
+          full_name: string
+          last_name: string
           role_codes: string[]
           role_names: string[]
           user_id: string
@@ -4011,6 +4042,7 @@ export type Database = {
           starts_at: string
         }[]
       }
+      get_key_request_allow_past_slots: { Args: never; Returns: boolean }
       get_key_request_email_context: {
         Args: { p_key_request_id: string }
         Returns: {
@@ -4029,6 +4061,27 @@ export type Database = {
           can_cancel: boolean
           can_return: boolean
           course_code: string
+          ends_at: string
+          floor: string
+          id: string
+          lecturer_name: string
+          purpose: string
+          purpose_type: string
+          request_code: string
+          room_code: string
+          room_name: string
+          room_type_name: string
+          starts_at: string
+          status: string
+        }[]
+      }
+      get_my_key_requests_v2: {
+        Args: never
+        Returns: {
+          can_cancel: boolean
+          can_return: boolean
+          course_code: string
+          decision_reason: string
           ends_at: string
           floor: string
           id: string
@@ -4070,8 +4123,11 @@ export type Database = {
           building: string
           capacity: number
           code: string
+          description: string
+          equipment: Json
           floor: string
           id: string
+          image_url: string
           layout_key: string
           name: string
           requires_sso_for_key_request: boolean
@@ -4310,6 +4366,14 @@ export type Database = {
         }
         Returns: string
       }
+      set_admin_key_request_timing_setting: {
+        Args: { p_enabled: boolean }
+        Returns: boolean
+      }
+      set_admin_room_active: {
+        Args: { p_active: boolean; p_room_id: string }
+        Returns: string
+      }
       set_admin_user_roles: {
         Args: { p_role_codes: string[]; p_user_id: string }
         Returns: Json
@@ -4320,6 +4384,10 @@ export type Database = {
       }
       set_room_schedule_confirmation: {
         Args: { p_confirmed: boolean; p_room_id: string }
+        Returns: undefined
+      }
+      update_admin_user_profile: {
+        Args: { p_first_name: string; p_last_name: string; p_user_id: string }
         Returns: undefined
       }
       update_external_booking: {

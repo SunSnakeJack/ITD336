@@ -17,4 +17,10 @@ describe('ConfirmDialog',()=>{
     fireEvent.keyDown(document,{key:'Escape'})
     expect(close).toHaveBeenCalledOnce()
   })
+
+  it('shows an actionable error without closing the dialog',()=>{
+    render(<ConfirmDialog title="ระงับบัญชี" message="ตรวจสอบอีกครั้ง" confirmLabel="ยืนยัน" error="ไม่สามารถระงับบัญชีได้ กรุณาลองใหม่" onConfirm={vi.fn()} onClose={vi.fn()}/>)
+    expect(screen.getByRole('alert')).toHaveTextContent('ไม่สามารถระงับบัญชีได้ กรุณาลองใหม่')
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+  })
 })

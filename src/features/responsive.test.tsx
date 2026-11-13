@@ -28,7 +28,7 @@ describe('Responsive Layout Contracts', () => {
     expect(css).toMatch(/\.permission-matrix-wrap[^{]*\{[^}]*overflow-x:\s*auto/i)
   })
 
-  it('sets public-shell to key-mode when on key or account paths', () => {
+  it('uses the key-mode public shell without the retired sidebar', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
     const { container: defaultContainer } = render(
@@ -41,8 +41,8 @@ describe('Responsive Layout Contracts', () => {
 
     const defaultShell = defaultContainer.querySelector('.public-shell')
     expect(defaultShell).not.toBeNull()
-    expect(defaultShell?.classList.contains('key-mode')).toBe(false)
-    expect(defaultContainer.querySelector('.public-sidebar')).not.toBeNull()
+    expect(defaultShell?.classList.contains('key-mode')).toBe(true)
+    expect(defaultContainer.querySelector('.public-sidebar')).toBeNull()
 
     const { container: keyContainer } = render(
       <QueryClientProvider client={queryClient}>

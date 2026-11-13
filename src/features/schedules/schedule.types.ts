@@ -44,6 +44,9 @@ export interface ScheduleRoom {
   active: boolean
   bookingEnabled: boolean
   roomTypeName: string
+  description?: string | null
+  imageUrl?: string | null
+  equipment?: string[]
   academicScheduleConfirmed: boolean
   usageScope?: 'LABORATORY' | 'MEETING' | 'OTHER'
   requiresSsoForKeyRequest?: boolean

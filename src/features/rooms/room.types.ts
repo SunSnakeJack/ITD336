@@ -4,4 +4,4 @@ export interface RoomEditorOption{id:string;code:string;name:string}
 export interface RoomEquipmentItem{equipmentId:string;name?:string;quantity:number;notes:string|null}
 export interface AdminRoomDetail extends Room{room_type_name:string;equipment:RoomEquipmentItem[]}
 export interface RoomEditorOptions{roomTypes:RoomEditorOption[];equipment:RoomEditorOption[]}
-export interface SaveRoomInput{roomId:string|null;code:string;name:string;roomTypeId:string;building:string;floor:string;locationDescription:string;capacity:number;description:string;bookingEnabled:boolean;active:boolean;imageUrl:string;computerType:string;displayType:string;equipment:RoomEquipmentItem[]}
+export interface SaveRoomInput{roomId:string|null;code:string;name:string;roomTypeId:string;building:string;floor:string;locationDescription:string;capacity:number;description:string;bookingEnabled:boolean;active:boolean;imageUrl:string;imageFile?:File|null;computerType:string;displayType:string;equipment:RoomEquipmentItem[]}

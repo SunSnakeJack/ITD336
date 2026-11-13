@@ -4,29 +4,15 @@ import {
   Route,
   Routes,
   useLocation,
-  useParams,
 } from "react-router-dom";
 import { LoginForm } from "./features/auth/components/LoginForm";
 import { normalizeAuthReturnTo } from "./features/auth/auth.service";
 import { useAuthSession } from "./features/auth/hooks/useAuthSession";
 import type { AuthIdentity } from "./features/auth/auth.types";
-import { AdminLayout } from "./features/admin/components/AdminLayout";
-import { AdminDashboardPage } from "./features/admin/pages/AdminDashboardPage";
-import { AcademicSchedulesPage } from "./features/admin/pages/AcademicSchedulesPage";
-import { AdminRoomSchedulePage } from "./features/admin/pages/AdminRoomSchedulePage";
-import { RoomsManagementPage } from "./features/admin/pages/RoomsManagementPage";
-import { AdminRoomDetailPage } from "./features/admin/pages/AdminRoomDetailPage";
-import { AcademicTermsPage } from "./features/admin/pages/AcademicTermsPage";
-import { AdminPlaceholderPage } from "./features/admin/pages/AdminPlaceholderPage";
 import { PublicLayout } from "./features/public/components/PublicLayout";
-import { RoomSelectionPage } from "./features/student/pages/RoomSelectionPage";
-import { RoomDetailPage } from "./features/student/pages/RoomDetailPage";
-import { AdminBookingsPage } from "./features/admin/pages/AdminBookingsPage";
 import { AccountRequestsPage } from "./features/bookings/pages/AccountRequestsPage";
 import { LoadingSpinner } from "./shared/components/LoadingSpinner";
 import { useRealtimeInvalidation } from "./shared/hooks/useRealtimeInvalidation";
-import { UsagePolicyPage } from "./features/policies/pages/UsagePolicyPage";
-import { AdminKeyCabinetPage } from "./features/keys/pages/AdminKeyCabinetPage";
 import { KeyRequestRoomsPage } from "./features/keys/pages/KeyRequestRoomsPage";
 import { KeyRequestFormPage } from "./features/keys/pages/KeyRequestFormPage";
 import { KeyRequestRoomDetailPage } from "./features/keys/pages/KeyRequestRoomDetailPage";
@@ -36,8 +22,11 @@ import { KeyRequestActionPage } from "./features/keys/pages/KeyRequestActionPage
 import { MeetingRoomDetailPage, MeetingRoomEntryPage } from "./features/meeting-rooms/pages/MeetingRoomDetailPage";
 import { MeetingRoomRequestPage } from "./features/meeting-rooms/pages/MeetingRoomRequestPage";
 import { StaffLayout } from "./features/staff/components/StaffLayout";
-import { StaffHomePage, StaffRoomDetailPage, StaffRoomFormPage, StaffRoomsPage, StaffSettingsPage } from "./features/staff/pages/StaffOverviewPages";
-import { StaffKeyRequestDetailPage, StaffKeyRequestsPage, StaffMeetingRoomFormPage, StaffMeetingRoomsPage, StaffUserFormPage, StaffUsersPage } from "./features/staff/pages/StaffManagementPages";
+import { StaffHomePage, StaffRoomDetailPage, StaffRoomFormPage, StaffSettingsPage } from "./features/staff/pages/StaffOverviewPages";
+import { StaffRoomsPage } from "./features/staff/pages/StaffRoomsPage";
+import { StaffKeyRequestDetailPage, StaffMeetingRoomFormPage, StaffMeetingRoomsPage, StaffUserFormPage } from "./features/staff/pages/StaffManagementPages";
+import { StaffKeyRequestsPage } from "./features/staff/pages/StaffKeyRequestsPage";
+import { StaffUsersPage } from "./features/staff/pages/StaffUsersPage";
 import { StaffLabHistoryPage, StaffMeetingHistoryPage } from "./features/staff/pages/StaffHistoryPages";
 import { StaffLabDashboardPage, StaffMeetingDashboardPage } from "./features/staff/pages/StaffDashboardPages";
 import { StaffLabReportPage, StaffMeetingReportPage } from "./features/staff/pages/StaffReportPages";
@@ -83,11 +72,6 @@ function AccountGuard({
   return identity ? children : <Navigate to="/login" replace />;
 }
 
-function LegacyRoomRedirect() {
-  const { roomId } = useParams();
-  return <Navigate to={roomId ? `/rooms/${roomId}` : "/"} replace />;
-}
-
 function LoginRoute({
   identity,
   loading,
@@ -108,7 +92,7 @@ function LoginRoute({
     );
   if (identity)
     return (
-      <Navigate to={identity.role === "ADMIN" ? "/admin" : returnTo} replace />
+      <Navigate to={identity.role === "ADMIN" ? "/staff" : returnTo} replace />
     );
   return (
     <>
@@ -136,7 +120,7 @@ export function App() {
           />
         }
       >
-        <Route index element={<RoomSelectionPage />} />
+        <Route index element={<Navigate to="/keys" replace />} />
         <Route path="keys" element={<KeyRequestRoomsPage identity={identity} />} />
         <Route path="meeting-room" element={<MeetingRoomEntryPage />} />
         <Route path="meeting-room/:roomId" element={<MeetingRoomDetailPage identity={identity} />} />
@@ -151,11 +135,6 @@ export function App() {
           element={
             <KeyRequestFormPage identity={identity} authLoading={loading} />
           }
-        />
-        <Route path="rooms" element={<Navigate to="/" replace />} />
-        <Route
-          path="rooms/:roomId"
-          element={<RoomDetailPage identity={identity} />}
         />
         <Route path="account" element={<Navigate to="/account/profile" replace />} />
         <Route path="account/profile" element={<AccountGuard identity={identity} loading={loading}>{identity&&<AccountProfilePage identity={identity}/>}</AccountGuard>} />
@@ -190,31 +169,7 @@ export function App() {
           <LoginRoute identity={identity} loading={loading} error={error} />
         }
       />
-      <Route
-        path="admin"
-        element={
-          <AdminGuard identity={identity} loading={loading}>
-            <AdminLayout
-              identity={identity as AuthIdentity}
-              onLogout={logout}
-            />
-          </AdminGuard>
-        }
-      >
-        <Route index element={<AdminDashboardPage />} />
-        <Route path="rooms" element={<RoomsManagementPage />} />
-        <Route path="rooms/:roomId" element={<AdminRoomDetailPage />} />
-        <Route path="terms" element={<AcademicTermsPage />} />
-        <Route path="academic-schedules" element={<AcademicSchedulesPage />} />
-        <Route path="room-schedule" element={<AdminRoomSchedulePage />} />
-        <Route
-          path="users"
-          element={<AdminPlaceholderPage title="จัดการผู้ใช้งาน" />}
-        />
-        <Route path="bookings" element={<AdminBookingsPage />} />
-        <Route path="keys" element={<AdminKeyCabinetPage />} />
-        <Route path="policies" element={<UsagePolicyPage />} />
-      </Route>
+      <Route path="admin/*" element={<Navigate to="/staff" replace />} />
       <Route
         path="staff"
         element={
@@ -245,10 +200,7 @@ export function App() {
         <Route path="reports/meetings" element={<StaffMeetingReportPage />} />
         <Route path="usage-dashboard" element={<StaffUsageDashboardPage />} />
       </Route>
-      <Route path="student/rooms" element={<Navigate to="/" replace />} />
-      <Route path="student/rooms/:roomId" element={<LegacyRoomRedirect />} />
-      <Route path="student/schedule" element={<Navigate to="/" replace />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/keys" replace />} />
     </Routes>
   );
 }

@@ -12,7 +12,7 @@ interface SelectFieldProps<T extends string> {
   options: Array<SelectFieldOption<T>>
   onChange: (value: T) => void
   error?: string
-  placement?: 'bottom' | 'top'
+  placement?: 'bottom' | 'top' | 'auto'
 }
 
 export function SelectField<T extends string>({
@@ -22,13 +22,21 @@ export function SelectField<T extends string>({
   options,
   onChange,
   error,
-  placement = 'bottom',
+  placement = 'auto',
 }: SelectFieldProps<T>) {
   const [open, setOpen] = useState(false)
+  const [resolvedPlacement, setResolvedPlacement] = useState<'bottom' | 'top'>('bottom')
   const root = useRef<HTMLDivElement>(null)
   const triggerId = useId()
   const listId = useId()
   const selected = options.find((option) => option.value === value)
+  const toggleOpen = () => {
+    if (!open) {
+      const bounds = root.current?.getBoundingClientRect()
+      setResolvedPlacement(placement === 'auto' && bounds && window.innerHeight - bounds.bottom < 260 && bounds.top > window.innerHeight - bounds.bottom ? 'top' : placement === 'top' ? 'top' : 'bottom')
+    }
+    setOpen((current) => !current)
+  }
 
   useEffect(() => {
     const close = (event: PointerEvent) => {
@@ -49,7 +57,7 @@ export function SelectField<T extends string>({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
-        onClick={() => setOpen((current) => !current)}
+        onClick={toggleOpen}
         onKeyDown={(event) => {
           if (event.key === 'Escape') setOpen(false)
           if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -64,7 +72,7 @@ export function SelectField<T extends string>({
         </svg>
       </button>
       {open && (
-        <ul className={`app-select-options placement-${placement}`} id={listId} role="listbox" aria-label={`ตัวเลือก${label}`}>
+        <ul className={`app-select-options placement-${resolvedPlacement}`} id={listId} role="listbox" aria-label={`ตัวเลือก${label}`}>
           {options.map((option) => (
             <li key={option.value}>
               <button

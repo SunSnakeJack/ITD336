@@ -15,9 +15,9 @@ export const signInWithPassword = (email: string, password: string) =>
 export const normalizeAuthReturnTo = (returnTo: string | null | undefined) =>
   returnTo && !returnTo.startsWith('//') && (/^\/(?:keys|meeting-room)(?:\/|\?|$)/.test(returnTo) || returnTo.startsWith('/account/'))
     ? returnTo
-    : '/'
+    : '/keys'
 
-export const signInWithGoogle = (returnTo = '/') => {
+export const signInWithGoogle = (returnTo = '/keys') => {
   const safeReturnTo = normalizeAuthReturnTo(returnTo)
   return supabase.auth.signInWithOAuth({
     provider: 'google',

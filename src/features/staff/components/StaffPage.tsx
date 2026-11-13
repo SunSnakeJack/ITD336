@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
 
-export function StaffPage({ eyebrow, title, description, actions, children }: { eyebrow: string; title: string; description: string; actions?: ReactNode; children: ReactNode }) {
-  return <section className="staff-page"><header className="staff-page-header"><div><span>{eyebrow}</span><h2>{title}</h2><p>{description}</p></div>{actions && <div className="staff-page-actions">{actions}</div>}</header>{children}</section>
+export function StaffPage({ eyebrow, title, description, actions, hideHeader = false, children }: { eyebrow: string; title: string; description: string; actions?: ReactNode; hideHeader?: boolean; children: ReactNode }) {
+  return <section className="staff-page">{!hideHeader && <header className="staff-page-header"><div><span>{eyebrow}</span><h2>{title}</h2><p>{description}</p></div>{actions && <div className="staff-page-actions">{actions}</div>}</header>}{children}</section>
 }
 
 export function StaffQueryState({ loading, error, empty, emptyText, children }: { loading: boolean; error: Error | null; empty?: boolean; emptyText?: string; children: ReactNode }) {
@@ -17,6 +17,7 @@ export function BackendLimitation({ title, children }: { title: string; children
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  const labels: Record<string, string> = { ACTIVE: 'เปิดใช้งาน', SUSPENDED: 'ระงับบัญชี', INACTIVE: 'ปิดใช้งาน', PENDING: 'รออนุมัติ', REQUESTED: 'รอดำเนินการ', APPROVED: 'อนุมัติแล้ว', REJECTED: 'ไม่อนุมัติ', CANCELLED: 'ยกเลิก', CHECKED_OUT: 'กำลังถือกุญแจ', RETURN_REPORTED: 'รอตรวจรับ', RETURNED: 'คืนแล้ว', COMPLETED: 'เสร็จสิ้น', IN_USE: 'กำลังใช้งาน', LATE: 'เกินกำหนด', LOST: 'สูญหาย', DAMAGED: 'ชำรุด', NO_SHOW: 'ไม่มาใช้งาน', SUPERSEDED: 'ถูกแทนที่' }
-  return <span className={`staff-badge staff-badge-${status.toLowerCase()}`}>{labels[status] ?? status}</span>
+  const labels: Record<string, string> = { ACTIVE: 'เปิดใช้งาน', SUSPENDED: 'ระงับบัญชี', INACTIVE: 'ปิดใช้งาน', PENDING: 'รออนุมัติ', PENDING_APPROVAL: 'รออนุมัติ', REQUESTED: 'รอดำเนินการ', APPROVED: 'อนุมัติแล้ว', REJECTED: 'ไม่อนุมัติ', CANCELLED: 'ยกเลิก', CHECKED_OUT: 'กำลังถือกุญแจ', RETURN_REPORTED: 'รอตรวจรับ', RETURNED: 'คืนแล้ว', COMPLETED: 'เสร็จสิ้น', IN_USE: 'กำลังใช้งาน', LATE: 'เกินกำหนด', LOST: 'สูญหาย', DAMAGED: 'ชำรุด', NO_SHOW: 'ไม่มาใช้งาน', SUPERSEDED: 'ถูกแทนที่' }
+  const variant = status === 'PENDING_APPROVAL' ? 'pending' : status.toLowerCase()
+  return <span className={`staff-badge staff-badge-${variant}`}>{labels[status] ?? status}</span>
 }

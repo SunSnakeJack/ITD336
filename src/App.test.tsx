@@ -87,8 +87,8 @@ describe('Authentication entry point', () => {
   it('keeps the key catalog return path and rejects external redirects', () => {
     expect(normalizeAuthReturnTo('/keys')).toBe('/keys')
     expect(normalizeAuthReturnTo('/meeting-room/meeting-1/request?start=12:30')).toBe('/meeting-room/meeting-1/request?start=12:30')
-    expect(normalizeAuthReturnTo('https://evil.example/keys')).toBe('/')
-    expect(normalizeAuthReturnTo('//evil.example/keys')).toBe('/')
+    expect(normalizeAuthReturnTo('https://evil.example/keys')).toBe('/keys')
+    expect(normalizeAuthReturnTo('//evil.example/keys')).toBe('/keys')
   })
 
   it('protects the staff entry route with the existing administrator guard', async () => {
@@ -194,16 +194,11 @@ describe('Authentication entry point', () => {
     )
   })
 
-  it('shows the room map to a guest at the root route', async () => {
+  it('redirects the retired root route to the key catalog', async () => {
     renderPath('/')
-    expect(await screen.findByRole('heading', { name: /แผนผังห้อง อาคารเรียน ชั้น 4/ })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'เข้าสู่ระบบ' })).toHaveAttribute('href', '/login')
-    expect(screen.queryByRole('link', { name: 'เลือกห้อง' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'เลือกห้อง' })).not.toBeInTheDocument()
-    expect(screen.queryByText(/reading 'rest'/)).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'ภาพรวม' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'ค้นหาห้อง' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'การจองของฉัน' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'เลือกกุญแจที่ต้องการเบิก' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'IT KeySpace' })).toBeInTheDocument()
+    expect(screen.queryByText(/แผนผังห้อง อาคารเรียน ชั้น 4/)).not.toBeInTheDocument()
   })
 
   it('opens the dedicated key-request entry without a service picker', async () => {
@@ -236,7 +231,7 @@ describe('Authentication entry point', () => {
 
     expect(await screen.findByRole('heading', { name: 'ห้องประชุมคณะ IT' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: '← กลับ' })).not.toBeInTheDocument()
-    expect(screen.getByText('สมาร์ท ทีวี')).toBeInTheDocument()
+    expect(screen.getByText('Meeting Room')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'IT KeySpace' }).closest('a')).toHaveAttribute('href', '/meeting-room')
     expect(screen.queryByRole('link', { name: 'ภาพรวม' })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'รายการจองห้องประชุม' })).toBeInTheDocument()
@@ -786,12 +781,12 @@ describe('Authentication entry point', () => {
     expect(screen.getByRole('link', { name: 'เบิกกุญแจห้องนี้' })).toHaveAttribute('aria-disabled', 'true')
   })
 
-  it('shows authenticated account paths in the public sidebar', () => {
+  it('uses the shared key header without the retired public sidebar', () => {
     const identity = { userId: 'user-1', fullName: 'นักศึกษาทดสอบ', email: 'student@example.test', role: 'STUDENT' as const }
     render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><MemoryRouter><Routes><Route element={<PublicLayout identity={identity} loading={false} onLogout={vi.fn()} />}><Route index element={<div>หน้าแรก</div>} /></Route></Routes></MemoryRouter></QueryClientProvider>)
-    expect(screen.getByRole('link', { name: 'การจองและกุญแจ' })).toHaveAttribute('href', '/account/requests')
-    expect(screen.getByRole('link', { name: 'ประวัติการใช้งาน' })).toHaveAttribute('href', '/account/history')
-    expect(screen.queryByRole('link', { name: 'ค้นหาห้อง' })).not.toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'IT KeySpace' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'เปิดเมนูผู้ใช้' })).toBeInTheDocument()
+    expect(document.querySelector('.public-sidebar')).not.toBeInTheDocument()
   })
 
   it('shows the branded key header with account identity and an outline notification bell', () => {

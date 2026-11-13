@@ -30,7 +30,7 @@ describe('staff navigation contract', () => {
 
   it('keeps primary navigation concise while linking every module', () => {
     expect(staffNavigation.map((item) => item.label)).toEqual([
-      'จัดการผู้ใช้งาน', 'จัดการข้อมูลห้อง', 'แดชบอร์ด', 'การตั้งค่าสิทธิ์',
+      'แดชบอร์ด', 'จัดการผู้ใช้งาน', 'จัดการข้อมูลห้อง', 'อนุมัติคำขอ', 'การตั้งค่าสิทธิ์',
     ])
     expect(staffNavigation.every((item) => item.to.startsWith('/staff'))).toBe(true)
   })

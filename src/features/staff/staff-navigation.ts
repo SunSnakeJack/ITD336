@@ -2,14 +2,16 @@ export interface StaffNavigationItem {
   label: string
   to: string
   icon: string
+  group: 'หลัก' | 'จัดการ' | 'ระบบ'
   match?: string
 }
 
 export const staffNavigation: StaffNavigationItem[] = [
-  { label: 'จัดการผู้ใช้งาน', to: '/staff/users', icon: '👤' },
-  { label: 'จัดการข้อมูลห้อง', to: '/staff/rooms', icon: '▦' },
-  { label: 'แดชบอร์ด', to: '/staff/usage-dashboard', icon: '▥' },
-  { label: 'การตั้งค่าสิทธิ์', to: '/staff/settings', icon: '⚙' },
+  { label: 'แดชบอร์ด', to: '/staff/usage-dashboard', icon: '▥', group: 'หลัก' },
+  { label: 'จัดการผู้ใช้งาน', to: '/staff/users', icon: '👤', group: 'จัดการ' },
+  { label: 'จัดการข้อมูลห้อง', to: '/staff/rooms', icon: '▦', group: 'จัดการ' },
+  { label: 'อนุมัติคำขอ', to: '/staff/key-requests', icon: '✓', group: 'จัดการ' },
+  { label: 'การตั้งค่าสิทธิ์', to: '/staff/settings', icon: '⚙', group: 'ระบบ' },
 ]
 
 export const staffRoutePaths = [

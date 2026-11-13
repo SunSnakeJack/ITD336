@@ -1,12 +1,18 @@
 import { supabase } from '../../lib/supabase/client'
 import type { StaffRoleOption, StaffUserDirectoryItem } from './types/staff-user.types'
+import { getStaffUserStatusErrorMessage } from './utils/staff-user-status-error'
 
-interface StaffUserDirectoryRow {user_id:string;full_name:string;email:string;account_status:StaffUserDirectoryItem['accountStatus'];role_codes:string[]|null;role_names:string[]|null}
+interface StaffUserDirectoryRow {user_id:string;first_name:string|null;last_name:string|null;full_name:string;email:string;account_status:StaffUserDirectoryItem['accountStatus'];role_codes:string[]|null;role_names:string[]|null}
 
 export async function getStaffUserDirectory():Promise<StaffUserDirectoryItem[]>{
-  const{data,error}=await supabase.rpc('get_admin_user_directory' as never) as unknown as{data:StaffUserDirectoryRow[]|null;error:{message:string}|null}
+  const{data,error}=await supabase.rpc('get_admin_user_directory_v2' as never) as unknown as{data:StaffUserDirectoryRow[]|null;error:{message:string}|null}
   if(error){if(error.message.includes('FORBIDDEN'))throw new Error('บัญชีนี้ไม่มีสิทธิ์ดูรายชื่อผู้ใช้งาน');throw new Error(error.message)}
-  return(data??[]).map((row)=>({id:row.user_id,fullName:row.full_name,email:row.email,accountStatus:row.account_status,roleCodes:row.role_codes??[],roleNames:row.role_names??[]}))
+  return(data??[]).map((row)=>({id:row.user_id,firstName:row.first_name??row.full_name,lastName:row.last_name??'',fullName:row.full_name,email:row.email,accountStatus:row.account_status,roleCodes:row.role_codes??[],roleNames:row.role_names??[]}))
+}
+
+export async function updateStaffUserProfile(input:{userId:string;firstName:string;lastName:string}){
+  const{error}=await supabase.rpc('update_admin_user_profile' as never,{p_user_id:input.userId,p_first_name:input.firstName,p_last_name:input.lastName} as never) as unknown as{error:{message:string}|null}
+  if(error)throw new Error(error.message.includes('FORBIDDEN')?'บัญชีนี้ไม่มีสิทธิ์แก้ไขข้อมูลผู้ใช้':error.message)
 }
 
 export async function getStaffRoleOptions():Promise<StaffRoleOption[]>{
@@ -30,7 +36,7 @@ export async function inviteStaffUser(input:{email:string;fullName:string;roleCo
 
 export async function setStaffUserStatus(input:{userId:string;status:StaffUserDirectoryItem['accountStatus']}){
   const{data,error}=await supabase.functions.invoke('admin-user-management',{body:{action:'SET_STATUS',...input}})
-  if(error)throw new Error(error.message)
+  if(error)throw new Error(await getStaffUserStatusErrorMessage(error))
   if(data?.error){if(data.error==='LAST_ADMIN_REQUIRED')throw new Error('ไม่สามารถระงับหรือปิดใช้งานผู้ดูแลระบบคนสุดท้ายได้');throw new Error(String(data.error))}
   return data as{userId:string;status:StaffUserDirectoryItem['accountStatus']}
 }
