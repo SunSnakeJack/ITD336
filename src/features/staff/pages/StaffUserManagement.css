@@ -17,9 +17,15 @@
 .staff-user-table tr:nth-child(6n+3) .staff-user-identity>span{background:#fff0c7;color:#a85f00}
 .staff-user-table tr:nth-child(6n+4) .staff-user-identity>span{background:#eee2ff;color:#6d28d9}
 .staff-user-table tr:nth-child(6n+5) .staff-user-identity>span{background:#fee2e2;color:#c81e1e}
-.staff-role-list .staff-role-badge:nth-child(4n+2){background:#d7f6ef;color:#087c6d}
-.staff-role-list .staff-role-badge:nth-child(4n+3){background:#fff0c7;color:#a85f00}
-.staff-role-list .staff-role-badge:nth-child(4n+4){background:#eee2ff;color:#6d28d9}
+.staff-user-table .staff-role-badge,.staff-user-table .staff-role-empty{background:#e5e7eb;border-radius:999px;color:#475569;font-size:.72rem;font-weight:700;padding:.3rem .55rem}
+.staff-user-table .staff-role-badge[data-role="ADMIN"]{background:#e8edff;color:#2344ce}
+.staff-user-table .staff-role-badge[data-role="STAFF"]{background:#d7f6ef;color:#087c6d}
+.staff-user-table .staff-role-badge[data-role="STUDENT"]{background:#fff0c7;color:#a85f00}
+.staff-user-table .staff-role-badge[data-role="TEACHER"]{background:#eee2ff;color:#6d28d9}
+.staff-user-table .staff-role-badge[data-role="PRIORITY_USER"]{background:#fee2e2;color:#b91c1c}
+.staff-user-table .staff-badge-active{background:#dcfce7;color:#166534}
+.staff-user-table .staff-badge-suspended{background:#ffedd5;color:#c2410c}
+.staff-user-table .staff-badge-inactive{background:#e5e7eb;color:#475569}
 .staff-edit-user-dialog{max-height:88vh;max-width:600px;overflow:auto}
 .staff-edit-user-fields{display:grid;gap:.65rem;grid-template-columns:1fr 1fr;margin-top:1rem}
 .staff-edit-user-fields label{color:#45516a;display:grid;font-size:.78rem;font-weight:700;gap:.3rem}

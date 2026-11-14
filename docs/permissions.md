@@ -10,6 +10,8 @@ The staff user directory and role editor use narrowly scoped `ADMIN`-authorized 
 
 Member invitations and account suspension/reactivation run through the JWT-protected `admin-user-management` Edge Function. It verifies the caller's active Admin role before using Supabase Auth Admin APIs. The existing `on_auth_user_created` trigger creates `profiles` automatically; browser clients never create Auth users directly. `INACTIVE` is a recoverable soft removal that preserves bookings and audit history.
 
+The Edge Function checks `has_role('ADMIN')` using the caller's verified Authorization header. This reuses the database's active-account role rule without depending on PostgREST embedded relationships. Authorization query failures return `AUTHORIZATION_CHECK_FAILED`; server logs record only the error code. Migration 0066 grants the server-only service role the specific reads, role assignment inserts, account_status update, and audit insertion needed by this function; browser grants are unchanged. Function code changes require deployment before live verification. Authenticated suspension/reactivation verification: NOT RUN — AUTH TEST USERS REQUIRED.
+
 Staff room creation and editing require `ROOM_MANAGE`. The browser sends room and equipment form state to guarded RPCs; it cannot write `rooms` or `room_equipment` directly. Each successful create or update records an audit event.
 
 The consolidated usage dashboard calls `get_staff_usage_history`, which requires `REPORT_READ` or `ROOM_MANAGE`. The RPC exposes only the fields required for authorized reporting and does not grant direct browser access to profile, booking, or key-loan tables.

@@ -12,8 +12,10 @@ Deno.serve(async(req)=>{
  const db=createClient(url,serviceKey,{auth:{persistSession:false}})
  const token=authHeader.replace(/^Bearer\s+/i,'');const{data:{user:actor}}=await db.auth.getUser(token)
  if(!actor)return json({error:'AUTHENTICATION_REQUIRED'},401)
- const{data:adminRole}=await db.from('user_roles').select('role_id,roles!inner(code),profiles!inner(account_status)').eq('user_id',actor.id).eq('roles.code','ADMIN').eq('profiles.account_status','ACTIVE').maybeSingle()
- if(!adminRole)return json({error:'FORBIDDEN'},403)
+ const caller=createClient(url,Deno.env.get('SUPABASE_ANON_KEY')??serviceKey,{global:{headers:{Authorization:authHeader}},auth:{persistSession:false}})
+ const{data:adminRole,error:adminRoleError}=await caller.rpc('has_role',{p_role:'ADMIN'})
+ if(adminRoleError){console.error('admin-user-management authorization failed',{code:adminRoleError.code});return json({error:'AUTHORIZATION_CHECK_FAILED'},503)}
+ if(adminRole!==true)return json({error:'FORBIDDEN'},403)
  const body=await req.json().catch(()=>({})) as Body
 
  if(body.action==='INVITE'){

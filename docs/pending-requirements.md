@@ -29,3 +29,8 @@ The following need product-owner decisions before enforcement:
 15. Which roles receive `KEY_DIRECT_USE` beyond Admin.
 
 Seeded rule values are labeled PROVISIONAL and are not automatically treated as finalized policy.
+# Email operational assumptions
+
+- Confirmed: start reminder 30 minutes before use; active ADMIN accounts receive administrator notices; cancellation emails go to requester only for now.
+- Pending: verified Resend sender domain and sender address for delivery beyond the test recipient.
+- Operational proposal: overdue poll recovers the previous 24 hours only; confirm a wider recovery window if needed. Priority replacement rules remain pending.

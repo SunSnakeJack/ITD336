@@ -11,6 +11,7 @@ export function StaffLayout({ identity, onLogout }: { identity: AuthIdentity; on
   const title = getStaffPageTitle(location.pathname)
   const dashboardActive = location.pathname === '/staff/usage-dashboard'
   const usersActive = location.pathname === '/staff/users'
+  const roomsActive = location.pathname === '/staff/rooms'
   useEffect(() => { setDrawerOpen(false); setAccountOpen(false) }, [location.pathname])
 
   return <div className="staff-shell">
@@ -35,7 +36,8 @@ export function StaffLayout({ identity, onLogout }: { identity: AuthIdentity; on
     <div className="staff-workspace">
       <header className="staff-topbar" data-testid="staff-topbar">
         <button className="staff-menu-button" aria-label="เปิดเมนู" onClick={() => setDrawerOpen(true)}>☰</button>
-        <div className="staff-topbar-title"><small>{dashboardActive ? 'USAGE DASHBOARD' : usersActive ? 'USER MANAGEMENT' : 'ระบบเจ้าหน้าที่'}</small><h1>{dashboardActive ? 'ภาพรวมการใช้งาน' : title}</h1></div>
+        <div className="staff-topbar-title"><small>{dashboardActive ? 'USAGE DASHBOARD' : usersActive ? 'USER MANAGEMENT' : roomsActive ? 'ROOM OVERVIEW' : 'ระบบเจ้าหน้าที่'}</small><h1>{dashboardActive ? 'ภาพรวมการใช้งาน' : title}</h1></div>
+        {roomsActive && <Link className="staff-topbar-export staff-topbar-add" to="/staff/rooms/new">+ เพิ่มห้องใหม่</Link>}
         {dashboardActive && <button className="staff-topbar-export" type="button" aria-label="Export PDF" onClick={() => window.print()}>⇩ Export PDF</button>}
         {usersActive && <Link className="staff-topbar-export staff-topbar-add" to="/staff/users?dialog=add">+ เพิ่มสมาชิกใหม่</Link>}
       </header>

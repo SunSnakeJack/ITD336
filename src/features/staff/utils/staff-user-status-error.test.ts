@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { getStaffUserStatusErrorMessage } from './staff-user-status-error'
 
 describe('staff user status errors', () => {
+  it('explains gateway JWT errors', async () => {
+    await expect(getStaffUserStatusErrorMessage({ context: { json: async () => ({ message: 'Invalid JWT' }) } })).resolves.toBe('เซสชันไม่ถูกต้องหรือหมดอายุ กรุณาเข้าสู่ระบบใหม่')
+  })
   it('falls back safely when the function context is not a Response', async () => {
     const error = { message: 'Edge Function returned a non-2xx status code', context: { status: 500 } }
     await expect(getStaffUserStatusErrorMessage(error)).resolves.toBe('ไม่สามารถเปลี่ยนสถานะบัญชีได้ กรุณาลองใหม่อีกครั้ง')

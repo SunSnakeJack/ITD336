@@ -12,6 +12,7 @@ import './StaffRoomManagement.css'
 import { keyRequestTimingSettingQuery } from '../staff-settings.queries'
 import { StaffPermissionSettings } from '../components/StaffPermissionSettings'
 import { thaiRoomType } from '../../rooms/utils/room-type-label'
+import { RoomBookingHistory } from '../components/RoomBookingHistory'
 
 export function StaffHomePage() {
   const rooms = useQuery(roomsQuery())
@@ -55,6 +56,7 @@ export function StaffRoomDetailPage() {
     <StaffQueryState loading={room.isPending} error={room.error} empty={!room.data}>
       {room.data && <article className="staff-card staff-room-detail-card"><div className="staff-section-head"><h3>{room.data.code} · {room.data.name}</h3><StatusBadge status={room.data.active ? 'ACTIVE' : 'INACTIVE'} /></div><div className="staff-room-detail-layout">{room.data.image_url?<img src={room.data.image_url} alt={`รูปภาพ ${room.data.name}`}/>:<div className="staff-room-image-empty">ยังไม่มีรูปภาพห้อง</div>}<dl className="staff-detail-list"><div><dt>ประเภทห้อง</dt><dd>{thaiRoomType(room.data.room_type_name)}</dd></div><div><dt>ความจุ</dt><dd>{room.data.capacity} คน</dd></div><div><dt>เปิดให้จอง</dt><dd>{room.data.booking_enabled ? 'เปิด' : 'ปิด'}</dd></div><div><dt>เปิดใช้งานห้อง</dt><dd>{room.data.active ? 'เปิด' : 'ปิด'}</dd></div></dl></div>{room.data.description&&<p>{room.data.description}</p>}<section className="staff-room-equipment"><h3>อุปกรณ์เพิ่มเติม</h3>{room.data.equipment.length?<ul>{room.data.equipment.map(item=><li key={item.equipmentId}><strong>{item.name}</strong></li>)}</ul>:<p>ยังไม่มีข้อมูลอุปกรณ์เพิ่มเติม</p>}</section></article>}
     </StaffQueryState>
+    {room.data && <RoomBookingHistory roomCode={room.data.code}/>}
   </StaffPage>
 }
 

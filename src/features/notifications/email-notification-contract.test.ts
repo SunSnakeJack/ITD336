@@ -73,10 +73,10 @@ describe('key-request email notifications',()=>{
   it('keeps the worker in test-recipient mode with Resend idempotency',()=>{
     const workerPath=join(process.cwd(),'supabase/functions/email-worker/index.ts')
     const worker=existsSync(workerPath)?readFileSync(workerPath,'utf8'):''
-    expect(worker).toContain("from:'ITD336 <onboarding@resend.dev>'")
+    expect(worker).toContain("from:delivery.from")
     expect(worker).toContain('RESEND_ALLOWED_RECIPIENT')
     expect(worker).toContain("'Idempotency-Key'")
-    expect(worker).toContain("mode!=='test'")
+    expect(worker).toContain("mode==='production'&&!cronAuthorized")
     expect(worker).toContain('PUBLIC_SITE_URL')
     expect(worker).toContain('/key-request-action?action=')
     expect(worker).not.toContain('/functions/v1/key-request-action?')
@@ -109,7 +109,7 @@ describe('key-request email notifications',()=>{
 
   it('sends terminal confirmation emails without requiring a public site URL',()=>{
     const worker=readFileSync(join(process.cwd(),'supabase/functions/email-worker/index.ts'),'utf8')
-    expect(worker).toContain("!['key-request-lecturer-notice','key-request-cancelled','key-request-returned','key-request-ended'].includes(row.template_key)")
+    expect(worker).toContain("!booking&&!['key-request-admin-notice','key-request-overdue','key-request-rejected','key-request-lecturer-notice','key-request-cancelled','key-request-returned','key-request-ended'].includes(row.template_key)")
     expect(worker).toContain("if(actionBundleRequired&&!siteUrl)throw new Error('PUBLIC_SITE_URL_REQUIRED')")
     expect(worker).not.toContain('if(!url||!serviceKey||!resendKey||!siteUrl)')
   })
@@ -155,7 +155,7 @@ describe('key-request email notifications',()=>{
     expect(email.html).not.toContain('ยกเลิกคำขอ')
     expect(email.html).not.toContain('https://example.test/c')
     const worker=readFileSync(join(process.cwd(),'supabase/functions/email-worker/index.ts'),'utf8')
-    expect(worker).toContain("!['key-request-lecturer-notice','key-request-cancelled','key-request-returned','key-request-ended'].includes(row.template_key)")
+    expect(worker).toContain("!booking&&!['key-request-admin-notice','key-request-overdue','key-request-rejected','key-request-lecturer-notice','key-request-cancelled','key-request-returned','key-request-ended'].includes(row.template_key)")
     expect(worker).toContain('actionBundleRequired')
   })
 

@@ -31,6 +31,9 @@ describe('admin member lifecycle',()=>{
   })
 
   it('keeps privileged user creation and suspension in a guarded edge function',()=>{
+    expect(adminUserFunction).toContain("caller.rpc('has_role',{p_role:'ADMIN'})")
+    expect(adminUserFunction).toContain('Authorization:authHeader')
+    expect(adminUserFunction).toContain("if(adminRole!==true)return json({error:'FORBIDDEN'},403)")
     expect(adminUserFunction).toContain("eq('roles.code','ADMIN')")
     expect(adminUserFunction).toContain('inviteUserByEmail')
     expect(adminUserFunction).toContain("action:'USER_INVITED'")
