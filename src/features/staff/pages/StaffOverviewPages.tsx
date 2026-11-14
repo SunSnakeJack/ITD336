@@ -12,6 +12,7 @@ import './StaffRoomManagement.css'
 import { keyRequestTimingSettingQuery } from '../staff-settings.queries'
 import { StaffPermissionSettings } from '../components/StaffPermissionSettings'
 import { thaiRoomType } from '../../rooms/utils/room-type-label'
+import { StaffSaturdaySetting } from '../components/StaffSaturdaySetting'
 import { RoomBookingHistory } from '../components/RoomBookingHistory'
 
 export function StaffHomePage() {
@@ -68,5 +69,5 @@ export function StaffRoomFormPage(){
 
 export function StaffSettingsPage() {
   const setting=useQuery(keyRequestTimingSettingQuery())
-  return <StaffPage eyebrow="Permission Settings" title="การตั้งค่าสิทธิ์" description="กำหนดข้อยกเว้นการใช้งานที่ควบคุมและบันทึกโดยระบบ"><StaffQueryState loading={setting.isPending} error={setting.error} empty={setting.data===undefined}>{setting.data!==undefined&&<StaffPermissionSettings key={String(setting.data)} initialValue={setting.data}/>}</StaffQueryState></StaffPage>
+  return <StaffPage eyebrow="Permission Settings" title="การตั้งค่าสิทธิ์" description="กำหนดข้อยกเว้นการใช้งานที่ควบคุมและบันทึกโดยระบบ"><StaffQueryState loading={setting.isPending} error={setting.error} empty={setting.data===undefined}>{setting.data!==undefined&&<StaffPermissionSettings key={String(setting.data)} initialValue={setting.data}/>}</StaffQueryState><StaffSaturdaySetting /></StaffPage>
 }

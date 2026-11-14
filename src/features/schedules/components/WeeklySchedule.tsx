@@ -1,3 +1,4 @@
+import { isSaturdayClosed } from '../saturday-policy'
 import { useState } from 'react'
 import type { ScheduleEvent } from '../schedule.types'
 import { addDays, dateKey, isWithinCalendarBookingWindow } from '../schedule.utils'
@@ -13,13 +14,13 @@ function eventForSlot(events: ScheduleEvent[], day: Date, time: string) {
 
 export interface ScheduleCellSelection { date: string; time: string; event?: ScheduleEvent; holiday: boolean }
 
-export function WeeklySchedule({ rangeStart, events, bookingWindow = false, onEmptyCellSelect, onEventSelect, onCellSelect }: { rangeStart: Date; events: ScheduleEvent[]; bookingWindow?: boolean; onEmptyCellSelect?: (date: string, time: string) => void; onEventSelect?: (event: ScheduleEvent) => void; onCellSelect?: (selection: ScheduleCellSelection) => void }) {
+export function WeeklySchedule({ rangeStart, events, openSaturday, bookingWindow = false, onEmptyCellSelect, onEventSelect, onCellSelect }: { rangeStart: Date; events: ScheduleEvent[]; openSaturday?: string | null; bookingWindow?: boolean; onEmptyCellSelect?: (date: string, time: string) => void; onEventSelect?: (event: ScheduleEvent) => void; onCellSelect?: (selection: ScheduleCellSelection) => void }) {
   const [selected, setSelected] = useState<string | null>(null)
   const days = Array.from({ length: 7 }, (_, index) => addDays(rangeStart, index))
-  return <div className="availability-table-wrap"><table className="availability-table"><thead><tr><th>Time</th>{days.map((day) => <th className={day.getDay() === 6 ? 'holiday-heading' : ''} key={dateKey(day)}>{new Intl.DateTimeFormat('th-TH', { weekday: 'short' }).format(day)} {day.getDate()}</th>)}</tr></thead><tbody>{SCHEDULE_TIMES.map((time) => <tr key={time}><th>{time}</th>{days.map((day) => {
+  return <div className="availability-table-wrap"><table className="availability-table"><thead><tr><th>Time</th>{days.map((day) => <th className={isSaturdayClosed(dateKey(day), openSaturday) ? 'holiday-heading' : ''} key={dateKey(day)}>{new Intl.DateTimeFormat('th-TH', { weekday: 'short' }).format(day)} {day.getDate()}</th>)}</tr></thead><tbody>{SCHEDULE_TIMES.map((time) => <tr key={time}><th>{time}</th>{days.map((day) => {
     const cellKey = `${dateKey(day)}-${time}`
     const event = eventForSlot(events, day, time)
-    const holiday = day.getDay() === 6
+    const holiday = isSaturdayClosed(dateKey(day), openSaturday)
     const slotStart = new Date(`${dateKey(day)}T${time}:00+07:00`)
     const outsideBookingWindow = bookingWindow && !isWithinCalendarBookingWindow(slotStart)
     const unavailable = bookingWindow && (outsideBookingWindow || holiday)

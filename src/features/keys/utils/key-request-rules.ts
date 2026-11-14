@@ -1,7 +1,10 @@
+import { bangkokDateKey, isSaturdayClosed } from '../../schedules/saturday-policy'
+
 export interface KeyRequestRuleInput {
   email: string
   startsAt: string
   endsAt: string
+  openSaturday?: string | null
 }
 
 export interface KeyRequestRuleErrors {
@@ -33,7 +36,9 @@ export function validateKeyRequest(input: KeyRequestRuleInput) {
   const start = bangkokParts(input.startsAt)
   const end = bangkokParts(input.endsAt)
   if (start.weekday === 'Sat' || end.weekday === 'Sat') {
-    errors.date = 'ไม่สามารถทำรายการสำหรับวันเสาร์ได้'
+    if ([input.startsAt, input.endsAt].some(value => isSaturdayClosed(bangkokDateKey(new Date(value)), input.openSaturday))) {
+      errors.date = 'ไม่สามารถทำรายการสำหรับวันเสาร์ได้'
+    }
   }
 
   const startMinutes = Number(start.hour) * 60 + Number(start.minute)

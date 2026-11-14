@@ -17,3 +17,6 @@ Staff room creation and editing require `ROOM_MANAGE`. The browser sends room an
 The consolidated usage dashboard calls `get_staff_usage_history`, which requires `REPORT_READ` or `ROOM_MANAGE`. The RPC exposes only the fields required for authorized reporting and does not grant direct browser access to profile, booking, or key-loan tables.
 
 Changing the elapsed key-request slot exception requires `SETTINGS_MANAGE`. Reading its boolean value is public because it contains no sensitive data and is required for consistent catalog UI; the database insert trigger remains the enforcement boundary.
+# Saturday booking exception
+
+The permission settings page lets a user with `SETTINGS_MANAGE` open one specified Saturday for room bookings and key requests. The exception expires when that date ends in Asia/Bangkok. The change is audited and the public policy returns only the current exception date. Existing booking limits, elapsed-slot settings, and academic schedule rules apply independently.

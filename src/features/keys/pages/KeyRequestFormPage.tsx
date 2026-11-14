@@ -1,3 +1,4 @@
+import { saturdayPolicyQuery } from '../../schedules/saturday-policy.queries'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FormEvent, useMemo, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
@@ -28,6 +29,7 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
   const { roomId = '' } = useParams()
   const [searchParams] = useSearchParams()
   const rooms = useQuery(publicRoomsQuery())
+  const saturday = useQuery(saturdayPolicyQuery())
   const referenceOptions = useQuery(keyRequestReferenceOptionsQuery())
   const room = rooms.data?.find((item) => item.id === roomId)
   const date = useMemo(() => searchParams.get('date') ?? bangkokDate(), [searchParams])
@@ -76,7 +78,7 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
     event.preventDefault()
     const startsAt = `${date}T${startTime}:00+07:00`
     const endsAt = `${date}T${endTime}:00+07:00`
-    const ruleResult = validateKeyRequest({ email: requesterEmail, startsAt, endsAt })
+    const ruleResult = validateKeyRequest({ email: requesterEmail, startsAt, endsAt, openSaturday: saturday.data })
     const nextErrors: Record<string, string> = { ...ruleResult.errors }
     if (!requesterName.trim()) nextErrors.name = 'กรุณากรอกชื่อ–นามสกุล'
     if (!requesterIdentifier.trim()) nextErrors.requesterIdentifier = 'กรุณากรอกรหัสนักศึกษา / บุคลากร'

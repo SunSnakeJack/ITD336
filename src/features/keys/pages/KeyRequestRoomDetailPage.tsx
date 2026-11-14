@@ -1,3 +1,5 @@
+import { isSaturdayClosed } from '../../schedules/saturday-policy'
+import { saturdayPolicyQuery } from '../../schedules/saturday-policy.queries'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
@@ -22,6 +24,8 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
   const date = useMemo(bangkokDate, [])
   const events = useQuery(publicScheduleEventsQuery({ roomId, from: date, to: date }))
   const history = useQuery(publicKeyRequestHistoryQuery(roomId))
+  const saturday = useQuery(saturdayPolicyQuery())
+  const closed = isSaturdayClosed(date, saturday.data)
   const timingPolicy=useQuery(keyRequestTimingPolicyQuery())
   const [start, setStart] = useState<string | null>(null)
   const [end, setEnd] = useState<string | null>(null)
@@ -36,7 +40,7 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
   const occupied = (time: string) => (events.data ?? []).some((event) => time >= bangkokClock(event.startsAt) && time < bangkokClock(event.endsAt))
   const isUnavailable = (time: string) => {
     const target = time === '18:00' ? '17:30' : time
-    return occupied(target) || isSlotElapsedForBangkokDate(target, date, new Date(), timingPolicy.data??false)
+    return closed || occupied(target) || isSlotElapsedForBangkokDate(target, date, new Date(), timingPolicy.data??false)
   }
   const selectSlot = (time: string) => {
     if (isUnavailable(time)){setSelectionNotice('ช่วงเวลานี้ไม่ว่าง กรุณาเลือกเวลาอื่น');return}
@@ -53,7 +57,7 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
     setSelectionNotice(null)
   }
   const requestPath = `/keys/rooms/${room.id}/request?date=${date}&start=${start ?? '08:00'}&end=${end ?? '09:00'}`
-  const canRequest=room.active&&Boolean(start&&end)
+  const canRequest=!closed&&room.active&&Boolean(start&&end)
   const clearSelection=()=>{setStart(null);setEnd(null);setSelectionNotice(null)}
 
   return <section className="key-request-entry key-room-detail">
