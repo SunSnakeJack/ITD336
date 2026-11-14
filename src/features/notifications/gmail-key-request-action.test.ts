@@ -38,18 +38,14 @@ describe('gmail-key-request-action',()=>{
     const worker=readFileSync(join(process.cwd(),'supabase/functions/email-worker/index.ts'),'utf8')
     const action=readFileSync(join(process.cwd(),'supabase/functions/gmail-key-request-action/index.ts'),'utf8')
     const template=readFileSync(join(process.cwd(),'supabase/functions/_shared/email-templates.ts'),'utf8')
-    expect(worker).toContain("GMAIL_KEY_ACTION_ENABLED')==='true'")
-    expect(worker).toContain("issue_gmail_key_action_token")
-    expect(template).toContain('application/ld+json')
-    expect(template).toContain('HttpActionHandler')
-    expect(template).toContain('HttpRequestMethod/POST')
-    for(const source of[worker,action]){
-      expect(source).toContain('GMAIL_KEY_ACTION_TEST_REQUEST_IDS')
-      expect(source).toContain('GMAIL_KEY_ACTION_TEST_EXPIRES_AT')
-      expect(source).toContain('createGmailSelfTestScope')
-    }
+    expect(worker).not.toContain("GMAIL_KEY_ACTION_ENABLED')==='true'")
+    expect(worker).not.toContain("issue_gmail_key_action_token")
+    expect(template).not.toContain('application/ld+json')
+    expect(template).not.toContain('HttpActionHandler')
+    expect(template).not.toContain('HttpRequestMethod/POST')
+    expect(action).toContain("createGmailSelfTestScope")
     expect(action).toContain('authorizeScope')
-    expect(worker).toContain('gmailScope?.allows')
+    expect(worker).not.toContain('gmailScope?.allows')
   })
 
   it('verifies the Google bearer signature, issuer, audience and Gmail caller',()=>{

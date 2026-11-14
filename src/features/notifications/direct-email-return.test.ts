@@ -29,9 +29,9 @@ describe('direct-email-return',()=>{
  })
  it('keeps direct RETURN links behind a request-scoped disabled-by-default guard',()=>{
   const worker=readFileSync(join(process.cwd(),'supabase/functions/email-worker/index.ts'),'utf8')
-  expect(worker).toContain("DIRECT_EMAIL_RETURN_ENABLED')==='true'")
-  expect(worker).toContain('DIRECT_EMAIL_RETURN_REQUEST_IDS')
-  expect(worker).toContain('DIRECT_EMAIL_RETURN_EXPIRES_AT')
-  expect(worker).toContain('/functions/v1/direct-email-return?token=')
+  expect(worker).not.toContain("DIRECT_EMAIL_RETURN_ENABLED')==='true'")
+  expect(worker).not.toContain('DIRECT_EMAIL_RETURN_REQUEST_IDS')
+  expect(worker).not.toContain('DIRECT_EMAIL_RETURN_EXPIRES_AT')
+  expect(worker).not.toContain('/functions/v1/direct-email-return?token=')
  })
 })

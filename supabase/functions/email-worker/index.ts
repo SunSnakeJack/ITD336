@@ -1,8 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4'
 import { renderKeyRequestEmail } from '../_shared/email-templates.ts'
-import {emailDeliveryPolicy} from '../_shared/email-delivery-policy.ts'
-import {sha256Hex,signGmailKeyActionToken,type GmailKeyAction} from '../_shared/gmail-key-action.ts'
-import {createGmailSelfTestScope} from '../_shared/gmail-self-test-guard.ts'
+import {emailDeliveryPolicy,matchesTestRecipient} from '../_shared/email-delivery-policy.ts'
 
 type OutboxRow={id:string;entity_type:string;entity_id:string;recipient_email:string;template_key:string;payload:Record<string,unknown>;idempotency_key:string}
 type RequestRow={request_code:string;status:string;starts_at:string;ends_at:string;purpose:string;decision_reason:string|null;room_name:string}
@@ -14,76 +12,56 @@ Deno.serve(async(req)=>{
  if(req.method==='OPTIONS')return new Response(null,{status:204,headers:corsHeaders})
  if(req.method!=='POST')return json({error:'METHOD_NOT_ALLOWED'},405)
  const mode=Deno.env.get('EMAIL_DELIVERY_MODE')??'test';const allowed=Deno.env.get('RESEND_ALLOWED_RECIPIENT')?.trim().toLowerCase();const cronSecret=Deno.env.get('CRON_SECRET')
- const gmailEnabled=Deno.env.get('GMAIL_KEY_ACTION_ENABLED')==='true';const gmailSecret=Deno.env.get('GMAIL_KEY_ACTION_SECRET')??''
- const directReturnEnabled=Deno.env.get('DIRECT_EMAIL_RETURN_ENABLED')==='true'
+ if(mode==='test'&&allowed!=='sufeeyan.tale@northbkk.ac.th')return json({error:'APPROVED_TEST_RECIPIENT_REQUIRED'},503)
  let delivery:ReturnType<typeof emailDeliveryPolicy>
  try{delivery=emailDeliveryPolicy(mode,allowed,Deno.env.get('RESEND_FROM'))}catch(error){return json({error:error instanceof Error?error.message:'DELIVERY_CONFIGURATION_INVALID'},503)}
- const gmailScope=gmailEnabled?await createGmailSelfTestScope({deliveryMode:mode,enabled:'true',allowedRecipient:allowed,requestIds:Deno.env.get('GMAIL_KEY_ACTION_TEST_REQUEST_IDS'),expiresAt:Deno.env.get('GMAIL_KEY_ACTION_TEST_EXPIRES_AT'),now:Math.floor(Date.now()/1000)}):null
- const directReturnScope=directReturnEnabled?await createGmailSelfTestScope({deliveryMode:mode,enabled:'true',allowedRecipient:allowed,requestIds:Deno.env.get('DIRECT_EMAIL_RETURN_REQUEST_IDS'),expiresAt:Deno.env.get('DIRECT_EMAIL_RETURN_EXPIRES_AT'),now:Math.floor(Date.now()/1000)}):null
- if(gmailEnabled&&!gmailScope)return json({error:'GMAIL_SELF_TEST_SCOPE_INVALID'},503)
- if(directReturnEnabled&&!directReturnScope)return json({error:'DIRECT_RETURN_SCOPE_INVALID'},503)
+ if(delivery.from!=='ITD336 <noreply@itd336.app>')return json({error:'ITD336_SENDER_REQUIRED'},503)
  const cronAuthorized=Boolean(cronSecret)&&req.headers.get('authorization')===`Bearer ${cronSecret}`
- if(mode==='production'&&!cronAuthorized)return json({error:'FORBIDDEN'},403)
+ const cutoff=Deno.env.get('EMAIL_PRODUCTION_START_AT')
+ if(mode==='production'&&(!cronAuthorized||!cutoff||!Number.isFinite(Date.parse(cutoff))))return json({error:'PRODUCTION_DISPATCH_NOT_READY'},403)
  const body=await req.json().catch(()=>({})) as{entityId?:string;dispatchToken?:string;templateKey?:string};const entityId=body.entityId?.trim()??'';const dispatchToken=body.dispatchToken??'';const templateKey=body.templateKey??''
  if(!cronAuthorized&&(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(entityId)||dispatchToken.length<32))return json({error:'INVALID_ENTITY_DISPATCH'},400)
- const url=Deno.env.get('SUPABASE_URL');const serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');const resendKey=Deno.env.get('RESEND_API_KEY');const publicSiteUrl=Deno.env.get('PUBLIC_SITE_URL')?.replace(/\/$/,'');const siteUrl=publicSiteUrl
+ const url=Deno.env.get('SUPABASE_URL');const serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');const resendKey=Deno.env.get('ITD336_RESEND_API_KEY')
  if(!url||!serviceKey||!resendKey)return json({error:'WORKER_CONFIGURATION_MISSING'},503)
  const db=createClient(url,serviceKey,{auth:{persistSession:false}});const workerId=`email-worker-${crypto.randomUUID()}`
  const scopedRetry=cronAuthorized&&uuid.test(entityId)&&(templateKey==='key-request-cancelled'||templateKey==='key-request-returned')
- if(cronAuthorized){const{error}=await db.rpc('enqueue_overdue_key_request_emails');if(error)return json({error:'OVERDUE_ENQUEUE_FAILED'},500)}
- const claim=mode==='production'?db.rpc('claim_notification_outbox',{p_worker_id:workerId,p_limit:20}):scopedRetry
+ const testEntityId=Deno.env.get('EMAIL_TEST_ENTITY_ID')?.trim()
+ if(testEntityId&&(!uuid.test(testEntityId)||mode!=='test'||cronAuthorized||entityId!==testEntityId)){
+  return json({error:'OUTSIDE_EMAIL_TEST_SCOPE'},403)
+ }
+ if(mode==='test'&&cronAuthorized&&!scopedRetry)return json({error:'BATCH_DISPATCH_DISABLED'},403)
+ const claim=mode==='production'
+  ?db.rpc('claim_new_production_emails',{p_worker_id:workerId,p_start_at:cutoff})
+  :scopedRetry
   ?db.rpc('claim_terminal_notification_outbox_retry',{p_worker_id:workerId,p_recipient:allowed,p_entity_id:entityId,p_template_key:templateKey})
-  :cronAuthorized?db.rpc('claim_notification_outbox_test',{p_worker_id:workerId,p_recipient:allowed,p_limit:20})
-  :db.rpc('claim_notification_outbox_entity_test',{p_worker_id:workerId,p_recipient:allowed,p_entity_id:entityId,p_dispatch_token:dispatchToken,p_limit:10})
+  :db.rpc('claim_notification_outbox_entity_test',{p_worker_id:workerId,p_recipient:allowed,p_entity_id:entityId,p_dispatch_token:dispatchToken,p_limit:testEntityId?1:10})
  const{data:claimed,error:claimError}=await claim
- if(claimError)return json({error:'CLAIM_FAILED',detail:claimError.message},500)
+ if(claimError)return json({error:'CLAIM_FAILED',code:claimError.code},500)
  let sent=0,failed=0
  for(const row of(claimed??[]) as OutboxRow[]){
   try{
+   if(!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(row.recipient_email))throw new Error('INVALID_OUTBOX_RECIPIENT')
+   if(delivery.recipient!==null&&!matchesTestRecipient(row.recipient_email,delivery.recipient))throw new Error('OUTSIDE_EMAIL_TEST_RECIPIENT')
+   if(testEntityId&&(row.entity_id!==testEntityId||row.template_key!=='key-request-submitted'))throw new Error('OUTSIDE_EMAIL_TEST_SCOPE')
    const booking=row.entity_type==='booking'
    const{data:context,error:requestError}=booking?await db.rpc('get_booking_email_context',{p_booking_id:row.entity_id}):await db.rpc('get_key_request_email_context',{p_key_request_id:row.entity_id})
    const item=(context?.[0]??null) as RequestRow|null
    if(requestError||!item)throw new Error(requestError?.message??'KEY_REQUEST_NOT_FOUND')
    if(['key-request-starting-soon','key-request-ending-soon','key-request-ended','key-request-overdue'].includes(row.template_key)&&!['APPROVED','IN_USE'].includes(item.status))throw new Error('STALE_TIMED_NOTIFICATION')
+   if(row.template_key.endsWith('-starting-soon')&&Date.parse(item.starts_at)<=Date.now())throw new Error('STALE_TIMED_NOTIFICATION')
    if(row.template_key==='booking-starting-soon'&&item.status!=='APPROVED')throw new Error('STALE_TIMED_NOTIFICATION')
-   const actionBundleRequired=!booking&&!['key-request-admin-notice','key-request-overdue','key-request-rejected','key-request-lecturer-notice','key-request-cancelled','key-request-returned','key-request-ended'].includes(row.template_key);let links={track:'',cancel:'',returnKey:''}
-   if(actionBundleRequired){
-    if(actionBundleRequired&&!siteUrl)throw new Error('PUBLIC_SITE_URL_REQUIRED')
-    const expiresAt=new Date(new Date(item.ends_at).getTime()+86_400_000).toISOString()
-    const{data:bundle,error:tokenError}=await db.rpc('issue_key_request_action_bundle',{p_key_request_id:row.entity_id,p_expires_at:expiresAt})
-    if(tokenError||!bundle)throw new Error(tokenError?.message??'TOKEN_ISSUE_FAILED')
-    const link=(action:string,token:string)=>`${siteUrl}/key-request-action?action=${action}&token=${encodeURIComponent(token)}`
-    links={track:'',cancel:link('CANCEL',bundle.cancel_token),returnKey:link('RETURN',bundle.return_token)}
-   }
-   const directReturnTemplate=['key-request-submitted','key-request-approved','key-request-ending-soon'].includes(row.template_key)
-   const directReturnDigest=directReturnTemplate?await sha256Hex(row.recipient_email):''
-   if(directReturnEnabled&&directReturnTemplate&&directReturnScope?.allows(row.entity_id,directReturnDigest,Math.floor(Date.now()/1000))){
-    if(gmailSecret.length<32)throw new Error('DIRECT_RETURN_CONFIGURATION_MISSING')
-    const expiresAt=Math.min(Math.floor((new Date(item.ends_at).getTime()+86_400_000)/1000),directReturnScope.expiresAt)
-    const payload={v:1 as const,jti:row.id,requestId:row.entity_id,action:'RETURN' as const,recipientDigest:directReturnDigest,exp:expiresAt,purpose:'gmail-key-action' as const}
-    const rawToken=await signGmailKeyActionToken(payload,gmailSecret)
-    const{error:returnTokenError}=await db.rpc('issue_gmail_key_action_token',{p_outbox_id:row.id,p_key_request_id:row.entity_id,p_recipient_email:row.recipient_email,p_action:'RETURN',p_expires_at:new Date(expiresAt*1000).toISOString(),p_raw_token:rawToken})
-    if(returnTokenError)throw new Error(returnTokenError.message)
-    links.returnKey=`${url}/functions/v1/direct-email-return?token=${encodeURIComponent(rawToken)}`
-   }
-   let gmailAction:null|{name:string;url:string}=null
-   const gmailActionType:GmailKeyAction|null=['key-request-ending-soon','key-request-ended'].includes(row.template_key)?'RETURN':['key-request-submitted','key-request-approved'].includes(row.template_key)?'CANCEL':null
-   const recipientDigest=gmailActionType?await sha256Hex(row.recipient_email):''
-   if(gmailEnabled&&actionBundleRequired&&gmailActionType&&gmailScope?.allows(row.entity_id,recipientDigest,Math.floor(Date.now()/1000))){
-    if(gmailSecret.length<32)throw new Error('GMAIL_KEY_ACTION_CONFIGURATION_MISSING')
-    const expiresAt=Math.min(Math.floor((new Date(item.ends_at).getTime()+86_400_000)/1000),gmailScope.expiresAt);const recipientDigest=await sha256Hex(row.recipient_email)
-    const payload={v:1 as const,jti:row.id,requestId:row.entity_id,action:gmailActionType,recipientDigest,exp:expiresAt,purpose:'gmail-key-action' as const}
-    const rawToken=await signGmailKeyActionToken(payload,gmailSecret)
-    const{error:gmailTokenError}=await db.rpc('issue_gmail_key_action_token',{p_outbox_id:row.id,p_key_request_id:row.entity_id,p_recipient_email:row.recipient_email,p_action:gmailActionType,p_expires_at:new Date(expiresAt*1000).toISOString(),p_raw_token:rawToken})
-    if(gmailTokenError)throw new Error(gmailTokenError.message)
-    gmailAction={name:gmailActionType==='CANCEL'?'ยกเลิกคำขอ':'ยืนยันคืนกุญแจ',url:`${url}/functions/v1/gmail-key-request-action?token=${encodeURIComponent(rawToken)}`}
-   }
-   const rendered=renderKeyRequestEmail(row.template_key,{requestCode:item.request_code,roomName:item.room_name,startsAt:item.starts_at,endsAt:item.ends_at,purpose:item.purpose,status:String(row.payload.status??item.status),reason:String(row.payload.reason??item.decision_reason??'')||null,links,gmailAction})
-   const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{authorization:`Bearer ${resendKey}`,'content-type':'application/json','Idempotency-Key':row.idempotency_key},body:JSON.stringify({from:delivery.from,to:[row.recipient_email],subject:rendered.subject,html:rendered.html})})
+   const rendered=renderKeyRequestEmail(row.template_key,{requestCode:item.request_code,roomName:item.room_name,startsAt:item.starts_at,endsAt:item.ends_at,purpose:item.purpose,status:String(row.payload.status??item.status),reason:String(row.payload.reason??item.decision_reason??'')||null,links:{track:'',cancel:'',returnKey:''}})
+   const response=await fetch('https://api.resend.com/emails',{method:'POST',signal:AbortSignal.timeout(10_000),headers:{authorization:`Bearer ${resendKey}`,'content-type':'application/json','Idempotency-Key':row.idempotency_key},body:JSON.stringify({from:delivery.from,to:[row.recipient_email],subject:rendered.subject,html:rendered.html})})
    const provider=await response.json().catch(()=>({})) as{id?:string;message?:string}
-   if(!response.ok)throw new Error(provider.message??`RESEND_${response.status}`)
-   await db.rpc('complete_notification_outbox',{p_outbox_id:row.id,p_succeeded:true,p_error:null,p_provider_message_id:provider.id??null});sent++
-  }catch(error){failed++;await db.rpc('complete_notification_outbox',{p_outbox_id:row.id,p_succeeded:false,p_error:error instanceof Error?error.message:'UNKNOWN_DELIVERY_ERROR',p_provider_message_id:null})}
+   if(!response.ok||!provider.id)throw new Error(`RESEND_${response.status}`)
+   const {error: completionError}=await db.rpc('complete_notification_outbox',{p_outbox_id:row.id,p_succeeded:true,p_error:null,p_provider_message_id:provider.id})
+   if(completionError){console.error('EMAIL_ACCEPTED_OUTBOX_UPDATE_FAILED',row.id);failed++;continue}
+   sent++
+  }catch(error){
+   failed++
+   const {error: completionError}=await db.rpc('complete_notification_outbox',{p_outbox_id:row.id,p_succeeded:false,p_error:error instanceof Error?error.message:'UNKNOWN_DELIVERY_ERROR',p_provider_message_id:null})
+   if(completionError)console.error('EMAIL_FAILURE_OUTBOX_UPDATE_FAILED',row.id)
+  }
  }
  return json({claimed:(claimed??[]).length,sent,failed,mode})
 })

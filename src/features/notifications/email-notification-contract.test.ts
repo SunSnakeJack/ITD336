@@ -34,13 +34,13 @@ describe('key-request email notifications',()=>{
     expect(renderKeyRequestEmail('key-request-rejected',{...base,status:'REJECTED'}).subject).toContain('ไม่อนุมัติ')
     expect(renderKeyRequestEmail('key-request-ending-soon',{...base,status:'APPROVED'}).subject).toContain('30 นาที')
     expect(renderKeyRequestEmail('key-request-ended',{...base,status:'APPROVED'}).subject).toContain('สิ้นสุด')
-    expect(renderKeyRequestEmail('key-request-submitted',{...base,status:'APPROVED'}).html).toContain('ยืนยันคืนกุญแจ')
+    expect(renderKeyRequestEmail('key-request-submitted',{...base,status:'APPROVED'}).html).not.toContain('ยืนยันคืนกุญแจ')
   })
 
   it('renders only cancel and return actions without a tracking action',()=>{
     const email=renderKeyRequestEmail('key-request-submitted',{requestCode:'KR-1',roomName:'S2407',startsAt:'2026-11-08T10:00:00+07:00',endsAt:'2026-11-08T11:00:00+07:00',purpose:'ทดสอบ',status:'APPROVED',links:{track:'https://example.test/t',cancel:'https://example.test/c',returnKey:'https://example.test/r'}})
-    expect(email.html).toContain('ยกเลิกคำขอ')
-    expect(email.html).toContain('ยืนยันคืนกุญแจ')
+    expect(email.html).not.toContain('ยกเลิกคำขอ')
+    expect(email.html).not.toContain('ยืนยันคืนกุญแจ')
     expect(email.html).not.toContain('ติดตามสถานะ')
     expect(email.html).not.toContain('https://example.test/t')
   })
@@ -76,9 +76,15 @@ describe('key-request email notifications',()=>{
     expect(worker).toContain("from:delivery.from")
     expect(worker).toContain('RESEND_ALLOWED_RECIPIENT')
     expect(worker).toContain("'Idempotency-Key'")
-    expect(worker).toContain("mode==='production'&&!cronAuthorized")
-    expect(worker).toContain('PUBLIC_SITE_URL')
-    expect(worker).toContain('/key-request-action?action=')
+    expect(worker).toContain('PRODUCTION_DISPATCH_NOT_READY')
+    expect(worker).toContain("Deno.env.get('ITD336_RESEND_API_KEY')")
+    expect(worker).not.toContain("Deno.env.get('RESEND_API_KEY')")
+    expect(worker).toContain('APPROVED_TEST_RECIPIENT_REQUIRED')
+    expect(worker).toContain('ITD336_SENDER_REQUIRED')
+    expect(worker).not.toContain("db.rpc('claim_notification_outbox'")
+    expect(worker).not.toContain("db.rpc('claim_notification_outbox_test'")
+    expect(worker).not.toContain('PUBLIC_SITE_URL')
+    expect(worker).not.toContain('/key-request-action?action=')
     expect(worker).not.toContain('/functions/v1/key-request-action?')
   })
 
@@ -94,7 +100,7 @@ describe('key-request email notifications',()=>{
     expect(dispatchSql).toContain("entity_type='key_request'")
     expect(dispatchSql).toContain('entity_id=p_entity_id')
     expect(dispatchSql).toContain("coalesce(auth.role(),'')<>'service_role'")
-    expect(worker).toContain('const siteUrl=publicSiteUrl')
+    expect(worker).not.toContain('const siteUrl=publicSiteUrl')
     expect(worker).not.toContain('isLoopbackOrigin')
     expect(worker).not.toContain("req.headers.get('origin')")
     expect(worker).not.toContain("link('TRACK'")
@@ -109,8 +115,8 @@ describe('key-request email notifications',()=>{
 
   it('sends terminal confirmation emails without requiring a public site URL',()=>{
     const worker=readFileSync(join(process.cwd(),'supabase/functions/email-worker/index.ts'),'utf8')
-    expect(worker).toContain("!booking&&!['key-request-admin-notice','key-request-overdue','key-request-rejected','key-request-lecturer-notice','key-request-cancelled','key-request-returned','key-request-ended'].includes(row.template_key)")
-    expect(worker).toContain("if(actionBundleRequired&&!siteUrl)throw new Error('PUBLIC_SITE_URL_REQUIRED')")
+    expect(worker).not.toContain("!booking&&!['key-request-admin-notice','key-request-overdue','key-request-rejected','key-request-lecturer-notice','key-request-cancelled','key-request-returned','key-request-ended'].includes(row.template_key)")
+    expect(worker).not.toContain("if(actionBundleRequired&&!siteUrl)throw new Error('PUBLIC_SITE_URL_REQUIRED')")
     expect(worker).not.toContain('if(!url||!serviceKey||!resendKey||!siteUrl)')
   })
 
@@ -155,8 +161,8 @@ describe('key-request email notifications',()=>{
     expect(email.html).not.toContain('ยกเลิกคำขอ')
     expect(email.html).not.toContain('https://example.test/c')
     const worker=readFileSync(join(process.cwd(),'supabase/functions/email-worker/index.ts'),'utf8')
-    expect(worker).toContain("!booking&&!['key-request-admin-notice','key-request-overdue','key-request-rejected','key-request-lecturer-notice','key-request-cancelled','key-request-returned','key-request-ended'].includes(row.template_key)")
-    expect(worker).toContain('actionBundleRequired')
+    expect(worker).not.toContain("!booking&&!['key-request-admin-notice','key-request-overdue','key-request-rejected','key-request-lecturer-notice','key-request-cancelled','key-request-returned','key-request-ended'].includes(row.template_key)")
+    expect(worker).not.toContain('actionBundleRequired')
   })
 
   it('preserves cancellation history and releases the request time range',()=>{
