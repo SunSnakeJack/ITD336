@@ -22,7 +22,7 @@ import { KeyRequestActionPage } from "./features/keys/pages/KeyRequestActionPage
 import { MeetingRoomDetailPage, MeetingRoomEntryPage } from "./features/meeting-rooms/pages/MeetingRoomDetailPage";
 import { MeetingRoomRequestPage } from "./features/meeting-rooms/pages/MeetingRoomRequestPage";
 import { StaffLayout } from "./features/staff/components/StaffLayout";
-import { StaffHomePage, StaffRoomDetailPage, StaffRoomFormPage, StaffSettingsPage } from "./features/staff/pages/StaffOverviewPages";
+import { StaffRoomDetailPage, StaffRoomFormPage, StaffSettingsPage } from "./features/staff/pages/StaffOverviewPages";
 import { StaffRoomsPage } from "./features/staff/pages/StaffRoomsPage";
 import { StaffKeyRequestDetailPage, StaffMeetingRoomFormPage, StaffMeetingRoomsPage, StaffUserFormPage } from "./features/staff/pages/StaffManagementPages";
 import { StaffKeyRequestsPage } from "./features/staff/pages/StaffKeyRequestsPage";
@@ -178,7 +178,7 @@ export function App() {
           </AdminGuard>
         }
       >
-        <Route index element={<StaffHomePage />} />
+        <Route index element={<Navigate to="usage-dashboard" replace />} />
         <Route path="rooms" element={<StaffRoomsPage />} />
         <Route path="rooms/new" element={<StaffRoomFormPage />} />
         <Route path="rooms/:roomId/edit" element={<StaffRoomFormPage />} />

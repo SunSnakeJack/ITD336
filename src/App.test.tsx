@@ -97,6 +97,30 @@ describe('Authentication entry point', () => {
     expect(screen.queryByText('Staff Management')).not.toBeInTheDocument()
   })
 
+  it('redirects administrators from /staff to the usage dashboard', async () => {
+    const payload = btoa(JSON.stringify({ iat: Math.floor(Date.now() / 1000) }))
+    vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
+      data: { session: { access_token: `x.${payload}.x`, user: { id: 'admin-1', user_metadata: {} } } }, error: null,
+    } as never)
+    const tables = vi.mocked(supabase.from)
+    const original = tables.getMockImplementation()
+    tables.mockImplementation(((table: string) => {
+      if (table === 'profiles') return { select: () => ({ eq: () => ({ single: async () => ({
+        data: { id: 'admin-1', full_name: 'Admin', email: 'admin@example.test', account_status: 'ACTIVE' }, error: null,
+      }) }) }) }
+      if (table === 'user_roles') return { select: () => ({ eq: async () => ({ data: [{ role_id: 'admin-role' }], error: null }) }) }
+      if (table === 'roles') return { select: () => ({ in: async () => ({ data: [{ id: 'admin-role', code: 'ADMIN', name: 'Admin' }], error: null }) }) }
+      return original?.(table as never)
+    }) as never)
+    try {
+      render(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={['/staff']}><App /><LocationProbe /></MemoryRouter></QueryClientProvider>)
+      expect(await screen.findByText('/staff/usage-dashboard')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'ภาพรวมการใช้งาน' })).toBeInTheDocument()
+    } finally {
+      if (original) tables.mockImplementation(original)
+    }
+  })
+
   it('automatically completes an email cancellation through the frontend', async () => {
     vi.mocked(supabase.functions.invoke).mockResolvedValue({data:{ok:true,requestCode:'KR-1',status:'CANCELLED'},error:null} as never)
     renderPath(`/key-request-action?action=CANCEL&token=${'a'.repeat(64)}`)
