@@ -1,17 +1,18 @@
+import type { StaffIconName } from './components/StaffIcon'
+
 export interface StaffNavigationItem {
   label: string
   to: string
-  icon: string
+  icon: StaffIconName
   group: 'หลัก' | 'จัดการ' | 'ระบบ'
   match?: string
 }
 
 export const staffNavigation: StaffNavigationItem[] = [
-  { label: 'แดชบอร์ด', to: '/staff/usage-dashboard', icon: '▥', group: 'หลัก' },
-  { label: 'จัดการผู้ใช้งาน', to: '/staff/users', icon: '👤', group: 'จัดการ' },
-  { label: 'จัดการข้อมูลห้อง', to: '/staff/rooms', icon: '▦', group: 'จัดการ' },
-  { label: 'อนุมัติคำขอ', to: '/staff/key-requests', icon: '✓', group: 'จัดการ' },
-  { label: 'การตั้งค่าสิทธิ์', to: '/staff/settings', icon: '⚙', group: 'ระบบ' },
+  { label: 'แดชบอร์ด', to: '/staff/usage-dashboard', icon: 'dashboard', group: 'หลัก' },
+  { label: 'จัดการผู้ใช้งาน', to: '/staff/users', icon: 'users', group: 'จัดการ' },
+  { label: 'จัดการข้อมูลห้อง', to: '/staff/rooms', icon: 'rooms', group: 'จัดการ' },
+  { label: 'การตั้งค่าสิทธิ์', to: '/staff/settings', icon: 'settings', group: 'ระบบ' },
 ]
 
 export const staffRoutePaths = [

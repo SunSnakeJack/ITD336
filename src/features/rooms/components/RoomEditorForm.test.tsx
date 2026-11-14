@@ -5,6 +5,34 @@ import { RoomEditorForm } from './RoomEditorForm'
 const options={roomTypes:[{id:'type-1',code:'LAB',name:'ห้องปฏิบัติการ'}],equipment:[{id:'equipment-1',code:'MIC',name:'ไมโครโฟน'}]}
 
 describe('RoomEditorForm',()=>{
+  it('validates and saves a Thai room name from a button outside the form', () => {
+    const onSave = vi.fn()
+    render(<>
+      <button type="submit" form="test-room-editor">บันทึกด้านบน</button>
+      <RoomEditorForm formId="test-room-editor" options={options} pending={false} onCancel={vi.fn()} onSave={onSave} />
+    </>)
+    const submit = screen.getByRole('button', { name: 'บันทึกด้านบน' })
+    fireEvent.click(submit)
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+    expect(onSave).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByLabelText('รหัสห้อง *'), { target: { value: 'MEETING-ROOM' } })
+    fireEvent.change(screen.getByLabelText('ชื่อสำหรับหน้าจัดการ *'), { target: { value: 'ห้องประชุมคณะ' } })
+    fireEvent.click(submit)
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ code: 'MEETING-ROOM', name: 'ห้องประชุมคณะ' }))
+  })
+  it('excludes COLD from new rooms and allows selecting a Thai format by group', () => {
+    render(<RoomEditorForm options={{ ...options, roomTypes: [
+      { id: 'cold', code: 'COLD', name: 'Cold Room' },
+      { id: 'computer', code: 'COMPUTER', name: 'Computer Room' },
+      { id: 'studio', code: 'STUDIO', name: 'Studio' },
+    ] }} pending={false} onCancel={vi.fn()} onSave={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /รูปแบบห้อง.*ห้องปฏิบัติการคอมพิวเตอร์/ }))
+    expect(screen.queryByRole('option', { name: 'ห้องควบคุมอุณหภูมิ' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /กลุ่มห้อง.*ห้องทั่วไป/ }))
+    fireEvent.click(screen.getByRole('option', { name: 'ห้องพิเศษ' }))
+    fireEvent.click(screen.getByRole('button', { name: /รูปแบบห้อง.*เลือกรูปแบบห้อง/ }))
+    expect(screen.getByRole('option', { name: 'ห้องสตูดิโอ' })).toBeInTheDocument()
+  })
   it('validates required fields and normalizes checked equipment',()=>{
     const save=vi.fn()
     render(<RoomEditorForm options={options} pending={false} onCancel={vi.fn()} onSave={save}/>)

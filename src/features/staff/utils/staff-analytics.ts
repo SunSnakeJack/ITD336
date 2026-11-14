@@ -1,5 +1,6 @@
 import type { AdminBooking } from '../../bookings/booking.types'
 import type { Room } from '../../rooms/room.types'
+import { roomFormatGroup } from '../../rooms/utils/room-type-label'
 
 export type RoomStatusFilter = 'all' | 'active' | 'inactive'
 export type RoomCategoryFilter = 'all' | 'general' | 'special' | 'meeting'
@@ -20,6 +21,8 @@ export function filterRooms(rooms: Room[], search: string, status: RoomStatusFil
 }
 
 export function roomCategory(room: Room, typeLabel = ''): Exclude<RoomCategoryFilter, 'all'> {
+  const group = roomFormatGroup(typeLabel)
+  if (group) return group
   const value = `${room.code} ${room.name} ${typeLabel}`.toLocaleLowerCase('th')
   if (value.includes('meet') || value.includes('ประชุม')) return 'meeting'
   if (value.includes('special') || value.includes('studio') || value.includes('พิเศษ')) return 'special'

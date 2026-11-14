@@ -53,7 +53,7 @@ describe('StaffLayout', () => {
     const topbar = screen.getByTestId('staff-topbar')
     expect(topbar).toHaveTextContent('USAGE DASHBOARD')
     expect(topbar).toHaveTextContent('ภาพรวมการใช้งาน')
-    expect(screen.getByRole('button', { name: 'Export PDF' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'พิมพ์ / บันทึก PDF' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'ออกจากระบบ' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'เปิดเมนูบัญชี' }))

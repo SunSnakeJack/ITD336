@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { StaffUsageDashboardPage } from './StaffUsageDashboardPage'
@@ -15,14 +15,38 @@ vi.mock('../staff-key-request.service', () => ({
 }))
 
 describe('StaffUsageDashboardPage layout', () => {
-  it('places the record table beside the room and user insights on desktop', async () => {
+  it('exports a report with the current filters and all matching columns', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { container } = render(<QueryClientProvider client={client}><StaffUsageDashboardPage /></QueryClientProvider>)
+    await screen.findByText('รายการบันทึก')
+    fireEvent.change(screen.getByLabelText('ตั้งแต่วันที่'), { target: { value: '2026-11-13' } })
+    const exportForm = container.querySelector('#usage-report-export')
+    if (!exportForm) throw new Error('Export form missing')
+    const print = vi.spyOn(window, 'print').mockImplementation(() => {})
+    fireEvent.submit(exportForm)
+    await waitFor(() => expect(print).toHaveBeenCalledTimes(1))
+    const output = document.querySelector<HTMLElement>('.usage-report-output')
+    if (!output) throw new Error('Print output missing')
+    expect(output).toHaveAttribute('data-ready', 'true')
+    expect(output).toHaveTextContent('ตั้งแต่ 13 พฤศจิกายน 2569')
+    expect(output).toHaveTextContent('หน้าที่ 1/1')
+    expect(within(output).getAllByRole('columnheader', { hidden: true })).toHaveLength(9)
+    expect(output).toHaveTextContent('S2407')
+    expect(output).toHaveTextContent('รออนุมัติ')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    fireEvent(window, new Event('afterprint'))
+    expect(document.querySelector('.usage-report-output')).toBeNull()
+    print.mockRestore()
+  })
+
+  it('places the room and user insights above the full-width record table', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { container } = render(<QueryClientProvider client={client}><StaffUsageDashboardPage/></QueryClientProvider>)
     await screen.findByText('รายการบันทึก')
     const body = container.querySelector('.usage-dashboard-body')
     expect(body).not.toBeNull()
-    expect(body?.firstElementChild).toHaveClass('usage-records-panel')
-    const aside = body?.lastElementChild
+    expect(body?.lastElementChild).toHaveClass('usage-records-panel')
+    const aside = body?.firstElementChild
     expect(aside).toHaveClass('usage-dashboard-insights')
     await waitFor(() => expect(aside?.querySelector('.usage-rooms')).not.toBeNull())
     expect(aside?.querySelector('.usage-ranking')).not.toBeNull()
