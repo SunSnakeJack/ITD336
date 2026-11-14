@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { emailDeliveryPolicy } from '../../../supabase/functions/_shared/email-delivery-policy'
+import { emailDeliveryPolicy, matchesTestRecipient } from '../../../supabase/functions/_shared/email-delivery-policy'
 import { renderKeyRequestEmail } from '../../../supabase/functions/_shared/email-templates'
 
 describe('email delivery policy', () => {
+  it('uses the verified sender in test mode while enforcing one allowed recipient', () => {
+    const sender = 'ITD336 <noreply@itd336.app>'
+    expect(emailDeliveryPolicy('test', ' TEST@example.com ', sender)).toEqual({ from: sender, recipient: 'test@example.com' })
+    expect(matchesTestRecipient('TEST@example.com', 'test@example.com')).toBe(true)
+    expect(matchesTestRecipient('other@example.com', 'test@example.com')).toBe(false)
+    expect(matchesTestRecipient('test@example.com,other@example.com', 'test@example.com')).toBe(false)
+  })
   it('restricts test delivery and requires a production sender', () => {
     expect(emailDeliveryPolicy('test', ' TEST@example.com ')).toMatchObject({ recipient: 'test@example.com' })
     expect(() => emailDeliveryPolicy('production')).toThrow('VERIFIED_DOMAIN_REQUIRED')
