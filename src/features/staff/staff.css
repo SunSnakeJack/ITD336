@@ -58,3 +58,6 @@
 .staff-shell .usage-summary-card { border-top-color: var(--staff-yellow); }
 .staff-shell .usage-summary-card strong, .staff-shell .usage-ranking li>b { color: var(--staff-blue); }
 .staff-shell .usage-rooms i span { background: linear-gradient(90deg,#a56f0b,#e1af2b); }
+.usage-screen-table .staff-table td :is(strong, small, .staff-badge, .staff-decision-actions button) {
+  font-size: inherit;
+}

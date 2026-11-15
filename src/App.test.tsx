@@ -267,18 +267,18 @@ describe('Authentication entry point', () => {
 
   it('opens the read-only weekly meeting calendar and limits week navigation', async () => {
     vi.setSystemTime(new Date('2026-11-15T00:15:00+07:00'))
-    vi.mocked(supabase.rpc).mockImplementation((async (name: string) => {
+    vi.mocked(supabase.rpc).mockImplementation((async (name: string, args: { p_upcoming?: boolean }) => {
       if (name === 'get_public_room_catalog') return { data: [{ id: 'meeting-1', code: 'MEETING-ROOM', name: 'MEETING-ROOM',
         room_type_name: 'Meeting Room', active: true, usage_scope: 'MEETING' }], error: null } as never
       if (name === 'get_public_meeting_room_week') return { data: { opens_at: '08:00', closes_at: '18:00', events: [
         { starts_at: '2026-11-15T01:30:00Z', ends_at: '2026-11-15T04:30:00Z', category: 'LEADERSHIP' },
         { starts_at: '2026-11-16T02:00:00Z', ends_at: '2026-11-16T03:00:00Z', category: 'TEACHER' },
       ] }, error: null } as never
-      if (name === 'get_public_meeting_room_upcoming') return { data: [
+      if (name === 'get_meeting_room_booking_list' && args.p_upcoming) return { data: [
         { starts_at: '2026-11-17T09:00:00+07:00', ends_at: '2026-11-17T09:30:00+07:00', category: 'TEACHER', pending: false },
         { starts_at: '2026-11-16T09:00:00+07:00', ends_at: '2026-11-16T09:30:00+07:00', category: 'LEADERSHIP', pending: true },
       ], error: null } as never
-      if (name === 'get_public_meeting_room_history') return { data: Array.from({ length: 6 }, (_, index) => ({
+      if (name === 'get_meeting_room_booking_list') return { data: Array.from({ length: 6 }, (_, index) => ({
         starts_at: `2026-11-${14 - index}T08:00:00+07:00`, ends_at: `2026-11-${14 - index}T08:30:00+07:00`,
         category: 'TEACHER',
       })), error: null } as never

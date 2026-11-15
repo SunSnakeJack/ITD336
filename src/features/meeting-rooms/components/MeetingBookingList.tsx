@@ -7,19 +7,26 @@ import { meetingEventCategories } from '../utils/meeting-week'
 
 const tabs = { upcoming: 'จองล่วงหน้า', history: 'จองย้อนหลัง' } as const
 
-export function MeetingBookingList({ roomId, active }: { roomId: string; active: boolean }) {
+export function MeetingBookingList({ roomId, active, viewerId }: { roomId: string; active: boolean; viewerId: string | null }) {
   const id = useId()
   const [period, setPeriod] = useState<MeetingBookingPeriod>('upcoming')
   const bookings = useQuery({
-    queryKey: [...scheduleKeys.publicMeetingBookings(roomId), period],
-    queryFn: () => getMeetingBookings(roomId, period),
+    queryKey: [...scheduleKeys.publicMeetingBookings(roomId), period, viewerId],
+    queryFn: () => getMeetingBookings(roomId, period, viewerId),
+    gcTime: 0,
     enabled: active,
   })
   const upcoming = period === 'upcoming'
   const suffix = upcoming ? 'ล่วงหน้า' : 'ย้อนหลัง'
   const items = (bookings.data ?? []).slice(0, 5).map((item, index) => ({
     id: `${item.starts_at}-${index}`,
-    title: `${item.pending ? 'รออนุมัติ · ' : ''}${meetingEventCategories[item.category]}`,
+    title: [
+      item.pending ? 'รออนุมัติ' : '',
+      item.requester_name?.trim()
+        ? `${item.category === 'TEACHER' ? 'อ. ' : ''}${item.requester_name.trim()}`
+        : meetingEventCategories[item.category],
+      item.purpose?.trim(),
+    ].filter(Boolean).join(' · '),
     startsAt: item.starts_at,
     endsAt: item.ends_at,
   }))

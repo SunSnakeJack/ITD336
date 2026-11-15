@@ -78,7 +78,7 @@ export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | n
   return <section className="key-request-entry key-room-detail meeting-room-detail">
     <header className="key-detail-heading"><h1>{roomTitle}</h1><p>{room.description||'ยังไม่มีคำอธิบายห้อง'}</p><div className="key-detail-metadata"><span>{room.active ? 'เปิดใช้งาน' : 'ไม่พร้อมใช้'}</span><span>ต้องเข้าสู่ระบบ</span></div></header>
     <article className="key-detail-card key-room-information"><div className="key-room-photo"><img src={room.imageUrl||defaultRoomImage} alt={`ภาพห้อง ${room.code}`} className="key-room-photo-image" /></div><div className="key-room-facts"><h2>ข้อมูลห้อง</h2><p><small>ประเภทห้อง</small><strong>{room.roomTypeName}</strong></p><p><small>ความจุ</small><strong>{room.capacity > 0 ? `${room.capacity} ที่นั่ง` : 'ยังไม่มีข้อมูล'}</strong></p></div><footer><strong>อุปกรณ์เพิ่มเติม</strong><span>{room.equipment?.length?room.equipment.join(' · '):'ยังไม่มีข้อมูลอุปกรณ์เพิ่มเติม'}</span></footer></article>
-    <MeetingBookingList key={room.id} roomId={room.id} active={room.active} />
+    <MeetingBookingList key={room.id} roomId={room.id} active={room.active} viewerId={identity?.userId ?? null} />
     <article className="key-detail-card key-schedule-card">
       <div className="key-schedule-heading"><h2>ตารางเวลาการใช้ห้อง</h2></div>
       <div role="tablist" className="meeting-schedule-tabs" aria-label="มุมมองตารางเวลา"

@@ -32,15 +32,20 @@ export async function getMeetingWeek(roomId: string, weekStart: string, viewerId
 
 export type MeetingBookingPeriod = 'upcoming' | 'history'
 
-export async function getMeetingBookings(roomId: string, period: MeetingBookingPeriod): Promise<(MeetingWeekEvent & { pending: boolean })[]> {
-  const rpc = period === 'upcoming' ? 'get_public_meeting_room_upcoming' : 'get_public_meeting_room_history'
-  // Regenerate the RPC types after migration 0077 is applied.
-  const { data, error } = await supabase.rpc(rpc as never, { p_room_id: roomId } as never)
+export async function getMeetingBookings(roomId: string, period: MeetingBookingPeriod, viewerId: string | null): Promise<(MeetingWeekEvent & { pending: boolean })[]> {
+  // Regenerate the RPC types after migration 0081 is applied.
+  const { data, error } = await supabase.rpc('get_meeting_room_booking_list' as never, {
+    p_room_id: roomId, p_upcoming: period === 'upcoming',
+  } as never)
   if (error) throw new Error(error.message)
   const rows: unknown = data
   if (!Array.isArray(rows)) throw new Error('Invalid meeting history response')
   return rows.filter(isMeetingEvent).map(row => ({
     starts_at: row.starts_at, ends_at: row.ends_at, category: row.category,
     pending: 'pending' in row && row.pending === true,
+    requester_name: viewerId !== null && 'viewer_id' in row && row.viewer_id === viewerId && typeof row.requester_name === 'string'
+      ? row.requester_name : undefined,
+    purpose: viewerId !== null && 'viewer_id' in row && row.viewer_id === viewerId && typeof row.purpose === 'string'
+      ? row.purpose : undefined,
   }))
 }
