@@ -10,3 +10,11 @@
 7. The requester or a user with `BOOKING_MANAGE` can cancel a future PENDING/APPROVED booking. Both the UI and `cancel_booking` reject cancellation after `ends_at` has elapsed.
 
 Invalid transitions such as CANCELLED → APPROVED fail. The final exclusion constraint handles concurrent approvals even if two sessions pass an earlier read.
+
+The meeting-room form reads eligible Bangkok dates and operating hours from
+`get_meeting_booking_policy`. It counts eligible days starting tomorrow,
+excluding closed Saturdays and including the configured Saturday exception.
+In Staff Permission Settings, users with `SETTINGS_MANAGE` can set the limit
+to 1–30 days (default 3). Each change is audited and applies to new meeting
+bookings. Both meeting booking RPC paths enforce the same eligible dates.
+The form validates the requester identifier as digits for review only.

@@ -275,16 +275,21 @@ describe('Authentication entry point', () => {
     }) as never)
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{ id: 'meeting-1', code: 'MEETING-ROOM', name: 'MEETING-ROOM', room_type_name: 'Meeting Room', capacity: 10, active: true, usage_scope: 'MEETING' }], error: null } as never)
 
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{
+      allowed_dates: ['2026-11-09', '2026-11-10', '2026-11-11'], opens_at: '08:30:00', closes_at: '18:30:00',
+    }], error: null } as never)
     renderPath('/meeting-room/meeting-1/request?date=2026-11-09&start=12:30&end=14:00')
 
     expect(await screen.findByRole('heading', { name: 'แบบฟอร์มการจองห้องประชุม' })).toBeInTheDocument()
     expect(screen.queryByText('สถานะ')).not.toBeInTheDocument()
     expect(screen.queryByRole('radio')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('วันที่จอง')).toHaveValue('2026-11-09')
+    await waitFor(() => expect(screen.getByLabelText('วันที่จอง')).toHaveValue('2026-11-09'))
+    expect(screen.getAllByRole('option')).toHaveLength(3)
     const requesterId = screen.getByLabelText('รหัสผู้ใช้งาน')
     expect(requesterId).not.toHaveAttribute('readonly')
     expect(requesterId).toHaveValue('')
-    fireEvent.change(requesterId, { target: { value: '9876541' } })
+    fireEvent.change(requesterId, { target: { value: 'abc9876541' } })
+    expect(requesterId).toHaveValue('9876541')
     fireEvent.click(screen.getByRole('button', { name: 'เวลาเริ่มต้น 12:30' }))
     expect(screen.getByRole('listbox', { name: 'ตัวเลือกเวลาเริ่มต้น' })).toHaveClass('placement-top')
     fireEvent.change(screen.getByLabelText('ระบุวัตถุประสงค์'), { target: { value: 'นัดพรีเซนต์งานนักศึกษา' } })
@@ -306,6 +311,9 @@ describe('Authentication entry point', () => {
     expect(meetingTimeOptions('2026-11-08', now)).not.toContain('12:00')
     expect(meetingTimeOptions('2026-11-08', now)[0]).toBe('12:30')
     expect(meetingTimeOptions('2026-11-09', now)[0]).toBe('08:00')
+    const configuredTimes = meetingTimeOptions('2026-11-09', now, '08:30:00', '18:30:00')
+    expect(configuredTimes[0]).toBe('08:30')
+    expect(configuredTimes.at(-1)).toBe('18:30')
   })
 
   it('separates general and special laboratories into catalog tabs', async () => {
@@ -347,12 +355,20 @@ describe('Authentication entry point', () => {
     expect(screen.getByText('09:00–12:00 น.')).toBeInTheDocument()
   })
 
-  it('shows requester role, name, and purpose from the public key-request event', async () => {
+  it('groups the ten latest public key requests by their Bangkok usage date', async () => {
     vi.mocked(supabase.rpc).mockImplementation((async (name: string) => {
       if (name === 'get_public_room_catalog') return { data: [{ id: 'room-1', code: 'S2407', name: 'ห้อง S2407', room_type_name: 'Computer Room', active: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: false }], error: null } as never
       if (name === 'get_public_room_schedule_events') return { data: [
-        { id: 'student-request', event_type: 'BOOKING', title: 'นศ. ธนบัตร · พรีเซนต์โปรเจค', starts_at: '2026-11-08T14:30:00+07:00', ends_at: '2026-11-08T16:30:00+07:00', status: 'APPROVED' },
-        { id: 'teacher-request', event_type: 'BOOKING', title: 'อ. พลวัต · SOC401', starts_at: '2026-11-08T09:00:00+07:00', ends_at: '2026-11-08T12:00:00+07:00', status: 'APPROVED' },
+        { id: 'key-request:student', event_type: 'BOOKING', title: 'นศ. ธนบัตร · พรีเซนต์โปรเจค', starts_at: '2026-11-08T14:30:00+07:00', ends_at: '2026-11-08T16:30:00+07:00', status: 'APPROVED' },
+      ], error: null } as never
+      if (name === 'get_public_key_request_history') return { data: [
+        { id: 'student-request', requester_name: 'นศ. ธนบัตร · พรีเซนต์โปรเจค', starts_at: '2026-11-08T14:30:00+07:00', ends_at: '2026-11-08T16:30:00+07:00', status: 'APPROVED' },
+        { id: 'teacher-request', requester_name: 'อ. พลวัต · SOC401', starts_at: '2026-11-07T23:00:00Z', ends_at: '2026-11-08T00:00:00Z', status: 'APPROVED' },
+        ...Array.from({ length: 9 }, (_, index) => ({
+          id: `old-${index}`, requester_name: `รายการก่อนหน้า ${index + 1}`,
+          starts_at: `2026-11-07T${10 + index}:00:00+07:00`,
+          ends_at: `2026-11-07T${10 + index}:30:00+07:00`, status: 'RETURNED',
+        })),
       ], error: null } as never
       return { data: [], error: null } as never
     }) as never)
@@ -360,7 +376,18 @@ describe('Authentication entry point', () => {
     renderPath('/keys')
 
     expect(await screen.findByText('นศ. ธนบัตร · พรีเซนต์โปรเจค')).toBeInTheDocument()
-    expect(screen.getByText('อ. พลวัต · SOC401')).toBeInTheDocument()
+    const scrollRegion = screen.getByRole('region', { name: 'รายการเบิกล่าสุด' })
+    const currentDay = screen.getByRole('heading', { name: /รายการเบิก · 8 พ.ย. 2569/ }).closest('section')
+    expect(scrollRegion).toContainElement(currentDay)
+    expect(Array.from(currentDay?.querySelectorAll('p > span') ?? [], row => row.textContent)).toEqual([
+      'นศ. ธนบัตร · พรีเซนต์โปรเจค', 'อ. พลวัต · SOC401',
+    ])
+    expect(Array.from(scrollRegion.querySelectorAll('h3 time'), heading => heading.getAttribute('datetime'))).toEqual([
+      '2026-11-08', '2026-11-07',
+    ])
+    expect(scrollRegion).not.toContainElement(screen.getByRole('link', { name: 'ดูรายละเอียด S2407' }))
+    expect(screen.getAllByText(/รายการก่อนหน้า/)).toHaveLength(8)
+    expect(screen.queryByText('รายการก่อนหน้า 1')).not.toBeInTheDocument()
   })
 
   it('marks a fully occupied room as having no available time', async () => {

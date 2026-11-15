@@ -1,3 +1,7 @@
+.public-main > .key-mobile-header {
+  border-image: linear-gradient(90deg, #10005b 55%, #f3d000) 1;
+}
+
 .key-mobile-header .key-header-logo {
   align-items: center;
   display: flex;
