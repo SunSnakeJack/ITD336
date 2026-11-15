@@ -620,7 +620,7 @@ describe('Authentication entry point', () => {
   it('selects a lecturer without changing the manually entered course code', async () => {
     vi.mocked(supabase.rpc).mockImplementation((async (name: string) => {
       if (name === 'get_public_room_catalog') return { data: [{ id: 'room-1', code: 'S2407', name: 'ห้อง S2407', room_type_name: 'Computer Room', active: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: false }], error: null } as never
-      if (name === 'get_public_key_request_options') return { data: [{ id: 'course-1', course_code: 'ITD336', course_name: 'การพัฒนาเว็บแอปพลิเคชัน', lecturer_name: 'อ. พสวัตน์' }], error: null } as never
+      if (name === 'get_public_key_request_lecturers') return { data: [{ id: 'course-1', course_code: 'ITD336', course_name: 'การพัฒนาเว็บแอปพลิเคชัน', lecturer_name: 'อ. พสวัตน์' }], error: null } as never
       return { data: [], error: null } as never
     }) as never)
     renderPath('/keys/rooms/room-1/request')
@@ -631,8 +631,17 @@ describe('Authentication entry point', () => {
     fireEvent.click(screen.getByRole('option', { name: 'อ. พสวัตน์' }))
 
     expect(screen.getByLabelText('รหัสวิชา')).toHaveValue('SOC401')
+    expect(screen.queryByLabelText(/ชื่อวิชา/)).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('ชื่อ–นามสกุล'), { target: { value: 'นักศึกษาทดสอบ' } })
+    fireEvent.change(screen.getByLabelText('รหัสนักศึกษา / บุคลากร'), { target: { value: '661198765' } })
+    fireEvent.change(screen.getByLabelText('อีเมล'), { target: { value: 'student@northbkk.ac.th' } })
     expect(screen.getByRole('button', { name: /อาจารย์ผู้สอน.*อ. พสวัตน์/ })).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByLabelText('อีเมลอาจารย์')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'ถัดไป' }))
+    fireEvent.click(screen.getByRole('button', { name: 'ยืนยันการเบิก' }))
+    await waitFor(() => expect(supabase.rpc).toHaveBeenCalledWith('create_teaching_key_request', expect.objectContaining({
+      p_course_code: 'SOC401', p_course_name: null, p_lecturer_id: 'course-1',
+    })))
   })
 
   it('uses upward shared dropdowns for key-request times', async () => {
@@ -678,7 +687,7 @@ describe('Authentication entry point', () => {
   it('uses the shared custom dropdown for requester status and course selection', async () => {
     vi.mocked(supabase.rpc).mockImplementation((async (name: string) => {
       if (name === 'get_public_room_catalog') return { data: [{ id: 'room-1', code: 'S2407', name: 'ห้อง S2407', room_type_name: 'Computer Room', active: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: false }], error: null } as never
-      if (name === 'get_public_key_request_options') return { data: [{ id: 'course-1', course_code: 'ITD336', course_name: 'การพัฒนาเว็บแอปพลิเคชัน', lecturer_name: 'อ. พสวัตน์' }], error: null } as never
+      if (name === 'get_public_key_request_lecturers') return { data: [{ id: 'course-1', course_code: 'ITD336', course_name: 'การพัฒนาเว็บแอปพลิเคชัน', lecturer_name: 'อ. พสวัตน์' }], error: null } as never
       return { data: [], error: null } as never
     }) as never)
     renderPath('/keys/rooms/room-1/request')
@@ -691,7 +700,7 @@ describe('Authentication entry point', () => {
   it('asks a teacher to select a course without showing lecturer fields', async () => {
     vi.mocked(supabase.rpc).mockImplementation((async (name: string) => {
       if (name === 'get_public_room_catalog') return { data: [{ id: 'room-1', code: 'S2407', name: 'ห้อง S2407', room_type_name: 'Computer Room', active: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: false }], error: null } as never
-      if (name === 'get_public_key_request_options') return { data: [{ id: 'course-1', course_code: 'ITD336', course_name: 'การพัฒนาเว็บแอปพลิเคชัน', lecturer_name: 'อ. พสวัตน์' }], error: null } as never
+      if (name === 'get_public_key_request_lecturers') return { data: [{ id: 'course-1', course_code: 'ITD336', course_name: 'การพัฒนาเว็บแอปพลิเคชัน', lecturer_name: 'อ. พสวัตน์' }], error: null } as never
       return { data: [], error: null } as never
     }) as never)
     renderPath('/keys/rooms/room-1/request')
