@@ -1,0 +1,42 @@
+.key-schedule-grid [data-state="free"],
+.key-schedule-legend [data-state="free"] { --slot-bg: #e7f7eb; --slot-border: #bbdfc5; --slot-text: #15552a; }
+.key-schedule-grid [data-state="elapsed"],
+.key-schedule-legend [data-state="elapsed"] { --slot-bg: #fff4f4; --slot-border: #f0c8c8; --slot-text: #963f3f; }
+.key-schedule-grid [data-state="closed"],
+.key-schedule-legend [data-state="closed"] { --slot-bg: #edf0f3; --slot-border: #d6dce3; --slot-text: #475569; }
+.key-schedule-grid [data-state="occupied"],
+.key-schedule-legend [data-state="occupied"] { --slot-bg: #fbeeee; --slot-border: #efcaca; --slot-text: #963f3f; }
+.key-schedule-grid [data-state="selected"],
+.key-schedule-legend [data-state="selected"] { --slot-bg: #e2edff; --slot-border: #316bcc; --slot-text: #1748bf; }
+
+.key-room-detail .key-slot-grid.key-schedule-grid button[data-state],
+.key-room-detail .key-slot-legend.key-schedule-legend span[data-state] i {
+  background: var(--slot-bg);
+  border-color: var(--slot-border);
+  color: var(--slot-text);
+}
+
+.key-room-detail .key-slot-grid.key-schedule-grid button[data-state] small {
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+
+.key-room-detail .key-schedule-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem .85rem;
+  margin: .75rem 0;
+}
+.key-room-detail .key-schedule-legend span {
+  align-items: center;
+  display: inline-flex;
+  gap: .35rem;
+  font-size: .75rem;
+}
+.key-room-detail .key-schedule-legend i {
+  display: inline-block;
+  width: .65rem;
+  height: .65rem;
+  border: 1px solid;
+  border-radius: 3px;
+}

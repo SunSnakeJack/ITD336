@@ -10,7 +10,7 @@ import keyRoomIcon from '../../../assets/key-room.svg'
 import externalLinkIcon from '../../../assets/external-link.svg'
 import keyActionArrow from '../../../assets/key-action-arrow.svg'
 import { keyRequestTimingPolicyQuery, publicKeyRequestHistoryQuery } from '../key.queries'
-import { KeyCatalogBookingHistory } from './KeyCatalogBookingHistory'
+import { RoomUsageHistory } from '../../schedules/components/RoomUsageHistory'
 
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
 
@@ -39,7 +39,8 @@ export function KeyRoomCatalogCard({room,identity}:{room:ScheduleRoom;identity:A
       </section>}
       {events.isError || history.isError ? <p>โหลดรายการเบิกไม่สำเร็จ</p>
         : events.isPending || history.isPending ? <p>กำลังโหลดรายการเบิก…</p>
-        : history.data.length ? <KeyCatalogBookingHistory items={history.data} />
+        : history.data.length ? <RoomUsageHistory items={history.data.map(item => ({ ...item, title: item.requesterName }))}
+          label="รายการเบิกล่าสุด" heading="รายการเบิก" />
         : <p>— ไม่มีรายการเบิก —</p>}
     </div>}
     <footer><Link aria-label={`ดูรายละเอียด ${room.code}`} to={`/keys/rooms/${room.id}`}>ดูรายละเอียด <img src={externalLinkIcon} alt=""/></Link>{!canRequest?<button aria-label={`เบิกกุญแจ ${room.code}`} className="primary-action" disabled>{room.active?'ไม่มีช่วงเวลาว่าง':'เบิกกุญแจห้องนี้'}</button>:room.requiresSsoForKeyRequest&&!identity?<button aria-label={`เบิกกุญแจ ${room.code}`} className="primary-action" onClick={()=>setLoginOpen(true)}>เบิกกุญแจห้องนี้<img src={keyActionArrow} alt=""/></button>:<Link aria-label={`เบิกกุญแจ ${room.code}`} className="primary-action" to={requestPath}>เบิกกุญแจห้องนี้<img src={keyActionArrow} alt=""/></Link>}</footer>

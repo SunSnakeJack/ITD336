@@ -74,6 +74,8 @@ Enumerations constrain operational states. Foreign keys default to restrictive d
 
 Migration `0058_staff_usage_dashboard.sql` adds an explicit report category to room types and an authorized consolidated history RPC. Meeting usage comes from completed/active `bookings`; laboratory usage comes from the current `key_requests` flow and legacy operational `key_loans`. Cancelled and rejected records are excluded, and no report sample data is stored in the database.
 
+Migration `0079_same_day_meeting_booking_and_staff_usage.sql` uses `room_types.usage_scope` to classify meeting bookings for that RPC, matching the booking workflow. The RPC includes approved, in-use and completed meeting bookings and retains the existing laboratory report filters.
+
 Migration `0059_past_key_request_setting.sql` stores the elapsed-slot exception in `system_settings`. A database trigger rejects past same-day key requests while disabled; authorized settings managers may enable the exception through an audited RPC. Schedule conflicts and service-hour constraints remain unchanged.
 
 Migration `0065_admin_user_profile_management.sql` adds an ADMIN-only directory RPC that exposes the existing split profile names and an audited profile-update RPC. Normal clients cannot use these functions to assign roles or elevate privileges; role and account-status transitions remain controlled by their existing services.

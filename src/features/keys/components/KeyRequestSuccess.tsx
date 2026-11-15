@@ -1,3 +1,5 @@
+import { RequestStepper } from '../../../shared/components/RequestStepper'
+import { RequestResultIcon } from '../../../shared/components/RequestResultIcon'
 import { Link } from 'react-router-dom'
 import { formatThaiDate } from '../utils/format-thai-date'
 
@@ -14,9 +16,9 @@ export function KeyRequestSuccess({ status, roomCode, date, startTime, endTime, 
   const pending = status === 'PENDING_APPROVAL'
 
   return <section className={`key-request-entry key-request-success ${pending ? 'pending' : 'approved'}`}>
-    <div className="key-stepper key-success-stepper" aria-label="ขั้นตอนการเบิกกุญแจ"><b>1</b><i/><b>2</b><i/><b aria-current="step">3</b></div>
+    <RequestStepper step={3} label="ขั้นตอนการเบิกกุญแจ" />
     <div className="key-success-card">
-      <span className="key-success-symbol" aria-hidden="true">{pending ? '⌛' : '✓'}</span>
+      <RequestResultIcon pending={pending} />
       <h1>{pending ? 'ส่งคำขอเบิกกุญแจเรียบร้อยแล้ว' : 'ส่งคำขอเบิกกุญแจสำเร็จ'}</h1>
       <p>{pending ? <>ระบบได้รับคำขอของคุณแล้ว<br />กรุณารอเจ้าหน้าที่ตรวจสอบและอนุมัติคำขอ</> : 'ระบบได้รับข้อมูลการเบิกกุญแจของคุณเรียบร้อยแล้ว'}</p>
       <h2>รายละเอียดการเบิกกุญแจ</h2>

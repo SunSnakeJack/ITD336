@@ -1,0 +1,16 @@
+.request-result-icon {
+  display: block;
+  width: 3.65rem;
+  height: 3.65rem;
+  margin: .1rem auto .75rem;
+  fill: none;
+  stroke: #00a844;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.request-result-icon.is-pending { stroke: #ef9b00; stroke-width: 4; }
+
+.key-success-card:has(> .request-result-icon.is-confirmed) h1 { color: #008a38; }
+.key-success-card:has(> .request-result-icon.is-pending) h1 { color: #a85a00; }

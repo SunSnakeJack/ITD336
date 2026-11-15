@@ -265,7 +265,75 @@ describe('Authentication entry point', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent('กรุณาเข้าสู่ระบบ')
   })
 
+  it('opens the read-only weekly meeting calendar and limits week navigation', async () => {
+    vi.setSystemTime(new Date('2026-11-15T00:15:00+07:00'))
+    vi.mocked(supabase.rpc).mockImplementation((async (name: string) => {
+      if (name === 'get_public_room_catalog') return { data: [{ id: 'meeting-1', code: 'MEETING-ROOM', name: 'MEETING-ROOM',
+        room_type_name: 'Meeting Room', active: true, usage_scope: 'MEETING' }], error: null } as never
+      if (name === 'get_public_meeting_room_week') return { data: { opens_at: '08:00', closes_at: '18:00', events: [
+        { starts_at: '2026-11-15T01:30:00Z', ends_at: '2026-11-15T04:30:00Z', category: 'LEADERSHIP' },
+        { starts_at: '2026-11-16T02:00:00Z', ends_at: '2026-11-16T03:00:00Z', category: 'TEACHER' },
+      ] }, error: null } as never
+      if (name === 'get_public_meeting_room_upcoming') return { data: [
+        { starts_at: '2026-11-17T09:00:00+07:00', ends_at: '2026-11-17T09:30:00+07:00', category: 'TEACHER', pending: false },
+        { starts_at: '2026-11-16T09:00:00+07:00', ends_at: '2026-11-16T09:30:00+07:00', category: 'LEADERSHIP', pending: true },
+      ], error: null } as never
+      if (name === 'get_public_meeting_room_history') return { data: Array.from({ length: 6 }, (_, index) => ({
+        starts_at: `2026-11-${14 - index}T08:00:00+07:00`, ends_at: `2026-11-${14 - index}T08:30:00+07:00`,
+        category: 'TEACHER',
+      })), error: null } as never
+      return { data: [], error: null } as never
+    }) as never)
+
+    renderPath('/meeting-room/meeting-1')
+    const daily = await screen.findByRole('tab', { name: 'รายวัน' })
+    expect(daily).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'จองล่วงหน้า' })).toHaveAttribute('aria-selected', 'true')
+    const upcoming = await screen.findByRole('region', { name: 'รายการจองห้องประชุมล่วงหน้า' })
+    expect(Array.from(upcoming.querySelectorAll('h3 time'), date => date.getAttribute('datetime'))).toEqual(['2026-11-16', '2026-11-17'])
+    expect(upcoming).toHaveTextContent('รออนุมัติ · คณบดีและหัวหน้าสาขา')
+    fireEvent.click(screen.getByRole('tab', { name: 'จองย้อนหลัง' }))
+    const history = await screen.findByRole('region', { name: 'รายการจองห้องประชุมย้อนหลัง' })
+    expect(history.querySelectorAll('h3 time')).toHaveLength(5)
+    expect(history.querySelector('h3 time')).toHaveAttribute('datetime', '2026-11-14')
+    fireEvent.keyDown(daily, { key: 'ArrowRight' })
+    const weeklyTable = await screen.findByRole('table', { name: 'ตารางเวลารายสัปดาห์' })
+    expect(weeklyTable.querySelector('[data-edge="start"]')).toHaveTextContent(/^08:00$/)
+    expect(weeklyTable.querySelector('[data-edge="end"]')).toHaveTextContent(/^18:00$/)
+    const legend = screen.getByRole('list', { name: 'ประเภทการใช้ห้อง' })
+    expect(Array.from(legend.querySelectorAll('li'), item => item.textContent)).toEqual(['คณบดีและหัวหน้าสาขา', 'อาจารย์'])
+    expect(screen.getByTitle('08:30–11:30 คณบดีและหัวหน้าสาขา')).toHaveStyle({ left: '5%', width: '30%' })
+    expect(screen.getByTitle('09:00–10:00 อาจารย์')).toHaveAttribute('data-category', 'TEACHER')
+    const booking = screen.getByRole('button', { name: /08:30–11:30 คณบดีและหัวหน้าสาขา/ })
+    fireEvent.click(booking)
+    const dialog = screen.getByRole('dialog', { name: 'รายละเอียดการจอง' })
+    expect(dialog).toHaveTextContent('ห้องประชุมคณะ IT')
+    expect(dialog).toHaveTextContent('08:30–11:30 น.')
+    expect(dialog).not.toHaveTextContent('ชื่อผู้จอง')
+    expect(dialog).not.toHaveTextContent('เหตุผลการจอง')
+    fireEvent(dialog, new Event('cancel', { cancelable: true }))
+    expect(screen.queryByRole('dialog', { name: 'รายละเอียดการจอง' })).not.toBeInTheDocument()
+    fireEvent.click(booking)
+    fireEvent.click(screen.getByRole('button', { name: 'ปิดรายละเอียด' }))
+    expect(screen.queryByRole('dialog', { name: 'รายละเอียดการจอง' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'จองห้องนี้' })).not.toBeInTheDocument()
+    expect(supabase.rpc).toHaveBeenCalledWith('get_public_meeting_room_week', { p_room_id: 'meeting-1', p_week_start: '2026-11-15' })
+
+    const back = screen.getByRole('button', { name: 'สัปดาห์ก่อนหน้า' })
+    const next = screen.getByRole('button', { name: 'สัปดาห์ถัดไป' })
+    fireEvent.click(back)
+    expect(back).toBeDisabled()
+    await waitFor(() => expect(supabase.rpc).toHaveBeenCalledWith('get_public_meeting_room_week', { p_room_id: 'meeting-1', p_week_start: '2026-11-08' }))
+    fireEvent.click(next)
+    fireEvent.click(next)
+    expect(next).toBeDisabled()
+    await waitFor(() => expect(supabase.rpc).toHaveBeenCalledWith('get_public_meeting_room_week', { p_room_id: 'meeting-1', p_week_start: '2026-11-22' }))
+    fireEvent.click(daily)
+    expect(screen.getByRole('button', { name: /08:00.*ว่าง/ })).toBeInTheDocument()
+  })
+
   it('uses the authenticated meeting-room booking form and review flow', async () => {
+    vi.setSystemTime(new Date('2026-11-09T07:30:00+07:00'))
     const payload = btoa(JSON.stringify({ iat: Math.floor(Date.now() / 1000) }))
     vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({ data: { session: { access_token: `x.${payload}.x`, user: { id: 'staff-1', user_metadata: {} } } }, error: null } as never)
     vi.mocked(supabase.from).mockImplementation(((table: string) => {
@@ -276,25 +344,33 @@ describe('Authentication entry point', () => {
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{ id: 'meeting-1', code: 'MEETING-ROOM', name: 'MEETING-ROOM', room_type_name: 'Meeting Room', capacity: 10, active: true, usage_scope: 'MEETING' }], error: null } as never)
 
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{
-      allowed_dates: ['2026-11-09', '2026-11-10', '2026-11-11'], opens_at: '08:30:00', closes_at: '18:30:00',
+      allowed_dates: ['2026-11-09', '2026-11-10', '2026-11-11'], opens_at: '08:00:00', closes_at: '18:00:00',
     }], error: null } as never)
     renderPath('/meeting-room/meeting-1/request?date=2026-11-09&start=12:30&end=14:00')
 
     expect(await screen.findByRole('heading', { name: 'แบบฟอร์มการจองห้องประชุม' })).toBeInTheDocument()
     expect(screen.queryByText('สถานะ')).not.toBeInTheDocument()
     expect(screen.queryByRole('radio')).not.toBeInTheDocument()
-    await waitFor(() => expect(screen.getByLabelText('วันที่จอง')).toHaveValue('2026-11-09'))
+    const dateSelect = await screen.findByRole('button', { name: 'วันที่จอง 9 พฤศจิกายน 2569' })
+    fireEvent.click(dateSelect)
     expect(screen.getAllByRole('option')).toHaveLength(3)
+    expect(screen.getByRole('option', { name: '9 พฤศจิกายน 2569' })).toHaveAttribute('aria-selected', 'true')
+    fireEvent.keyDown(dateSelect, { key: 'Escape' })
     const requesterId = screen.getByLabelText('รหัสผู้ใช้งาน')
+    expect(screen.getByRole('list', { name: 'ขั้นตอนการจองห้องประชุม' })).toHaveTextContent(/^123$/)
+    expect(screen.getByRole('list', { name: 'ขั้นตอนการจองห้องประชุม' }).querySelector('[aria-current="step"]')).toHaveTextContent(/^1$/)
     expect(requesterId).not.toHaveAttribute('readonly')
     expect(requesterId).toHaveValue('')
     fireEvent.change(requesterId, { target: { value: 'abc9876541' } })
     expect(requesterId).toHaveValue('9876541')
     fireEvent.click(screen.getByRole('button', { name: 'เวลาเริ่มต้น 12:30' }))
     expect(screen.getByRole('listbox', { name: 'ตัวเลือกเวลาเริ่มต้น' })).toHaveClass('placement-top')
+    expect(screen.getByRole('option', { name: '08:00' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: '18:00' })).not.toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('ระบุวัตถุประสงค์'), { target: { value: 'นัดพรีเซนต์งานนักศึกษา' } })
     fireEvent.click(screen.getByRole('button', { name: /ถัดไป/ }))
     expect(await screen.findByRole('heading', { name: 'ตรวจสอบข้อมูล' })).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'ขั้นตอนการจองห้องประชุม' }).querySelector('[aria-current="step"]')).toHaveTextContent(/^2$/)
     expect(screen.getByText('ข้อมูลการจอง')).toBeInTheDocument()
     expect(screen.getByText('9876541')).toBeInTheDocument()
     expect(screen.getByText('นัดพรีเซนต์งานนักศึกษา')).toBeInTheDocument()
@@ -302,8 +378,19 @@ describe('Authentication entry point', () => {
     expect(screen.getByRole('button', { name: 'ยืนยันการจอง' })).toHaveClass('review-confirm-action')
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: null, error: { message: 'BOOKING_ROLE_REQUIRED' } } as never)
     fireEvent.click(screen.getByRole('button', { name: 'ยืนยันการจอง' }))
-    expect(await screen.findByRole('dialog', { name: 'ไม่สามารถจองห้องได้' })).toHaveTextContent('บัญชีนี้ไม่มีสิทธิ์จองห้องประชุม กรุณาใช้บัญชีอาจารย์')
-    expect(supabase.rpc).toHaveBeenCalledWith('create_booking', expect.objectContaining({ p_room_id: 'meeting-1', p_purpose: 'นัดพรีเซนต์งานนักศึกษา', p_requires_key: true }))
+    expect(await screen.findByRole('dialog', { name: 'ไม่สามารถจองห้องได้' })).toHaveTextContent('บัญชีนี้ไม่มีสิทธิ์จองห้องประชุม')
+    expect(supabase.rpc).toHaveBeenCalledWith('create_booking', expect.objectContaining({
+      p_room_id: 'meeting-1', p_purpose: 'นัดพรีเซนต์งานนักศึกษา', p_requires_key: true,
+      p_starts_at: '2026-11-09T12:30:00+07:00', p_ends_at: '2026-11-09T14:00:00+07:00',
+    }))
+    fireEvent.click(screen.getByRole('button', { name: 'ตกลง' }))
+    fireEvent.click(screen.getByRole('button', { name: 'ย้อนกลับ' }))
+    expect(screen.getByRole('list', { name: 'ขั้นตอนการจองห้องประชุม' }).querySelector('[aria-current="step"]')).toHaveTextContent(/^1$/)
+    fireEvent.click(screen.getByRole('button', { name: /ถัดไป/ }))
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: { id: 'booking-1', status: 'APPROVED' }, error: null } as never)
+    fireEvent.click(screen.getByRole('button', { name: 'ยืนยันการจอง' }))
+    expect(await screen.findByRole('heading', { name: 'บันทึกการจองห้องสำเร็จ' })).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'ขั้นตอนการจองห้องประชุม' }).querySelector('[aria-current="step"]')).toHaveTextContent(/^3$/)
   })
 
   it('hides elapsed meeting-room times for today but keeps them for a future date', () => {
@@ -472,6 +559,7 @@ describe('Authentication entry point', () => {
     vi.mocked(supabase.rpc).mockImplementation((async (name: string) => {
       if (name === 'get_public_room_catalog') return { data: [{ id: 'room-1', code: 'S2407', layout_key: 'S2407', name: 'ห้องปฏิบัติการคอมพิวเตอร์', room_type_name: 'Computer Room', building: 'อาคาร 2', floor: '4', capacity: 30, active: true, academic_schedule_confirmed: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: false }], error: null } as never
       if (name === 'get_public_key_request_history') return { data: [{ id: 'req-1', requester_name: 'นศ. Sufeeyan Taleh · เปิดห้องเพื่อการเรียนการสอน', starts_at: '2026-11-08T14:30:00+07:00', ends_at: '2026-11-08T15:00:00+07:00', status: 'APPROVED' }], error: null } as never
+      if (name === 'get_public_room_schedule_events') return { data: [{ id: 'key-request:req-1', event_type: 'BOOKING', title: 'นศ. Sufeeyan Taleh · เปิดห้องเพื่อการเรียนการสอน', starts_at: '2026-11-08T14:30:00+07:00', ends_at: '2026-11-08T15:00:00+07:00', status: 'APPROVED' }], error: null } as never
       return { data: [], error: null } as never
     }) as never)
 
@@ -479,11 +567,11 @@ describe('Authentication entry point', () => {
 
     expect(await screen.findByRole('heading', { name: 'ห้อง S2407' })).toBeInTheDocument()
     expect(await screen.findByText('นศ. Sufeeyan Taleh · เปิดห้องเพื่อการเรียนการสอน')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /08:00.*ไม่ว่าง/ })).toHaveAttribute('aria-disabled', 'true')
-    expect(screen.getByRole('button', { name: /08:00.*ไม่ว่าง/ })).toHaveClass('unavailable')
-    expect(screen.getByRole('button', { name: /13:30.*ไม่ว่าง/ })).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('button', { name: /08:00.*ผ่านแล้ว/ })).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('button', { name: /13:30.*ผ่านแล้ว/ })).toHaveAttribute('data-state', 'elapsed')
+    expect(screen.getByRole('button', { name: '14:30 นศ. Sufeeyan Taleh' })).toHaveAttribute('data-state', 'occupied')
     expect(screen.getByRole('button', { name: /14:00.*ว่าง/ })).toHaveAttribute('aria-disabled', 'false')
-    expect(screen.getByRole('button', { name: /15:00.*ว่าง/ })).toHaveAttribute('aria-disabled', 'false')
+    expect(screen.getByRole('button', { name: /15:00.*ว่าง/ })).toHaveAttribute('data-state', 'free')
   })
 
   it('keeps ten key-request history rows in a three-row scroll area', async () => {
@@ -502,9 +590,9 @@ describe('Authentication entry point', () => {
 
     renderPath('/keys/rooms/room-1')
 
-    const list = await screen.findByRole('list', { name: 'รายการผู้เบิกกุญแจทั้งหมด' })
-    expect(list).toHaveClass('key-history-scroll')
-    expect(list.querySelectorAll('li')).toHaveLength(10)
+    const list = await screen.findByRole('region', { name: 'รายการผู้เบิกกุญแจทั้งหมด' })
+    expect(list).toHaveClass('is-compact')
+    expect(list.querySelectorAll('p')).toHaveLength(10)
   })
 
   it('opens an anonymous key-request form for a general laboratory', async () => {
@@ -775,7 +863,7 @@ describe('Authentication entry point', () => {
       return { data: [], error: null } as never
     }) as never)
     renderPath('/keys/rooms/room-1')
-    expect(await screen.findByRole('button', { name: /18:00.*ไม่ว่าง/ })).toHaveClass('unavailable')
+    expect(await screen.findByRole('button', { name: /18:00.*มีผู้ใช้/ })).toHaveClass('unavailable')
   })
 
   it('keeps the schedule title and date in one heading row', async () => {
@@ -809,7 +897,7 @@ describe('Authentication entry point', () => {
       return { data: [], error: null } as never
     }) as never)
     renderPath('/keys/rooms/room-1')
-    fireEvent.click(await screen.findByRole('button', { name: /10:30.*ไม่ว่าง/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /10:30.*มีผู้ใช้/ }))
     expect(screen.getByRole('alert')).toHaveTextContent('ช่วงเวลานี้ไม่ว่าง กรุณาเลือกเวลาอื่น')
   })
 

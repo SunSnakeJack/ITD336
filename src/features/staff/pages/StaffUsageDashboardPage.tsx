@@ -4,7 +4,7 @@ import { UsagePrintReport, type UsageReportSnapshot } from '../reporting/UsagePr
 import{useMutation,useQuery,useQueryClient}from'@tanstack/react-query'
 import{SelectField}from'../../../shared/components/SelectField'
 import{StaffPage,StaffQueryState}from'../components/StaffPage'
-import{staffUsageQuery}from'../reporting/staff-usage.queries'
+import{staffUsageQuery,staffUsageQueryKey}from'../reporting/staff-usage.queries'
 import{filterUsageRows,roomUsage,topUsers}from'../reporting/staff-usage.utils'
 import type{StaffUsageRow,UsageCategory}from'../reporting/staff-usage.types'
 import{StaffKeyRequestDecisionDialog}from'../components/StaffKeyRequestDecisionDialog'
@@ -22,7 +22,7 @@ export function StaffUsageDashboardPage(){
  const [report, setReport] = useState<UsageReportSnapshot | null>(null)
  const closeReport = useCallback(() => setReport(null), [])
  const client=useQueryClient(),query=useQuery(staffUsageQuery()),requests=useQuery({queryKey:staffKeyRequestQueryKey,queryFn:getStaffKeyRequests}),[category,setCategory]=useState<''|UsageCategory>(''),[roomId,setRoomId]=useState(''),[from,setFrom]=useState(''),[to,setTo]=useState(''),[pageSize,setPageSize]=useState(10),[page,setPage]=useState(1),[action,setAction]=useState<{item:StaffKeyRequest;decision:'APPROVED'|'REJECTED'}|null>(null)
- const decide=useMutation({mutationFn:decideStaffKeyRequest,onSuccess:async()=>{await Promise.all([client.invalidateQueries({queryKey:staffKeyRequestQueryKey}),client.invalidateQueries({queryKey:['staff','usage']})]);setAction(null)}})
+ const decide=useMutation({mutationFn:decideStaffKeyRequest,onSuccess:async()=>{await Promise.all([client.invalidateQueries({queryKey:staffKeyRequestQueryKey}),client.invalidateQueries({queryKey:staffUsageQueryKey})]);setAction(null)}})
  const rows=query.data??emptyRows,rooms=useMemo(()=>[...new Map(rows.filter(row=>!category||row.roomCategory===category).map(row=>[row.roomId,{id:row.roomId,code:row.roomCode,name:row.roomName}])).values()].sort((a,b)=>a.code.localeCompare(b.code)),[rows,category])
  const filtered=useMemo(()=>filterUsageRows(rows,{category,roomId,from,to}),[rows,category,roomId,from,to]),roomCounts=useMemo(()=>roomUsage(filtered),[filtered]),users=useMemo(()=>topUsers(filtered),[filtered])
  const pageCount=Math.max(1,Math.ceil(filtered.length/pageSize)),safePage=Math.min(page,pageCount),visible=filtered.slice((safePage-1)*pageSize,safePage*pageSize),maxRoom=Math.max(1,...roomCounts.map(item=>item.count))

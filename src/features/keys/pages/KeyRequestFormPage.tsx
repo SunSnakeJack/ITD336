@@ -1,3 +1,4 @@
+import { RequestStepper } from '../../../shared/components/RequestStepper'
 import { saturdayPolicyQuery } from '../../schedules/saturday-policy.queries'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FormEvent, useMemo, useState } from 'react'
@@ -97,7 +98,7 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
     setReviewing(true)
   }
 
-  return <section className="key-request-entry key-booking-form-page"><Link className="back-link" to="/keys">‹ กลับหน้าหลัก</Link><header><h1>แบบฟอร์มการเบิกกุญแจ</h1><p>กรุณากรอกข้อมูลเพื่อดำเนินการเบิกกุญแจ</p></header><div className="key-stepper" aria-label="ขั้นตอนการเบิกกุญแจ"><b aria-current="step">1</b><i/><b>2</b><i/><b>3</b></div>
+  return <section className="key-request-entry key-booking-form-page"><Link className="back-link" to="/keys">‹ กลับหน้าหลัก</Link><header><h1>แบบฟอร์มการเบิกกุญแจ</h1><p>กรุณากรอกข้อมูลเพื่อดำเนินการเบิกกุญแจ</p></header><RequestStepper step={1} label="ขั้นตอนการเบิกกุญแจ" />
     <form className="key-request-form" onSubmit={submit} noValidate>
       <section className="key-form-section" aria-labelledby="requester-heading"><h2 className="key-section-heading" id="requester-heading"><svg className="key-section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>ข้อมูลผู้เบิกกุญแจ</span></h2><div className="key-identity-row"><RequesterStatusSelect value={requesterType} onChange={setRequesterType}/><label>รหัสนักศึกษา / บุคลากร<input aria-label="รหัสนักศึกษา / บุคลากร" inputMode="numeric" pattern="[0-9]*" required placeholder="กรุณากรอกรหัส" value={requesterIdentifier} onChange={(event)=>setRequesterIdentifier(event.target.value.replace(/\D/g,''))}/>{errors.requesterIdentifier&&<small role="alert">{errors.requesterIdentifier}</small>}</label></div>
       <label>ชื่อ–นามสกุล<input aria-label="ชื่อ–นามสกุล" required placeholder="กรุณากรอกชื่อ–นามสกุล" value={requesterName} readOnly={Boolean(room.requiresSsoForKeyRequest)} onChange={(event) => setName(event.target.value)} />{errors.name && <small role="alert">{errors.name}</small>}</label>

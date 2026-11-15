@@ -6,8 +6,10 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import type { AuthIdentity } from '../../auth/auth.types'
 import { publicRoomsQuery, publicScheduleEventsQuery } from '../../schedules/schedule.queries'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
+import { RoomUsageHistory } from '../../schedules/components/RoomUsageHistory'
+import { RoomScheduleGrid, type RoomScheduleSlot } from '../../schedules/components/RoomScheduleGrid'
 import { keyRequestTimingPolicyQuery, publicKeyRequestHistoryQuery } from '../key.queries'
-import { bangkokClock, isSlotElapsedForBangkokDate } from '../utils/key-catalog-time'
+import { isSlotElapsedForBangkokDate } from '../utils/key-catalog-time'
 import { isSelectableRange, isTimeSelected } from '../utils/key-slot-selection'
 import { GoogleSsoModal } from '../../auth/components/GoogleSsoModal'
 import defaultRoomImage from '../../../assets/default-room.jpg'
@@ -37,10 +39,35 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
   if (rooms.isPending) return <LoadingSpinner label="กำลังโหลดข้อมูลห้อง…" />
   if (!room || room.usageScope !== 'LABORATORY') return <Navigate to="/keys" replace />
 
-  const occupied = (time: string) => (events.data ?? []).some((event) => time >= bangkokClock(event.startsAt) && time < bangkokClock(event.endsAt))
+  const now = new Date()
+  const slotTarget = (time: string) => time === '18:00' ? '17:30' : time
+  const covers = (item: { startsAt: string; endsAt: string }, time: string) => {
+    const startsAt = Date.parse(`${date}T${slotTarget(time)}:00+07:00`)
+    return Date.parse(item.startsAt) < startsAt + 30 * 60_000 && Date.parse(item.endsAt) > startsAt
+  }
+  const occupied = (time: string) => events.data?.find(event => covers(event, time))
   const isUnavailable = (time: string) => {
-    const target = time === '18:00' ? '17:30' : time
-    return closed || occupied(target) || isSlotElapsedForBangkokDate(target, date, new Date(), timingPolicy.data??false)
+    return closed || Boolean(occupied(time)) || isSlotElapsedForBangkokDate(time, date, now, timingPolicy.data ?? false)
+  }
+  const getSlot = (time: string): RoomScheduleSlot => {
+    const disabled = isUnavailable(time)
+    const event = occupied(time)
+    const elapsed = isSlotElapsedForBangkokDate(time, date, now)
+    const returned = elapsed && events.isSuccess
+      ? history.data?.find(item => item.status === 'RETURNED' && covers(item, time)) : undefined
+
+    if (closed) return { state: 'closed', label: 'ปิดให้บริการ', disabled }
+    if (!disabled && isTimeSelected(time, start, end)) {
+      const label = time === start ? 'เลือก - เริ่ม' : time === end ? 'เลือก - จบ' : 'เลือก'
+      return { state: 'selected', label, disabled }
+    }
+    if (event?.eventType === 'BLOCK') return { state: 'closed', label: 'ปิดให้บริการ', disabled }
+    if (event || returned) {
+      const publicTitle = returned?.requesterName ?? (event?.id.startsWith('key-request:') ? event.title : '')
+      return { state: 'occupied', label: publicTitle.split(' · ')[0].trim() || 'มีผู้ใช้', disabled }
+    }
+    if (elapsed) return { state: 'elapsed', label: 'ผ่านแล้ว', disabled }
+    return { state: 'free', label: 'ว่าง', disabled }
   }
   const selectSlot = (time: string) => {
     if (isUnavailable(time)){setSelectionNotice('ช่วงเวลานี้ไม่ว่าง กรุณาเลือกเวลาอื่น');return}
@@ -64,8 +91,8 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
     <Link className="back-link" to="/keys">← กลับ</Link>
     <header className="key-detail-heading"><h1>ห้อง {room.code}</h1><p>{room.description||'ยังไม่มีคำอธิบายห้อง'}</p><div className="key-detail-metadata"><span>{room.active?'เปิดใช้งาน':'ไม่พร้อมใช้'}</span><span>{room.requiresSsoForKeyRequest?'ต้องเข้าสู่ระบบ':'ไม่ต้องเข้าสู่ระบบ'}</span><span>{room.requiresSsoForKeyRequest?'รออนุมัติ':'ไม่ต้องรออนุมัติ'}</span></div></header>
     <article className="key-detail-card key-room-information"><div className="key-room-photo"><img src={room.imageUrl||defaultRoomImage} alt={`ภาพห้อง ${room.code}`} className="key-room-photo-image" loading="lazy" /></div><div className="key-room-facts"><h2>ข้อมูลห้อง</h2><p><small>ประเภทห้อง</small><strong>{room.roomTypeName}</strong></p><p><small>ความจุ</small><strong>{room.capacity>0?`${room.capacity} ที่นั่ง`:'ยังไม่มีข้อมูล'}</strong></p></div><footer><strong>อุปกรณ์เพิ่มเติม</strong><span>{room.equipment?.length?room.equipment.join(' · '):'ยังไม่มีข้อมูลอุปกรณ์เพิ่มเติม'}</span></footer></article>
-    <article className="key-detail-card key-history"><h2>รายการผู้เบิกกุญแจ</h2><time className="key-history-date">{thaiDate(date)}</time>{history.isPending?<p className="key-detail-empty">กำลังโหลดรายการ…</p>:history.isError?<p className="key-detail-empty">ไม่สามารถโหลดรายการได้</p>:history.data?.length ? <ul className="key-history-scroll" aria-label="รายการผู้เบิกกุญแจทั้งหมด">{history.data.map((item)=><li key={item.id}><span title={item.requesterName}>{item.requesterName}</span><time>{bangkokClock(item.startsAt)}–{bangkokClock(item.endsAt)} น.</time></li>)}</ul>:<p className="key-detail-empty">— ยังไม่มีรายการ —</p>}</article>
-    <article className="key-detail-card key-schedule-card"><div className="key-schedule-heading" data-testid="key-schedule-heading"><h2>ตารางเวลาการเบิกกุญแจ</h2><time dateTime={date}>{thaiDate(date)}<span className="sr-only"> ({date})</span></time><p>แตะครั้งแรกเพื่อเลือกเวลาเริ่มต้น แล้วแตะช่วงสุดท้ายที่ต้องการใช้งาน</p></div><div className="key-slot-legend" aria-label="สถานะช่วงเวลา"><span><i/>ว่าง</span><span><i/>จองแล้ว</span><span><i/>เลือกแล้ว</span></div><div className="key-slot-grid">{SLOTS.map((time) => { const unavailable = isUnavailable(time); const selected = isTimeSelected(time,start,end); const label=unavailable?'ไม่ว่าง':time===start?'เลือก - เริ่ม':time===end?'เลือก - จบ':selected?'เลือก':'ว่าง'; return <button key={time} type="button" aria-disabled={unavailable} className={unavailable?'unavailable':selected?'selected':''} onClick={() => selectSlot(time)}><strong>{time}</strong><small>{label}</small></button> })}</div>{selectionNotice&&<p className="key-selection-notice" role="alert">{selectionNotice}</p>}{start && <div className="key-selected-time"><div className="key-time-summary"><span>เวลาเริ่มต้น<strong>{start}</strong></span><span>เวลาสิ้นสุด<strong>{end ?? 'กรุณาเลือก'}</strong></span></div><button type="button" className="key-reset-selection" onClick={clearSelection}>เลือกช่วงเวลาใหม่</button></div>}</article>
+    <article className="key-detail-card key-history"><h2>รายการผู้เบิกกุญแจ</h2>{history.isPending?<p className="key-detail-empty">กำลังโหลดรายการ…</p>:history.isError?<p className="key-detail-empty">ไม่สามารถโหลดรายการได้</p>:history.data?.length ? <RoomUsageHistory items={history.data.map(item => ({ ...item, title: item.requesterName }))} label="รายการผู้เบิกกุญแจทั้งหมด" heading="รายการเบิก" compact />:<p className="key-detail-empty">— ยังไม่มีรายการ —</p>}</article>
+    <article className="key-detail-card key-schedule-card"><div className="key-schedule-heading" data-testid="key-schedule-heading"><h2>ตารางเวลาการเบิกกุญแจ</h2><time dateTime={date}>{thaiDate(date)}<span className="sr-only"> ({date})</span></time><p>แตะครั้งแรกเพื่อเลือกเวลาเริ่มต้น แล้วแตะช่วงสุดท้ายที่ต้องการใช้งาน</p></div><RoomScheduleGrid times={SLOTS} getSlot={getSlot} onSelect={selectSlot} />{selectionNotice&&<p className="key-selection-notice" role="alert">{selectionNotice}</p>}{start && <div className="key-selected-time"><div className="key-time-summary"><span>เวลาเริ่มต้น<strong>{start}</strong></span><span>เวลาสิ้นสุด<strong>{end ?? 'กรุณาเลือก'}</strong></span></div><button type="button" className="key-reset-selection" onClick={clearSelection}>เลือกช่วงเวลาใหม่</button></div>}</article>
     {room.requiresSsoForKeyRequest && !identity ? <button className="primary-action" disabled={!canRequest} onClick={() => setShowLogin(true)}>เบิกกุญแจห้องนี้</button> : <Link className="primary-action" aria-disabled={!canRequest} to={canRequest ? requestPath : '#'}>เบิกกุญแจห้องนี้</Link>}
     {showLogin && <GoogleSsoModal returnTo={requestPath} onClose={() => setShowLogin(false)} />}
   </section>

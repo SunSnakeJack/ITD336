@@ -4,6 +4,8 @@ import type { ScheduleFilters } from './schedule.types'
 
 export const scheduleKeys = {
   all: ['schedules'] as const,
+  publicMeetingWeeks: () => [...scheduleKeys.all, 'public-meeting-week'] as const,
+  publicMeetingBookings: (roomId: string) => [...scheduleKeys.all, 'public-meeting-bookings', roomId] as const,
   rooms: () => [...scheduleKeys.all, 'rooms'] as const,
   publicRooms: () => [...scheduleKeys.all, 'public-rooms'] as const,
   academic: () => [...scheduleKeys.all, 'academic'] as const,
