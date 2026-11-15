@@ -6,6 +6,7 @@ import { GoogleSsoModal } from '../../auth/components/GoogleSsoModal'
 import { UserMenuDrawer } from './UserMenuDrawer'
 import keySpaceLogo from '../../../assets/it-keyspace.ico'
 import './KeyHeader.css'
+import './RoomServiceTheme.css'
 import { AccountIdentitySummary } from './AccountIdentitySummary'
 
 export function PublicLayout({ identity, loading, onLogout }: { identity: AuthIdentity | null; loading: boolean; onLogout: () => Promise<void> }) {
@@ -16,7 +17,8 @@ export function PublicLayout({ identity, loading, onLogout }: { identity: AuthId
   const keyHeaderHome=meetingRoomMode?'/meeting-room':'/keys'
   const [menuOpen,setMenuOpen]=useState(false)
   const [loginOpen,setLoginOpen]=useState(false)
-  return <div className="student-shell public-shell key-mode">
+  const roomServiceMode = /^\/(keys|meeting-room)(\/|$)/.test(pathname)
+  return <div className={`student-shell public-shell key-mode${roomServiceMode ? ' room-service-theme' : ''}`}>
     <div className="public-main"><header className="key-mobile-header"><Link className="key-header-logo" to={keyHeaderHome}><img src={keySpaceLogo} alt="IT KeySpace" /></Link><div className="key-header-account">{loading?<small>กำลังตรวจสอบบัญชี…</small>:<><NotificationBell/><button className="key-account-button" aria-label="เปิดเมนูผู้ใช้" onClick={()=>setMenuOpen(true)}><AccountIdentitySummary identity={identity}/></button></>}</div></header><main><Outlet /></main></div>
     {menuOpen&&<UserMenuDrawer identity={identity} onClose={()=>setMenuOpen(false)} onProfile={()=>{setMenuOpen(false);setLoginOpen(true)}} onLogout={onLogout}/>}
     {loginOpen&&<GoogleSsoModal returnTo={returnTo} onClose={()=>setLoginOpen(false)}/>}

@@ -4,12 +4,13 @@ import { UsagePrintReport, type UsageReportSnapshot } from '../reporting/UsagePr
 import{useMutation,useQuery,useQueryClient}from'@tanstack/react-query'
 import{SelectField}from'../../../shared/components/SelectField'
 import{StaffPage,StaffQueryState}from'../components/StaffPage'
-import{staffUsageQuery}from'../reporting/staff-usage.queries'
+import{staffUsageQuery,staffUsageQueryKey}from'../reporting/staff-usage.queries'
 import{filterUsageRows,roomUsage,topUsers}from'../reporting/staff-usage.utils'
 import type{StaffUsageRow,UsageCategory}from'../reporting/staff-usage.types'
 import{StaffKeyRequestDecisionDialog}from'../components/StaffKeyRequestDecisionDialog'
 import{DecisionButtons}from'./StaffKeyRequestsPage'
 import{decideStaffKeyRequest,getStaffKeyRequests,staffKeyRequestQueryKey,type StaffKeyRequest}from'../staff-key-request.service'
+import { StaffMeetingDecisionButtons } from '../components/StaffMeetingDecisionButtons'
 import{StatusBadge}from'../components/StaffPage'
 
 const dateFormat=new Intl.DateTimeFormat('th-TH-u-nu-latn',{day:'2-digit',month:'2-digit',year:'2-digit',timeZone:'Asia/Bangkok'})
@@ -22,7 +23,7 @@ export function StaffUsageDashboardPage(){
  const [report, setReport] = useState<UsageReportSnapshot | null>(null)
  const closeReport = useCallback(() => setReport(null), [])
  const client=useQueryClient(),query=useQuery(staffUsageQuery()),requests=useQuery({queryKey:staffKeyRequestQueryKey,queryFn:getStaffKeyRequests}),[category,setCategory]=useState<''|UsageCategory>(''),[roomId,setRoomId]=useState(''),[from,setFrom]=useState(''),[to,setTo]=useState(''),[pageSize,setPageSize]=useState(10),[page,setPage]=useState(1),[action,setAction]=useState<{item:StaffKeyRequest;decision:'APPROVED'|'REJECTED'}|null>(null)
- const decide=useMutation({mutationFn:decideStaffKeyRequest,onSuccess:async()=>{await Promise.all([client.invalidateQueries({queryKey:staffKeyRequestQueryKey}),client.invalidateQueries({queryKey:['staff','usage']})]);setAction(null)}})
+ const decide=useMutation({mutationFn:decideStaffKeyRequest,onSuccess:async()=>{await Promise.all([client.invalidateQueries({queryKey:staffKeyRequestQueryKey}),client.invalidateQueries({queryKey:staffUsageQueryKey})]);setAction(null)}})
  const rows=query.data??emptyRows,rooms=useMemo(()=>[...new Map(rows.filter(row=>!category||row.roomCategory===category).map(row=>[row.roomId,{id:row.roomId,code:row.roomCode,name:row.roomName}])).values()].sort((a,b)=>a.code.localeCompare(b.code)),[rows,category])
  const filtered=useMemo(()=>filterUsageRows(rows,{category,roomId,from,to}),[rows,category,roomId,from,to]),roomCounts=useMemo(()=>roomUsage(filtered),[filtered]),users=useMemo(()=>topUsers(filtered),[filtered])
  const pageCount=Math.max(1,Math.ceil(filtered.length/pageSize)),safePage=Math.min(page,pageCount),visible=filtered.slice((safePage-1)*pageSize,safePage*pageSize),maxRoom=Math.max(1,...roomCounts.map(item=>item.count))
@@ -62,4 +63,4 @@ export function StaffUsageDashboardPage(){
  </StaffPage>
 }
 
-function UsageTable({rows,offset,requests,onSelect}:{rows:ReturnType<typeof filterUsageRows>;offset:number;requests:StaffKeyRequest[];onSelect?:(item:StaffKeyRequest,decision:'APPROVED'|'REJECTED')=>void}){return <div className="staff-table-wrap usage-screen-table usage-table-scroll"><table className="staff-table"><thead><tr><th>ลำดับ</th><th>วันเดือนปี</th><th>เลขห้อง</th><th>ประเภท</th><th>วัตถุประสงค์</th><th>ผู้ใช้งาน</th><th>เวลาเบิก</th><th>เวลาคืน</th><th>สถานะ</th><th>ดำเนินการ</th></tr></thead><tbody>{rows.map((row,index)=>{const request=requests.find(item=>item.id===row.transactionId);return <tr key={row.transactionId}><td>{offset+index+1}</td><td>{dateFormat.format(new Date(row.startsAt))}</td><td><strong>{row.roomCode}</strong><small>{row.roomName}</small></td><td>{categoryLabels[row.roomCategory]}</td><td>{request?.status==='REJECTED'?(request.decisionReason||'ไม่ระบุเหตุผล'):row.purpose}</td><td>{row.userName}</td><td>{timeFormat.format(new Date(row.startsAt))}</td><td>{row.returnedAt?timeFormat.format(new Date(row.returnedAt)):row.source==='BOOKING'?timeFormat.format(new Date(row.endsAt)):'ยังไม่คืน'}</td><td><StatusBadge status={request?.status??row.status}/></td><td>{request?.status==='PENDING_APPROVAL'&&onSelect?<DecisionButtons item={request} onSelect={decision=>onSelect(request,decision)}/>:'—'}</td></tr>})}</tbody></table></div>}
+function UsageTable({rows,offset,requests,onSelect}:{rows:ReturnType<typeof filterUsageRows>;offset:number;requests:StaffKeyRequest[];onSelect?:(item:StaffKeyRequest,decision:'APPROVED'|'REJECTED')=>void}){return <div className="staff-table-wrap usage-screen-table usage-table-scroll"><table className="staff-table"><thead><tr><th>ลำดับ</th><th>วันเดือนปี</th><th>เลขห้อง</th><th>ประเภท</th><th>วัตถุประสงค์</th><th>ผู้ใช้งาน</th><th>เวลาเบิก</th><th>เวลาคืน</th><th>สถานะ</th><th>ดำเนินการ</th></tr></thead><tbody>{rows.map((row,index)=>{const request=requests.find(item=>item.id===row.transactionId);return <tr key={row.transactionId}><td>{offset+index+1}</td><td>{dateFormat.format(new Date(row.startsAt))}</td><td><strong>{row.roomCode}</strong><small>{row.roomName}</small></td><td>{categoryLabels[row.roomCategory]}</td><td>{request?.status==='REJECTED'?(request.decisionReason||'ไม่ระบุเหตุผล'):row.purpose}</td><td>{row.userName}</td><td>{timeFormat.format(new Date(row.startsAt))}</td><td>{row.returnedAt?timeFormat.format(new Date(row.returnedAt)):row.source==='BOOKING'?timeFormat.format(new Date(row.endsAt)):'ยังไม่คืน'}</td><td><StatusBadge status={request?.status??row.status}/></td><td>{row.source==='BOOKING'&&row.roomCategory==='MEETING'&&row.status==='PENDING'?<StaffMeetingDecisionButtons row={row}/>:request?.status==='PENDING_APPROVAL'&&onSelect?<DecisionButtons item={request} onSelect={decision=>onSelect(request,decision)}/>:'—'}</td></tr>})}</tbody></table></div>}

@@ -1,0 +1,140 @@
+.meeting-room-detail .key-schedule-card { display: block; min-width: 0; }
+
+.meeting-room-detail .meeting-schedule-tabs {
+  display: flex;
+  gap: .35rem;
+  margin: .75rem 0;
+}
+
+.meeting-schedule-tabs button,
+.meeting-week-navigation button {
+  border: 1px solid #dbe3ef;
+  border-radius: .55rem;
+  background: #f5f7fb;
+  color: #10005b;
+  font: inherit;
+  padding: .45rem .75rem;
+}
+
+.meeting-schedule-tabs button[aria-selected="true"] { background: #1748bf; color: #fff; }
+.meeting-week-navigation button:disabled { opacity: .45; }
+
+.meeting-weekly { min-width: 0; }
+.meeting-week-legend,
+.meeting-week-navigation {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .45rem .8rem;
+  margin: 0 0 .65rem;
+  font-size: .8rem;
+}
+
+.meeting-week-legend { list-style: none; padding: 0; }
+.meeting-week-legend li::before {
+  content: '';
+  display: inline-block;
+  width: .65rem;
+  height: .65rem;
+  border-radius: .2rem;
+  background: var(--event-bg);
+  border: 1px solid var(--event-accent);
+  margin-inline-end: .3rem;
+}
+
+.meeting-weekly [data-category="LEADERSHIP"] { --event-bg: #fee2e2; --event-accent: #c62828; }
+.meeting-weekly [data-category="TEACHER"] { --event-bg: #ffedd5; --event-accent: #c56809; }
+.meeting-weekly [data-category="OTHER"] { --event-bg: #e9edf3; --event-accent: #64748b; }
+.meeting-weekly [data-category="BLOCK"] { --event-bg: #e2e8f0; --event-accent: #334155; }
+
+.meeting-week-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  border: 1px solid #e2e8f0;
+  border-radius: .75rem;
+}
+
+.meeting-week-table {
+  border-spacing: 0;
+  width: 100%;
+  table-layout: fixed;
+  font-size: .75rem;
+}
+
+.meeting-week-table th,
+.meeting-week-table td { border-bottom: 1px solid #eef1f5; padding: .25rem .45rem; }
+.meeting-week-table thead th { background: #edf0f5; }
+.meeting-week-table th:first-child {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 2;
+  width: 5.25rem;
+  border-inline-end: 1px solid #e2e8f0;
+}
+.meeting-week-table tbody th { background: #fff; }
+.meeting-week-hours { height: 1.5rem; }
+.meeting-week-hours, .meeting-week-track { position: relative; }
+.meeting-week-hours span { position: absolute; top: .2rem; transform: translateX(-50%); }
+.meeting-week-hours [data-edge="start"] { transform: none; }
+.meeting-week-hours [data-edge="end"] { transform: translateX(-100%); }
+.meeting-week-track { background: #f6f7f9; border-radius: .35rem; overflow: hidden; }
+.meeting-week-tick { position: absolute; top: 0; bottom: 0; border-inline-start: 1px dashed #cbd5e1; }
+.meeting-week-tick[data-hour="true"] { border-inline-start-style: solid; }
+.meeting-week-event {
+  position: absolute;
+  height: 1.9rem;
+  display: block;
+  padding: .3rem .4rem;
+  border: 0;
+  border-inline-start: 3px solid var(--event-accent);
+  border-radius: .35rem;
+  background: var(--event-bg);
+  color: #172033;
+  font: inherit;
+  font-weight: 700;
+  text-align: start;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meeting-week-event:focus-visible { outline: 2px solid #1748bf; outline-offset: -2px; }
+
+.meeting-event-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(25rem, calc(100% - 2rem));
+  height: fit-content;
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  padding: 0;
+  border: 1px solid #dbe3ef;
+  border-radius: 1rem;
+  color: #172033;
+  box-shadow: 0 12px 36px #17203333;
+}
+
+.meeting-event-dialog::backdrop { background: #17203380; }
+.meeting-event-dialog-body { padding: 1.15rem; position: relative; }
+.meeting-event-dialog h3 { margin: 0 0 1rem; padding-inline-end: 2rem; }
+.meeting-event-dialog dl { display: grid; gap: .7rem; }
+.meeting-event-dialog dl > div { display: grid; grid-template-columns: 4.5rem 1fr; gap: .6rem; }
+.meeting-event-dialog dt { color: #475569; }
+.meeting-event-dialog dd { margin: 0; overflow-wrap: anywhere; }
+.meeting-event-close {
+  position: absolute;
+  inset-block-start: .55rem;
+  inset-inline-end: .55rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  background: transparent;
+  border: 0;
+  border-radius: .45rem;
+  color: #172033;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+.meeting-event-close:hover { background: #edf0f5; }

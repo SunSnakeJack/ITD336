@@ -1,3 +1,6 @@
+import { RequestStepper } from '../../../shared/components/RequestStepper'
+import { formatThaiDate } from '../utils/format-thai-date'
+
 interface KeyRequestReviewProps {
   roomCode: string
   requesterIdentifier: string
@@ -41,7 +44,7 @@ export function KeyRequestReview({
         <h1>ตรวจสอบข้อมูล</h1>
         <p>กรุณาตรวจสอบข้อมูลให้เรียบร้อยก่อนกดยืนยัน</p>
       </header>
-      <div className="key-stepper key-review-stepper" aria-label="ขั้นตอนการเบิกกุญแจ"><b>1</b><i /><b aria-current="step">2</b><i /><b>3</b></div>
+      <RequestStepper step={2} label="ขั้นตอนการเบิกกุญแจ" />
       <section className="key-review-card">
         <h2><svg className="key-review-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M5 20c0-4 3-7 7-7s7 3 7 7"/></svg>ข้อมูลผู้เบิกกุญแจ</h2>
         <dl>
@@ -63,7 +66,7 @@ export function KeyRequestReview({
         </dl>
       </section>
       <div className="key-review-actions">
-        <button type="button" onClick={onBack}>ย้อนกลับ</button>
+        <button type="button" disabled={submitting} onClick={onBack}>ย้อนกลับ</button>
         <button className="primary-action review-confirm-action" type="button" disabled={submitting} onClick={onConfirm}>
           {submitting ? 'กำลังส่งคำขอ…' : 'ยืนยันการเบิก'}
         </button>
@@ -72,5 +75,4 @@ export function KeyRequestReview({
     </section>
   )
 }
-import { formatThaiDate } from '../utils/format-thai-date'
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { markAllNotificationsRead, markNotificationRead, myNotificationsQuery, notificationKeys, unreadNotificationsQuery } from '../notification.queries'
 import './NotificationBell.css'
@@ -8,11 +8,65 @@ const dateTime=new Intl.DateTimeFormat('th-TH',{dateStyle:'short',timeStyle:'sho
 
 export function NotificationBell(){
   const [open,setOpen]=useState(false)
+  const bell = useRef<HTMLDivElement>(null)
+  const trigger = useRef<HTMLButtonElement>(null)
+  const panelId = useId()
+  useEffect(() => {
+    if (!open) return
+    const closeOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !bell.current?.contains(event.target)) setOpen(false)
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setOpen(false)
+      trigger.current?.focus()
+    }
+    document.addEventListener('pointerdown', closeOutside)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open])
   const client=useQueryClient()
   const notifications=useQuery(myNotificationsQuery())
   const unread=useQuery(unreadNotificationsQuery())
   const read=useMutation({mutationFn:markNotificationRead,onSuccess:()=>client.invalidateQueries({queryKey:notificationKeys.all})})
   const readAll=useMutation({mutationFn:markAllNotificationsRead,onSuccess:()=>client.invalidateQueries({queryKey:notificationKeys.all})})
   const count=unread.data?.length??0
-  return <div className="notification-bell"><button type="button" aria-label={`การแจ้งเตือนที่ยังไม่อ่าน ${count} รายการ`} aria-expanded={open} onClick={()=>setOpen(!open)}><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>{count>0&&<span data-testid="notification-dot"/>}</button>{open&&<div className="notification-menu" role="dialog" aria-label="การแจ้งเตือน"><header><span><strong>การแจ้งเตือน</strong><small>{count} รายการที่ยังไม่อ่าน</small></span>{count>0&&<button disabled={readAll.isPending} onClick={()=>readAll.mutate()}>อ่านทั้งหมด</button>}</header>{notifications.isPending||unread.isPending?<p>กำลังโหลด…</p>:notifications.error||unread.error?<p className="panel-error">ไม่สามารถโหลดการแจ้งเตือนได้ กรุณาลองใหม่</p>:!notifications.data?.length?<p>ยังไม่มีการแจ้งเตือน</p>:notifications.data.slice(0,8).map((item)=><button className={item.read_at?'is-read':'is-unread'} key={item.id} disabled={read.isPending} onClick={()=>{if(!item.read_at)read.mutate(item.id)}}><strong>{labels[item.type]??item.title}</strong><small>{item.message}</small><time>{dateTime.format(new Date(item.created_at))}</time></button>)}{(read.error||readAll.error)&&<p className="panel-error">ไม่สามารถบันทึกสถานะว่าอ่านแล้วได้ กรุณาลองใหม่</p>}</div>}</div>
+  return <div className="notification-bell" ref={bell}>
+    <button ref={trigger} type="button" aria-haspopup="dialog" aria-controls={open ? panelId : undefined}
+      aria-label={`การแจ้งเตือนที่ยังไม่อ่าน ${count} รายการ`} aria-expanded={open} onClick={() => setOpen(value => !value)}>
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M10 4a2 2 0 0 1 4 0m-2 0a5.5 5.5 0 0 0-5.5 5.5v2c0 2.8-1.2 4.1-3 5.5h17c-1.8-1.4-3-2.7-3-5.5v-2A5.5 5.5 0 0 0 12 4z" />
+        <path d="M10 19.5a2 2 0 0 0 4 0" />
+      </svg>
+      {count > 0 && <span data-testid="notification-dot" />}
+    </button>
+    {open && <div id={panelId} className="notification-menu" role="dialog" aria-label="การแจ้งเตือน">
+      <header>
+        <strong>การแจ้งเตือน</strong><small>{count} รายการที่ยังไม่อ่าน</small>
+      </header>
+      <div className="notification-list">
+        {notifications.isPending || unread.isPending ? <p>กำลังโหลด…</p>
+          : notifications.error || unread.error ? <p className="panel-error">ไม่สามารถโหลดการแจ้งเตือนได้ กรุณาลองใหม่</p>
+          : !notifications.data?.length ? <p>ยังไม่มีการแจ้งเตือน</p>
+          : notifications.data.slice(0, 8).map(item => (
+            <button type="button" className={item.read_at ? 'is-read' : 'is-unread'} key={item.id}
+              disabled={read.isPending} onClick={() => { if (!item.read_at) read.mutate(item.id) }}>
+              <span className="notification-item-title">
+                <strong>{labels[item.type] ?? item.title}</strong>
+                {!item.read_at && <span className="notification-new">ใหม่</span>}
+              </span>
+              <small>{item.message}</small>
+              <time dateTime={item.created_at}>{dateTime.format(new Date(item.created_at))}</time>
+            </button>
+          ))}
+        {(read.error || readAll.error) && <p className="panel-error">ไม่สามารถบันทึกสถานะว่าอ่านแล้วได้ กรุณาลองใหม่</p>}
+      </div>
+      {count > 0 && <footer>
+        <button type="button" disabled={readAll.isPending} onClick={() => readAll.mutate()}>อ่านทั้งหมด</button>
+      </footer>}
+    </div>}
+  </div>
 }

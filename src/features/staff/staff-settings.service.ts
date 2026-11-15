@@ -1,4 +1,19 @@
 import{supabase}from'../../lib/supabase/client'
+
+// RPC signatures become available in generated types after migration 0073.
+export async function getMeetingAdvanceBookingDays(): Promise<number> {
+  const { data, error } = await supabase.rpc('get_meeting_advance_booking_days' as never)
+  if (error) throw error
+  const days: unknown = data
+  if (typeof days !== 'number') throw new Error('Meeting booking limit unavailable')
+  return days
+}
+
+export async function setMeetingAdvanceBookingDays(days: number) {
+  const { error } = await supabase.rpc('set_meeting_advance_booking_days' as never, { p_days: days } as never)
+  if (error) throw error
+  return days
+}
 export async function setOpenSaturday(date: string | null) {
   const { error } = await supabase.rpc('set_open_saturday' as never, { p_date: date } as never)
   if (error) throw new Error(error.message)

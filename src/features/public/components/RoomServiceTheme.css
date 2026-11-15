@@ -1,0 +1,48 @@
+.room-service-theme {
+  --room-surface: #fff;
+  --room-canvas: #f8f9fc;
+  --room-yellow: #ffea00;
+  --room-yellow-soft: #fff8b8;
+  --room-ink: #10005b;
+}
+
+.room-service-theme .public-main > main {
+  background: var(--room-canvas);
+}
+
+.room-service-theme .key-room-catalog-intro,
+.room-service-theme .key-detail-heading,
+.room-service-theme .key-booking-form-page > header {
+  background: linear-gradient(var(--room-yellow-soft), var(--room-surface));
+  border-radius: .75rem;
+  color: var(--room-ink);
+  padding: .85rem 1rem;
+}
+
+.room-service-theme .key-room-catalog-page .key-room-catalog-intro h1,
+.room-service-theme .key-detail-heading h1,
+.room-service-theme .key-booking-form-page > header h1 {
+  color: var(--room-ink);
+}
+
+.room-service-theme .key-room-tabs button[aria-selected="true"],
+.room-service-theme .meeting-schedule-tabs button[aria-selected="true"] {
+  background: var(--room-yellow);
+  border-color: var(--room-ink);
+  color: var(--room-ink);
+}
+
+.room-service-theme .key-request-entry .primary-action:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--room-yellow) !important;
+  color: var(--room-ink) !important;
+}
+
+.room-service-theme .key-request-entry .primary-action:not(:disabled):not([aria-disabled="true"]) img {
+  filter: brightness(0) saturate(100%) invert(10%) sepia(90%) saturate(3150%) hue-rotate(247deg);
+}
+
+.room-service-theme .key-request-entry .primary-action:not(:disabled):not([aria-disabled="true"]):focus-visible,
+.room-service-theme :is(.key-room-tabs, .meeting-schedule-tabs) button:focus-visible {
+  outline: 2px solid var(--room-ink);
+  outline-offset: 2px;
+}

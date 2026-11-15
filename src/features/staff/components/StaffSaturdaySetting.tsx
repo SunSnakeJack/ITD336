@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { meetingBookingPolicyKey } from '../../meeting-rooms/meeting-booking-policy'
 import { bangkokDateKey, isSaturday } from '../../schedules/saturday-policy'
 import { saturdayPolicyKey, saturdayPolicyQuery } from '../../schedules/saturday-policy.queries'
 import { setOpenSaturday } from '../staff-settings.service'
@@ -19,7 +20,12 @@ function SaturdaySettingForm({ initialDate }: { initialDate: string | null }) {
   const client = useQueryClient()
   const save = useMutation({
     mutationFn: setOpenSaturday,
-    onSuccess: async () => { await client.invalidateQueries({ queryKey: saturdayPolicyKey }) },
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: saturdayPolicyKey }),
+        client.invalidateQueries({ queryKey: meetingBookingPolicyKey }),
+      ])
+    },
   })
   const selected = enabled ? date : null
   return <article className="staff-card staff-permission-setting">

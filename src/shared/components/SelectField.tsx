@@ -12,6 +12,7 @@ interface SelectFieldProps<T extends string> {
   options: Array<SelectFieldOption<T>>
   onChange: (value: T) => void
   error?: string
+  disabled?: boolean
   placement?: 'bottom' | 'top' | 'auto'
 }
 
@@ -22,6 +23,7 @@ export function SelectField<T extends string>({
   options,
   onChange,
   error,
+  disabled = false,
   placement = 'auto',
 }: SelectFieldProps<T>) {
   const [open, setOpen] = useState(false)
@@ -52,6 +54,7 @@ export function SelectField<T extends string>({
       <button
         id={triggerId}
         type="button"
+        disabled={disabled}
         className="app-select-trigger"
         aria-label={`${label} ${selected?.label ?? placeholder}`}
         aria-haspopup="listbox"
@@ -71,7 +74,7 @@ export function SelectField<T extends string>({
           <path d="M1 1.5 6 6.5l5-5" />
         </svg>
       </button>
-      {open && (
+      {open && !disabled && (
         <ul className={`app-select-options placement-${resolvedPlacement}`} id={listId} role="listbox" aria-label={`ตัวเลือก${label}`}>
           {options.map((option) => (
             <li key={option.value}>

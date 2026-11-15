@@ -2,6 +2,13 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { StaffUsageDashboardPage } from './StaffUsageDashboardPage'
+import { getStaffUsageHistory } from '../reporting/staff-usage.service'
+import { approveBooking, rejectBooking } from '../../bookings/booking.service'
+
+vi.mock('../../bookings/booking.service', () => ({
+  approveBooking: vi.fn().mockResolvedValue({ status: 'APPROVED' }),
+  rejectBooking: vi.fn().mockResolvedValue({ status: 'REJECTED' }),
+}))
 
 vi.mock('../reporting/staff-usage.service', () => ({ getStaffUsageHistory: vi.fn().mockResolvedValue([{
   transactionId: 'request-1', source: 'KEY_REQUEST', roomId: 'room-1', roomCode: 'S2407', roomName: 'ห้อง S2407',
@@ -15,6 +22,26 @@ vi.mock('../staff-key-request.service', () => ({
 }))
 
 describe('StaffUsageDashboardPage layout', () => {
+  it.each(['อนุมัติ', 'ไม่อนุมัติ'])('supports %s for pending meeting bookings', async choice => {
+    vi.mocked(getStaffUsageHistory).mockResolvedValueOnce([{
+      transactionId: 'booking:meeting-1', source: 'BOOKING', roomId: 'room-1', roomCode: 'MEETING-ROOM',
+      roomName: 'ห้องประชุม', roomCategory: 'MEETING', purpose: 'ประชุม', userName: 'ผู้จอง',
+      startsAt: '2026-11-17T01:30:00Z', endsAt: '2026-11-17T02:00:00Z', returnedAt: null, status: 'PENDING',
+    }])
+    const client = new QueryClient()
+    render(<QueryClientProvider client={client}><StaffUsageDashboardPage /></QueryClientProvider>)
+    fireEvent.click(await screen.findByRole('button', { name: choice }))
+    const dialog = within(screen.getByRole('dialog'))
+    if (choice === 'ไม่อนุมัติ') {
+      fireEvent.click(dialog.getByRole('button', { name: 'ยืนยันไม่อนุมัติ' }))
+      expect(dialog.getByRole('alert')).toHaveTextContent('กรุณาระบุเหตุผล')
+      fireEvent.change(dialog.getByRole('textbox'), { target: { value: 'งดใช้ห้อง' } })
+    }
+    fireEvent.click(dialog.getByRole('button', { name: `ยืนยัน${choice}` }))
+    await waitFor(() => expect(choice === 'อนุมัติ' ? approveBooking : rejectBooking)
+      .toHaveBeenCalledWith('meeting-1', choice === 'อนุมัติ' ? 'อนุมัติโดยเจ้าหน้าที่' : 'งดใช้ห้อง'))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
   it('exports a report with the current filters and all matching columns', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { container } = render(<QueryClientProvider client={client}><StaffUsageDashboardPage /></QueryClientProvider>)
