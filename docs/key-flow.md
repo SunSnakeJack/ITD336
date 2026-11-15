@@ -21,3 +21,8 @@ Migration `0025_self_service_booking_key_approval.sql` removes Admin approval fr
 Migration `0028_overdue_key_cabinet_and_borrower_identity.sql` distinguishes an active in-period checkout (`CHECKED_OUT`, yellow) from a key that remains held after `expected_return_at` (`OVERDUE`, red). A closed room is gray; an overdue holder takes visual precedence so an outstanding key cannot be hidden by room availability. The Admin activity view also exposes the borrower's profile name and university id, with email/system id reserved as UI fallbacks.
 
 Authenticated public `key_requests` mirror submission and lifecycle status changes into in-app notifications. Email outbox behavior remains separate; the in-app trigger creates only an `IN_APP` delivery and skips legacy requests without an authenticated owner.
+
+For teaching requests, the requester enters the course code independently of the lecturer. Student requests select an
+active lecturer ID from the public directory. The database resolves the
+recipient and uses the existing lecturer notification outbox event.
+Teacher requests continue to identify the requester as the instructor.

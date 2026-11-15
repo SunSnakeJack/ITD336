@@ -8,9 +8,26 @@ export async function getPublicKeyRequestHistory(roomId:string):Promise<PublicKe
 export async function getMyKeyRequests():Promise<MyKeyRequest[]>{const{data,error}=await supabase.rpc('get_my_key_requests_v2' as never) as unknown as{data:Array<{id:string;request_code:string;room_code:string;room_name:string;room_type_name:string;floor:string|null;starts_at:string;ends_at:string;purpose:string;purpose_type:'TEACHING'|'OTHER';course_code:string|null;lecturer_name:string|null;status:string;decision_reason:string|null;can_cancel:boolean;can_return:boolean}>|null;error:{message:string}|null};if(error)throw new Error(error.message);return(data??[]).map((row)=>({id:row.id,requestCode:row.request_code,roomCode:row.room_code,roomName:row.room_name,roomTypeName:row.room_type_name,floor:row.floor,startsAt:row.starts_at,endsAt:row.ends_at,purpose:row.purpose,purposeType:row.purpose_type,courseCode:row.course_code,lecturerName:row.lecturer_name,status:row.status,decisionReason:row.decision_reason,canCancel:row.can_cancel,canReturn:row.can_return}))}
 export async function cancelMyKeyRequest(id:string){const{data,error}=await supabase.rpc('cancel_my_key_request' as never,{p_key_request_id:id} as never) as unknown as{data:{id:string;status:string}|null;error:{message:string}|null};if(error)throw new Error(error.message);return data}
 export async function returnMyKeyRequest(id:string){const{data,error}=await supabase.rpc('return_my_key_request' as never,{p_key_request_id:id} as never) as unknown as{data:{id:string;status:string}|null;error:{message:string}|null};if(error){if(error.message.includes('KEY_REQUEST_NOT_STARTED'))throw new Error('ยังไม่ถึงเวลาเริ่มใช้งานห้อง');if(error.message.includes('KEY_REQUEST_NOT_RETURNABLE'))throw new Error('รายการนี้ไม่อยู่ในสถานะที่คืนกุญแจได้');throw new Error(error.message)}return data}
-export async function getKeyRequestReferenceOptions():Promise<KeyRequestReferenceOption[]>{const {data,error}=await supabase.rpc('get_public_key_request_options' as never) as unknown as {data:Array<{id:string;course_code:string;course_name:string;lecturer_name:string}>|null;error:{message:string}|null};if(error)throw new Error(error.message);return(data??[]).map((row)=>({id:row.id,courseCode:row.course_code,courseName:row.course_name,lecturerName:row.lecturer_name}))}
+export async function getKeyRequestReferenceOptions():Promise<KeyRequestReferenceOption[]>{const {data,error}=await supabase.rpc('get_public_key_request_lecturers' as never) as unknown as {data:Array<{id:string;lecturer_name:string}>|null;error:{message:string}|null};if(error)throw new Error(error.message);return(data??[]).map((row)=>({id:row.id,lecturerName:row.lecturer_name}))}
 
 export async function createKeyRequest(input: CreateKeyRequestInput): Promise<KeyRequestResult> {
+  if (input.purposeType === 'TEACHING' && input.requesterType && input.requesterIdentifier) {
+    const { data, error } = await supabase.rpc('create_teaching_key_request' as never, {
+      p_room_id: input.roomId,
+      p_requester_name: input.requesterName.trim(),
+      p_requester_email: input.requesterEmail.trim().toLowerCase(),
+      p_requester_type: input.requesterType,
+      p_requester_identifier: input.requesterIdentifier.trim(),
+      p_purpose: input.purpose.trim(),
+      p_starts_at: input.startsAt,
+      p_ends_at: input.endsAt,
+      p_course_code: input.courseCode?.trim() || null,
+      p_course_name: input.courseName?.trim() || null,
+      p_lecturer_id: input.referenceOptionId ?? null,
+    } as never) as unknown as { data: KeyRequestResult | null; error: { message: string } | null }
+    if (error || !data) throwKeyRequestError(error?.message ?? 'KEY_REQUEST_FAILED')
+    return dispatchCreatedRequestEmail(data)
+  }
   if(input.requesterType&&input.requesterIdentifier){const {data,error}=await supabase.rpc('create_key_request_v2' as never,{p_room_id:input.roomId,p_requester_name:input.requesterName.trim(),p_requester_email:input.requesterEmail.trim().toLowerCase(),p_requester_type:input.requesterType,p_requester_identifier:input.requesterIdentifier.trim(),p_purpose_type:input.purposeType,p_purpose:input.purpose.trim(),p_starts_at:input.startsAt,p_ends_at:input.endsAt,p_reference_option_id:input.referenceOptionId??null} as never) as unknown as {data:KeyRequestResult|null;error:{message:string}|null};if(!error&&data)return dispatchCreatedRequestEmail(data);if(error)throwKeyRequestError(error.message)}
   const { data, error } = await supabase.rpc('create_key_request' as never, {
     p_room_id: input.roomId,
@@ -42,7 +59,8 @@ function throwKeyRequestError(message:string):never{
   if (message.includes('OUTSIDE_SERVICE_HOURS')) throw new Error('กรุณาเลือกเวลาระหว่าง 08:00–18:00 น.')
   if (message.includes('SATURDAY_NOT_AVAILABLE')) throw new Error('ไม่สามารถทำรายการสำหรับวันเสาร์ได้')
   if(message.includes('REQUESTER_IDENTITY_REQUIRED'))throw new Error('กรุณาระบุสถานะและรหัสนักศึกษา/บุคลากร')
-  if(message.includes('REFERENCE_OPTION_REQUIRED'))throw new Error('กรุณาเลือกวิชาและอาจารย์ผู้สอน')
+  if(message.includes('REFERENCE_OPTION_REQUIRED'))throw new Error('กรุณาเลือกอาจารย์ผู้สอน')
+  if(message.includes('COURSE_CODE_REQUIRED'))throw new Error('กรุณากรอกรหัสวิชา')
   throw new Error(message)
 }
 export const getMyKeyLoans=()=>unwrap<KeyLoan[]>(supabase.from('key_loans').select('*').order('requested_at',{ascending:false}))
