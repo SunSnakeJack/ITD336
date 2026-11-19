@@ -40,3 +40,4 @@ history tab lists up to five elapsed bookings, latest start first. The weekly ev
 the requester name and booking purpose for the requester or users with
 `BOOKING_MANAGE` or `BOOKING_APPROVE`. History and calendar entries for other
 viewers expose only times and display categories.
+The account history editor supports same-day time changes before the original start. It shows half-hour options and the database rechecks ownership, status, service hours and conflicts on save. Bookings with an active linked key loan keep their original time to preserve the loan schedule.

@@ -1,0 +1,153 @@
+.account-request-card-list { display: grid; gap: .55rem; }
+.account-request-card {
+  display: grid;
+  gap: .5rem;
+  min-width: 0;
+  padding: clamp(.75rem, 2vw, 1rem);
+  background: #fff;
+  color: #202020;
+  border: 1px solid #e8e8e8;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgb(24 34 45 / 12%);
+}
+.account-request-card-header,
+.account-request-card-status,
+.account-request-card-footer,
+.account-request-card-actions { display: flex; align-items: center; gap: .65rem; }
+.account-request-card-header { justify-content: space-between; flex-wrap: wrap; }
+.account-request-card-room { display: flex; align-items: center; gap: .5rem; flex: 1 1 7rem; min-width: 0; }
+.account-request-card-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: .55rem;
+  background: #fff3d2;
+  color: #855808;
+}
+.account-request-card-icon svg { width: 1.2rem; height: 1.2rem; }
+.account-request-card-header h3 { margin: 0; font-size: clamp(1.02rem, 3vw, 1.4rem); overflow-wrap: anywhere; }
+.account-request-card-status { flex-shrink: 0; align-items: stretch; }
+.account-request-card-status > span {
+  display: inline-flex;
+  align-items: center;
+  padding: .4rem .63rem;
+  color: var(--request-status-text, #373737);
+  font-size: .83rem;
+  font-weight: 700;
+  background: var(--request-status-bg, #f1f1f1);
+  border: 1px solid var(--request-status-border, #ddd);
+  border-radius: .55rem;
+}
+.account-request-card-status [data-tone="amber"] {
+  --request-status-bg: #fff2cc;
+  --request-status-border: #edd791;
+  --request-status-text: #704800;
+}
+.account-request-card-status [data-tone="green"] {
+  --request-status-bg: #e0f4e5;
+  --request-status-border: #b7dfc0;
+  --request-status-text: #18562a;
+}
+.account-request-card-status [data-tone="blue"] {
+  --request-status-bg: #e5efff;
+  --request-status-border: #c3d7f7;
+  --request-status-text: #194586;
+}
+.account-request-card-status [data-tone="orange"] {
+  --request-status-bg: #ffecd9;
+  --request-status-border: #f3cfa9;
+  --request-status-text: #843c09;
+}
+.account-request-card-status [data-tone="red"] {
+  --request-status-bg: #fce7e7;
+  --request-status-border: #f1c0c0;
+  --request-status-text: #8f2121;
+}
+.account-request-card-status [data-tone="purple"] {
+  --request-status-bg: #f0e7fc;
+  --request-status-border: #dbc9f1;
+  --request-status-text: #59328b;
+}
+.account-request-card-field { min-width: 0; overflow-wrap: anywhere; }
+.account-request-card-field small { display: block; color: #666; }
+.account-request-card-footer { flex-wrap: wrap; justify-content: space-between; border-top: 1px solid #ddd; padding-top: .5rem; }
+.account-request-card-footer > .account-request-card-field { flex: 1 1 7rem; }
+.account-request-card-actions { flex-wrap: wrap; margin-inline-start: auto; }
+.account-request-card-actions:empty, .account-request-card-actions:has(> .account-request-card-actions:empty) { display: none; }
+.account-request-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-height: 44px;
+  padding: .45rem .7rem;
+  border: 0;
+  border-radius: .5rem;
+  background: #eee;
+  color: #242424;
+  font: inherit;
+  font-weight: 700;
+}
+.account-request-action svg { width: 1.15rem; height: 1.15rem; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.account-request-action-return { background: #297931; color: white; }
+.account-request-action-cancel { background: #c92320; color: white; }
+.account-request-card:not(.is-editing) :is(.account-request-action-return, .account-request-action-cancel) {
+  min-width: 108px;
+  min-height: 34px;
+  padding: .2rem .5rem;
+  font-size: .875rem;
+}
+.account-request-action:disabled { opacity: .55; cursor: not-allowed; }
+.account-request-card-status .request-edit-toggle {
+  min-width: 2.75rem;
+  min-height: 2rem;
+  padding: 0;
+  border: 0;
+  background: #ffea00;
+  color: #503500;
+}
+.account-request-card.is-editing { border-block-start: .3rem solid #f5c329; }
+.account-request-card.is-editing > .account-request-card-field { border-top: 1px solid #ddd; padding-top: .65rem; }
+.account-request-card.is-editing .account-request-card-footer { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem; }
+.account-request-card.is-editing .account-request-card-field {
+  display: grid;
+  grid-template-columns: clamp(6rem, 28%, 8rem) minmax(0, 1fr);
+  align-items: center;
+  gap: .65rem;
+}
+.account-request-card-label { display: flex; align-items: center; gap: .4rem; font-weight: 700; }
+.account-request-card.is-editing .account-request-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-inline-start: 0;
+}
+.account-request-card.is-editing .account-request-action { min-width: 0; }
+.account-request-edit-times { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .45rem; }
+.account-request-edit-times > small, .account-request-card-actions > small { flex-basis: 100%; grid-column: 1 / -1; }
+.account-request-card-field textarea {
+  width: 100%;
+  min-width: 0;
+  padding: .4rem .55rem;
+  border: 1px solid #cbd5e1;
+  border-radius: .5rem;
+  font: inherit;
+  resize: vertical;
+}
+.account-request-card-actions:has(> .account-request-action:nth-child(2):last-child) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 520px) {
+  .account-request-card.is-editing .account-request-card-field { gap: .4rem; }
+  .account-request-card-label { gap: .25rem; font-size: .78rem; }
+  .account-request-card-label .account-request-card-icon { width: 1.5rem; height: 1.5rem; }
+  .account-request-card-label .account-request-card-icon svg { width: .95rem; height: .95rem; }
+  .account-request-edit-times { gap: .25rem; }
+  .account-request-edit-times .app-select-label { font-size: .72rem; }
+  .account-request-edit-times .app-select-trigger { padding-inline: .3rem; font-size: .82rem; }
+  .account-request-edit-times .key-select-arrow { flex-basis: 9px; width: 9px; margin-inline-start: .2rem; }
+  .account-request-card-actions { gap: .35rem; }
+  .account-request-action { padding-inline: .45rem; }
+}

@@ -5,7 +5,7 @@ import { scheduleKeys } from '../../schedules/schedule.queries'
 import { getMeetingBookings, type MeetingBookingPeriod } from '../meeting-week.service'
 import { meetingEventCategories } from '../utils/meeting-week'
 
-const tabs = { upcoming: 'จองล่วงหน้า', history: 'จองย้อนหลัง' } as const
+const tabs = { upcoming: 'จองล่วงหน้า', history: 'ประวัติการจอง' } as const
 
 export function MeetingBookingList({ roomId, active, viewerId }: { roomId: string; active: boolean; viewerId: string | null }) {
   const id = useId()

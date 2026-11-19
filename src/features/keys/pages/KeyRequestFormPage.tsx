@@ -1,9 +1,10 @@
+import { keyCatalogPath } from '../utils/key-catalog-path'
 import { RequestStepper } from '../../../shared/components/RequestStepper'
 import { saturdayPolicyQuery } from '../../schedules/saturday-policy.queries'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FormEvent, useMemo, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
-import type { AuthIdentity } from '../../auth/auth.types'
+import { getRequesterStatus, ROLE_LABELS, type AuthIdentity } from '../../auth/auth.types'
 import { publicRoomsQuery, publicScheduleEventsQuery, scheduleKeys } from '../../schedules/schedule.queries'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
 import { createKeyRequest } from '../key.service'
@@ -39,7 +40,9 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
   const date = useMemo(() => searchParams.get('date') ?? bangkokDate(), [searchParams])
   const [name, setName] = useState(identity?.fullName ?? '')
   const [email, setEmail] = useState(identity?.email ?? '')
-  const [requesterType, setRequesterType] = useState<'STUDENT'|'TEACHER'>(() => identity?.role === 'TEACHER' ? 'TEACHER' : 'STUDENT')
+  const [guestStatus, setGuestStatus] = useState<'STUDENT' | 'TEACHER'>('STUDENT')
+  const accountStatus = getRequesterStatus(identity)
+  const requesterType = accountStatus ?? guestStatus
   const [purposeType, setPurposeType] = useState<'TEACHING' | 'OTHER' | null>(null)
   const [purpose, setPurpose] = useState('')
   const [courseCode, setCourseCode] = useState('')
@@ -79,7 +82,7 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
     isHalfHourOccupied(date, time, events.data ?? []),
   ))
   const endTime = reviewing || result || endOptions.some((option) => option.value === selectedEnd) ? selectedEnd : ''
-  if (result) return <KeyRequestSuccess status={result.status} roomCode={room.code} date={date} startTime={startTime} endTime={endTime} purpose={effectivePurpose} />
+  if (result) return <KeyRequestSuccess catalogPath={keyCatalogPath(room.requiresSsoForKeyRequest)} status={result.status} roomCode={room.code} date={date} startTime={startTime} endTime={endTime} purpose={effectivePurpose} />
 
   const requestInput = {
     roomId, requesterName, requesterEmail, purposeType: purposeType ?? 'OTHER', purpose: effectivePurpose,
@@ -112,9 +115,9 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
     setReviewing(true)
   }
 
-  return <section className="key-request-entry key-booking-form-page"><Link className="back-link" to="/keys">‹ กลับหน้าหลัก</Link><header><h1>แบบฟอร์มการเบิกกุญแจ</h1><p>กรุณากรอกข้อมูลเพื่อดำเนินการเบิกกุญแจ</p></header><RequestStepper step={1} label="ขั้นตอนการเบิกกุญแจ" />
+  return <section className="key-request-entry key-booking-form-page"><Link className="back-link" to={keyCatalogPath(room.requiresSsoForKeyRequest)}>‹ กลับหน้าหลัก</Link><header><h1>แบบฟอร์มการเบิกกุญแจ</h1><p>กรุณากรอกข้อมูลเพื่อดำเนินการเบิกกุญแจ</p></header><RequestStepper step={1} label="ขั้นตอนการเบิกกุญแจ" />
     <form className="key-request-form" onSubmit={submit} noValidate>
-      <section className="key-form-section" aria-labelledby="requester-heading"><h2 className="key-section-heading" id="requester-heading"><svg className="key-section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>ข้อมูลผู้เบิกกุญแจ</span></h2><div className="key-identity-row"><RequesterStatusSelect value={requesterType} onChange={setRequesterType}/><label>ชื่อ–นามสกุล<input aria-label="ชื่อ–นามสกุล" required placeholder="กรุณากรอกชื่อ–นามสกุล" value={requesterName} readOnly={Boolean(room.requiresSsoForKeyRequest)} onChange={(event) => setName(event.target.value)} />{errors.name && <small role="alert">{errors.name}</small>}</label></div>
+      <section className="key-form-section" aria-labelledby="requester-heading"><h2 className="key-section-heading" id="requester-heading"><svg className="key-section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>ข้อมูลผู้เบิกกุญแจ</span></h2><div className="key-identity-row">{accountStatus ? <label>สถานะ<input readOnly value={ROLE_LABELS[accountStatus]}/></label> : <RequesterStatusSelect value={requesterType} onChange={setGuestStatus}/>}<label>ชื่อ–นามสกุล<input aria-label="ชื่อ–นามสกุล" required placeholder="กรุณากรอกชื่อ–นามสกุล" value={requesterName} readOnly={Boolean(room.requiresSsoForKeyRequest)} onChange={(event) => setName(event.target.value)} />{errors.name && <small role="alert">{errors.name}</small>}</label></div>
       <label>อีเมล<input aria-label="อีเมล" type="email" required placeholder="name@northbkk.ac.th" value={requesterEmail} readOnly={Boolean(room.requiresSsoForKeyRequest)} onChange={(event) => setEmail(event.target.value)} />{errors.email && <small role="alert">{errors.email}</small>}</label></section>
       <fieldset className="key-purpose-options"><legend className="key-section-heading"><svg className="key-section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 12h6"/><path d="M9 16h6"/></svg><span>วัตถุประสงค์</span></legend><label className="key-purpose-choice"><input type="radio" name="purposeType" checked={purposeType==='TEACHING'} onChange={()=>setPurposeType('TEACHING')}/><span>เพื่อเปิดห้องการเรียนการสอน</span></label>{courseRequired && <div className="key-purpose-fields">
           <div className="key-purpose-row"><label htmlFor="course-code-input">รหัสวิชา</label><div className="key-purpose-input-wrap"><input id="course-code-input" aria-label="รหัสวิชา" placeholder="กรุณากรอกรหัสวิชา" value={courseCode} onChange={(event) => setCourseCode(event.target.value)} />{errors.courseCode && <small role="alert">{errors.courseCode}</small>}</div></div>

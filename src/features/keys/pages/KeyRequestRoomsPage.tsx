@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { publicRoomsQuery } from '../../schedules/schedule.queries'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
 import { KeyRoomCatalogCard } from '../components/KeyRoomCatalogCard'
@@ -12,7 +12,14 @@ export function KeyRequestRoomsPage({identity}:{identity:AuthIdentity|null}) {
   const display = useQuery(keyCatalogDisplayQuery())
   const keyTag = display.data === 'key-tags'
   const laboratories = (rooms.data ?? []).filter((room) => room.usageScope === 'LABORATORY')
-  const [special, setSpecial] = useState(false)
+  const [params, setParams] = useSearchParams()
+  const special = params.get('tab') === 'special'
+  const setSpecial = (next: boolean) => {
+    const updated = new URLSearchParams(params)
+    if (next) updated.set('tab', 'special')
+    else updated.delete('tab')
+    setParams(updated, { replace: true })
+  }
   const visibleRooms = laboratories.filter((room) => Boolean(room.requiresSsoForKeyRequest) === special)
 
   return <section className="key-request-entry key-room-catalog-page">

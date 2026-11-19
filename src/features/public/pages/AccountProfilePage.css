@@ -1,6 +1,92 @@
-.key-account-page>.profile-history-action{
-  background:linear-gradient(90deg,#10005b 88%,#e8dc00)!important;
-  border:0!important;
-  box-shadow:none!important;
-  color:#fff!important;
+.public-main > main:has(> .account-profile) { background: #fff; }
+.key-account-page.account-profile { max-width: 520px; background: #fff; color: #100b32; }
+.key-account-page.account-profile > h1 {
+  border-inline-start: .42rem solid #edb523;
+  padding-inline-start: .6rem;
+  font-size: clamp(1.55rem, 5vw, 2rem);
+  font-weight: 800;
+  line-height: 1.15;
 }
+.key-account-page.account-profile > p { margin-top: -.55rem; color: #52525b; }
+.account-profile-card {
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #f0e8d5;
+  border-radius: 1.25rem;
+  box-shadow: 0 6px 20px #332a1514;
+}
+.account-profile-hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  justify-items: center;
+  gap: .6rem;
+  padding: 1.25rem .8rem 1rem;
+  text-align: center;
+}
+.account-profile-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(5.4rem, 29vw, 8rem);
+  aspect-ratio: 1;
+  border: 5px solid #fff;
+  border-radius: 50%;
+  background: #f1eef8;
+  color: #10005b;
+  box-shadow: 0 4px 12px #291d471a;
+}
+.account-profile-avatar > :is(.key-avatar-photo, .key-avatar) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border-radius: 50%;
+  object-fit: cover;
+  background: transparent;
+  color: inherit;
+}
+.account-profile-avatar > .key-avatar svg { width: 52%; height: auto; }
+.account-profile-avatar > .account-profile-avatar-badge {
+  position: absolute;
+  right: -.25rem;
+  bottom: -.15rem;
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  aspect-ratio: 1;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: #e2a711;
+  color: white;
+}
+.account-profile-avatar-badge svg { width: 70%; height: auto; }
+.account-profile-hero h2 { margin: 0; overflow-wrap: anywhere; font-size: clamp(1.25rem, 5.5vw, 1.75rem); font-weight: 800; }
+.account-profile-role { padding: .3rem .9rem; border-radius: .65rem; background: #fff0c7; font-weight: 700; }
+.account-profile-details { margin: 0; padding: 0 1rem .4rem; }
+.account-profile-details > div {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  column-gap: .75rem;
+  padding: .75rem 0;
+  border-top: 1px solid #ececef;
+}
+.account-profile-details span { grid-row: span 2; display: grid; place-items: center; align-self: center; aspect-ratio: 1; border-radius: .7rem; background: #fff6dc; color: #80580c; }
+.account-profile-details svg { width: 1.25rem; height: 1.25rem; }
+.account-profile-details dt { color: #656571; font-size: .82rem; }
+.account-profile-details dd { margin: 0; overflow-wrap: anywhere; font-weight: 700; }
+.account-profile > .profile-history-action {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  padding: .55rem .75rem;
+  border: 0;
+  border-radius: .55rem;
+  background: #ffea00;
+  color: #10005b;
+  font-weight: 700;
+  text-decoration: none;
+}
+.account-profile > .profile-history-action:focus-visible { outline: 2px solid #10005b; outline-offset: 2px; }

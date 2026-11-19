@@ -13,7 +13,7 @@ export function UserMenuDrawer({identity,onClose,onProfile,onLogout}:{identity:A
     {identity&&<div className="user-menu-identity"><strong>{identity.fullName}</strong><small>{identity.email}</small></div>}
     <Link aria-label="หน้าหลัก" to="/keys" onClick={onClose}><HomeIcon/> หน้าหลัก</Link>
     {identity?<Link aria-label="โปรไฟล์ผู้ใช้" to="/account/profile" onClick={onClose}><ProfileIcon/> โปรไฟล์ผู้ใช้</Link>:<button aria-label="โปรไฟล์ผู้ใช้" onClick={onProfile}><ProfileIcon/> โปรไฟล์ผู้ใช้</button>}
-    {identity?<Link aria-label="ประวัติการทำรายการ" to="/account/history" onClick={onClose}><HistoryIcon/> ประวัติการทำรายการ</Link>:<button aria-label="ประวัติการทำรายการ" onClick={onProfile}><HistoryIcon/> ประวัติการทำรายการ</button>}
+    {identity?<Link aria-label="การจองและกุญแจของฉัน" to="/account/requests" onClick={onClose}><HistoryIcon/> การจองและกุญแจของฉัน</Link>:<button aria-label="การจองและกุญแจของฉัน" onClick={onProfile}><HistoryIcon/> การจองและกุญแจของฉัน</button>}
     {identity&&<button className="user-menu-logout" onClick={()=>{onClose();void onLogout()}}><LogoutIcon/> ออกจากระบบ</button>}
   </aside></div>,document.body)
 }

@@ -17,7 +17,7 @@ import { KeyRequestRoomsPage } from "./features/keys/pages/KeyRequestRoomsPage";
 import { KeyRequestFormPage } from "./features/keys/pages/KeyRequestFormPage";
 import { KeyRequestRoomDetailPage } from "./features/keys/pages/KeyRequestRoomDetailPage";
 import { AccountProfilePage } from "./features/public/pages/AccountProfilePage";
-import { AccountKeyRequestHistoryPage } from "./features/keys/pages/AccountKeyRequestHistoryPage";
+import { AccountHistoryRedirect } from "./features/bookings/pages/AccountHistoryRedirect";
 import { KeyRequestActionPage } from "./features/keys/pages/KeyRequestActionPage";
 import { MeetingRoomDetailPage, MeetingRoomEntryPage } from "./features/meeting-rooms/pages/MeetingRoomDetailPage";
 import { MeetingRoomRequestPage } from "./features/meeting-rooms/pages/MeetingRoomRequestPage";
@@ -159,7 +159,7 @@ export function App() {
           path="account/history"
           element={
             <AccountGuard identity={identity} loading={loading}>
-              <AccountKeyRequestHistoryPage />
+              <AccountHistoryRedirect />
             </AccountGuard>
           }
         />

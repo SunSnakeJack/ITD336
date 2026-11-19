@@ -1,5 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
+import { myBookingsQuery } from '../../bookings/booking.queries'
+import { myKeyRequestsQuery } from '../../keys/key.queries'
+import { notificationHistoryPath, notificationRequestMessage } from '../notification-history'
 import { markAllNotificationsRead, markNotificationRead, myNotificationsQuery, notificationKeys, unreadNotificationsQuery } from '../notification.queries'
 import './NotificationBell.css'
 
@@ -31,6 +35,9 @@ export function NotificationBell(){
   const client=useQueryClient()
   const notifications=useQuery(myNotificationsQuery())
   const unread=useQuery(unreadNotificationsQuery())
+  const visible = notifications.data?.slice(0, 8) ?? []
+  const bookings = useQuery({ ...myBookingsQuery(), enabled: open && visible.some(item => item.related_entity_type === 'booking' && item.related_entity_id) })
+  const keyRequests = useQuery({ ...myKeyRequestsQuery(), enabled: open && visible.some(item => item.related_entity_type === 'key_request' && item.related_entity_id) })
   const read=useMutation({mutationFn:markNotificationRead,onSuccess:()=>client.invalidateQueries({queryKey:notificationKeys.all})})
   const readAll=useMutation({mutationFn:markAllNotificationsRead,onSuccess:()=>client.invalidateQueries({queryKey:notificationKeys.all})})
   const count=unread.data?.length??0
@@ -51,17 +58,25 @@ export function NotificationBell(){
         {notifications.isPending || unread.isPending ? <p>กำลังโหลด…</p>
           : notifications.error || unread.error ? <p className="panel-error">ไม่สามารถโหลดการแจ้งเตือนได้ กรุณาลองใหม่</p>
           : !notifications.data?.length ? <p>ยังไม่มีการแจ้งเตือน</p>
-          : notifications.data.slice(0, 8).map(item => (
-            <button type="button" className={item.read_at ? 'is-read' : 'is-unread'} key={item.id}
-              disabled={read.isPending} onClick={() => { if (!item.read_at) read.mutate(item.id) }}>
+          : visible.map(item => {
+            const path = notificationHistoryPath(item)
+            const request = (item.related_entity_type === 'booking' ? bookings.data
+              : item.related_entity_type === 'key_request' ? keyRequests.data : undefined)
+              ?.find(request => request.id === item.related_entity_id)
+            const className = item.read_at ? 'is-read' : 'is-unread'
+            const markRead = () => { if (!item.read_at) read.mutate(item.id) }
+            const content = <>
               <span className="notification-item-title">
                 <strong>{labels[item.type] ?? item.title}</strong>
                 {!item.read_at && <span className="notification-new">ใหม่</span>}
               </span>
-              <small>{item.message}</small>
+              <small>{request ? notificationRequestMessage(request) : item.message}</small>
               <time dateTime={item.created_at}>{dateTime.format(new Date(item.created_at))}</time>
-            </button>
-          ))}
+            </>
+            return path
+              ? <Link key={item.id} className={className} to={path} onClick={() => { markRead(); setOpen(false) }}>{content}</Link>
+              : <button key={item.id} type="button" className={className} disabled={read.isPending} onClick={markRead}>{content}</button>
+          })}
         {(read.error || readAll.error) && <p className="panel-error">ไม่สามารถบันทึกสถานะว่าอ่านแล้วได้ กรุณาลองใหม่</p>}
       </div>
       {count > 0 && <footer>

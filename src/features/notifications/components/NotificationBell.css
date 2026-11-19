@@ -22,7 +22,8 @@
   overscroll-behavior-y: contain;
   background: #fff;
 }
-.notification-menu .notification-list > button {
+.notification-menu .notification-list > :is(button, a) {
+  text-decoration: none;
   display: grid;
   width: 100%;
   min-width: 0;
@@ -37,12 +38,12 @@
   text-align: start;
   overflow-wrap: anywhere;
 }
-.notification-menu .notification-list > button.is-unread {
+.notification-menu .notification-list > :is(button, a).is-unread {
   background: #f5f7ff;
   border-color: #d2d8f7;
   border-inline-start-color: #1748bf;
 }
-.notification-menu .notification-list > button.is-read { color: #64748b; }
+.notification-menu .notification-list > :is(button, a).is-read { color: #64748b; }
 .notification-item-title {
   display: flex;
   align-items: baseline;
@@ -82,7 +83,7 @@
   font-weight: 700;
   padding: .4rem .55rem;
 }
-.notification-menu .notification-list > button:focus-visible { outline-offset: -3px; }
+.notification-menu .notification-list > :is(button, a):focus-visible { outline-offset: -3px; }
 .notification-list > p { margin: 0; padding: 1rem; text-align: center; }
 
 @media (max-width: 520px) {

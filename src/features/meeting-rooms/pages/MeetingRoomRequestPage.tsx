@@ -3,7 +3,7 @@ import { RequestResultIcon } from '../../../shared/components/RequestResultIcon'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FormEvent, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
-import { ROLE_LABELS, type AuthIdentity } from '../../auth/auth.types'
+import { getRequesterStatus, hasPriorityRole, ROLE_LABELS, type AuthIdentity } from '../../auth/auth.types'
 import { createBooking } from '../../bookings/booking.service'
 import { bookingKeys } from '../../bookings/booking.queries'
 import { publicRoomsQuery, publicScheduleEventsQuery, scheduleKeys } from '../../schedules/schedule.queries'
@@ -38,7 +38,7 @@ export function MeetingRoomRequestPage({ identity, authLoading }: { identity: Au
   const now = new Date()
   const availableTimes = policy.data && date
     ? meetingTimeOptions(date, now, policy.data.opens_at, policy.data.closes_at) : []
-  const blockingEvents = (schedule.data ?? []).filter((event) => !canOverrideMeetingEvent(identity?.role, event, now))
+  const blockingEvents = (schedule.data ?? []).filter((event) => !canOverrideMeetingEvent(identity, event, now))
   const unavailable = (time: string) => isHalfHourOccupied(date, time, blockingEvents)
   const startOptions = timeSelectOptions(availableTimes.slice(0, -1), unavailable)
   const startTime = selectedStart
@@ -83,18 +83,19 @@ export function MeetingRoomRequestPage({ identity, authLoading }: { identity: Au
   const step = save.isSuccess ? 3 : formStep
   const stepper = <RequestStepper step={step} label="ขั้นตอนการจองห้องประชุม" />
   const pendingApproval = save.data?.status === 'PENDING'
+  const requesterStatus = getRequesterStatus(identity) ?? identity.role
   const roomDisplayName = meetingRoomDisplayName(room)
 
   if (step === 3) return <section className="key-request-entry key-booking-form-page"><div className={`key-request-success ${pendingApproval ? 'pending' : 'approved'}`}>{stepper}<div className="key-success-card"><RequestResultIcon pending={pendingApproval} /><h1>{pendingApproval ? 'ส่งคำขอจองห้องเรียบร้อยแล้ว' : 'บันทึกการจองห้องสำเร็จ'}</h1><p>{pendingApproval ? 'กรุณารอเจ้าหน้าที่ตรวจสอบและอนุมัติคำขอ' : 'ระบบได้รับข้อมูลการจองห้องประชุมของคุณเรียบร้อยแล้ว'}</p><h2>รายละเอียดการจอง</h2><dl><Row label="ห้องที่จอง" value={roomDisplayName}/><Row label="วันที่จอง" value={formatThaiDate(reviewSlot?.date ?? date)}/><Row label="เวลาเริ่มต้น" value={`${reviewSlot?.start ?? startTime} น.`}/><Row label="เวลาสิ้นสุด" value={`${reviewSlot?.end ?? endTime} น.`}/><Row label="วัตถุประสงค์" value={purpose}/></dl></div><Link className="primary-action" to="/meeting-room">กลับสู่หน้าหลัก</Link></div></section>
 
-  if (step === 2) return <section className="key-request-entry key-booking-form-page key-request-review"><header><h1>ตรวจสอบข้อมูล</h1><p>กรุณาตรวจสอบข้อมูลให้เรียบร้อยก่อนกดยืนยัน</p></header>{stepper}<section className="key-review-card"><h2>ข้อมูลผู้จอง</h2><dl><Row label="ชื่อ – นามสกุล" value={identity.fullName}/><Row label="อีเมล" value={identity.email}/></dl></section><section className="key-review-card"><h2>ข้อมูลการจอง</h2><dl><Row label="ห้องที่จอง" value={roomDisplayName}/><Row label="วันที่จอง" value={formatThaiDate(reviewSlot?.date ?? date)}/><Row label="เวลาเริ่มต้น" value={reviewSlot?.start ?? startTime}/><Row label="เวลาสิ้นสุด" value={reviewSlot?.end ?? endTime}/><Row label="วัตถุประสงค์" value={purpose}/></dl></section>{identity.role === 'PRIORITY_USER' && <p>หากเวลาซ้อนกับรายการจองทั่วไปที่ยังไม่เริ่ม ระบบจะใช้สิทธิ์จองทับเมื่อยืนยัน</p>}<div className="key-review-actions"><button type="button" disabled={save.isPending} onClick={() => setStep(1)}>ย้อนกลับ</button><button className="primary-action review-confirm-action" type="button" disabled={save.isPending} onClick={() => save.mutate()}>{save.isPending ? 'กำลังบันทึก…' : 'ยืนยันการจอง'}</button></div>{save.error && <BookingErrorDialog message={save.error.message} onClose={() => save.reset()}/>}</section>
+  if (step === 2) return <section className="key-request-entry key-booking-form-page key-request-review"><header><h1>ตรวจสอบข้อมูล</h1><p>กรุณาตรวจสอบข้อมูลให้เรียบร้อยก่อนกดยืนยัน</p></header>{stepper}<section className="key-review-card"><h2>ข้อมูลผู้จอง</h2><dl><Row label="ชื่อ – นามสกุล" value={identity.fullName}/><Row label="อีเมล" value={identity.email}/></dl></section><section className="key-review-card"><h2>ข้อมูลการจอง</h2><dl><Row label="ห้องที่จอง" value={roomDisplayName}/><Row label="วันที่จอง" value={formatThaiDate(reviewSlot?.date ?? date)}/><Row label="เวลาเริ่มต้น" value={reviewSlot?.start ?? startTime}/><Row label="เวลาสิ้นสุด" value={reviewSlot?.end ?? endTime}/><Row label="วัตถุประสงค์" value={purpose}/></dl></section>{hasPriorityRole(identity) && <p>หากเวลาซ้อนกับรายการจองทั่วไปที่ยังไม่เริ่ม ระบบจะใช้สิทธิ์จองทับเมื่อยืนยัน</p>}<div className="key-review-actions"><button type="button" disabled={save.isPending} onClick={() => setStep(1)}>ย้อนกลับ</button><button className="primary-action review-confirm-action" type="button" disabled={save.isPending} onClick={() => save.mutate()}>{save.isPending ? 'กำลังบันทึก…' : 'ยืนยันการจอง'}</button></div>{save.error && <BookingErrorDialog message={save.error.message} onClose={() => save.reset()}/>}</section>
 
   return <section className="key-request-entry key-booking-form-page meeting-booking-form">
     <Link className="back-link" to={`/meeting-room/${roomId}`}>‹ กลับหน้าหลัก</Link>
     <header><h1>แบบฟอร์มการจองห้องประชุม</h1><p>กรุณากรอกข้อมูลเพื่อดำเนินการจองห้องประชุม</p></header>
     {stepper}
     <form className="key-request-form" onSubmit={submit} noValidate>
-      <section className="key-form-section"><h2 className="key-section-heading">ข้อมูลผู้จอง</h2><div className="key-identity-row"><label>สถานะ<input readOnly value={identity.role ? ROLE_LABELS[identity.role] : 'ผู้ใช้งาน'}/></label><label>ชื่อ–นามสกุล<input readOnly value={identity.fullName}/></label></div><label>อีเมล<input readOnly value={identity.email}/></label></section>
+      <section className="key-form-section"><h2 className="key-section-heading">ข้อมูลผู้จอง</h2><div className="key-identity-row"><label>สถานะ<input readOnly value={requesterStatus ? ROLE_LABELS[requesterStatus] : 'ผู้ใช้งาน'}/></label><label>ชื่อ–นามสกุล<input readOnly value={identity.fullName}/></label></div><label>อีเมล<input readOnly value={identity.email}/></label></section>
       <section className="key-form-section"><h2 className="key-section-heading">วัตถุประสงค์</h2><label>ระบุวัตถุประสงค์<textarea aria-label="ระบุวัตถุประสงค์" required rows={3} value={purpose} onChange={(event) => setPurpose(event.target.value)} placeholder="กรุณาระบุวัตถุประสงค์"/></label></section>
       <section className="key-form-section">
         <h2 className="key-section-heading">วันและเวลาที่จองห้อง</h2>

@@ -24,6 +24,7 @@ import { canCancelBooking, effectiveBookingStatus } from './features/bookings/bo
 import { getMyIdentity, normalizeAuthReturnTo } from './features/auth/auth.service'
 import { AccountKeyRequestHistoryPage } from './features/keys/pages/AccountKeyRequestHistoryPage'
 import { meetingTimeOptions } from './features/meeting-rooms/utils/meeting-time-options'
+import { MeetingRoomDetailPage } from './features/meeting-rooms/pages/MeetingRoomDetailPage'
 import { AccountProfilePage } from './features/public/pages/AccountProfilePage'
 
 const authStateSubscription = { unsubscribe: vi.fn() }
@@ -168,21 +169,23 @@ describe('Authentication entry point', () => {
 
   it('shows an email-matched legacy request as read-only history', async () => {
     vi.mocked(supabase.rpc).mockResolvedValueOnce({data:[{id:'legacy-1',request_code:'KR-1',room_code:'S2407',room_name:'ห้อง S2407',starts_at:'2026-11-08T10:00:00+07:00',ends_at:'2026-11-08T10:30:00+07:00',purpose:'ทดสอบ',purpose_type:'OTHER',course_code:null,lecturer_name:null,status:'APPROVED',can_cancel:false}],error:null} as never)
-    render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><AccountKeyRequestHistoryPage/></QueryClientProvider>)
+    render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><MemoryRouter><AccountKeyRequestHistoryPage/></MemoryRouter></QueryClientProvider>)
     expect(await screen.findByText('ห้อง S2407')).toBeInTheDocument()
-    expect(screen.getByText('สิ้นสุดแล้ว')).toHaveClass('muted')
-    expect(screen.queryByRole('button',{name:'ยกเลิกรายการ'})).not.toBeInTheDocument()
-    expect(screen.queryByRole('button',{name:'ยืนยันการคืนกุญแจ'})).not.toBeInTheDocument()
+    expect(screen.getByText('สิ้นสุดแล้ว')).toHaveAttribute('data-tone', 'gray')
+    expect(screen.queryByRole('button',{name:'ยกเลิก'})).not.toBeInTheDocument()
+    expect(screen.queryByRole('button',{name:'คืนกุญแจ'})).not.toBeInTheDocument()
   })
 
-  it('shows room metadata, duration, and cancellation for an eligible request', async () => {
+  it('shows the room, time and cancellation in a compact key request card', async () => {
+    vi.setSystemTime(new Date('2026-11-08T17:45:00+07:00'))
     vi.mocked(supabase.rpc).mockResolvedValueOnce({data:[{id:'owned-1',request_code:'KR-2',room_code:'S2408',room_name:'ห้องปฏิบัติการ S2408',room_type_name:'ห้องปฏิบัติการ',floor:'4',starts_at:'2026-11-08T17:30:00+07:00',ends_at:'2026-11-08T18:00:00+07:00',purpose:'เปิดห้องเพื่อการเรียนการสอน',purpose_type:'TEACHING',course_code:null,lecturer_name:null,status:'APPROVED',can_cancel:true}],error:null} as never)
-    render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><AccountKeyRequestHistoryPage/></QueryClientProvider>)
-    expect(await screen.findByText('ห้องปฏิบัติการ')).toBeInTheDocument()
-    expect(screen.getByText('S2408 • ชั้น 4')).toBeInTheDocument()
-    expect(screen.getByText('ระยะเวลา 30 นาที')).toBeInTheDocument()
-    expect(screen.getByRole('button',{name:'ยกเลิกรายการ'})).toBeInTheDocument()
-    expect(screen.queryByRole('button',{name:'ยืนยันการคืนกุญแจ'})).not.toBeInTheDocument()
+    render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><MemoryRouter><AccountKeyRequestHistoryPage/></MemoryRouter></QueryClientProvider>)
+    expect(await screen.findByRole('heading', { name: 'ห้อง S2408' })).toBeInTheDocument()
+    expect(screen.queryByText('S2408 • ชั้น 4')).not.toBeInTheDocument()
+    expect(screen.queryByText('ระยะเวลา 30 นาที')).not.toBeInTheDocument()
+    expect(screen.getByText(/8 พ.ย. 2569 · 17:30–18:00 น./).closest('time')).toHaveAttribute('datetime', '2026-11-08T17:30:00+07:00')
+    expect(screen.getByRole('button',{name:'ยกเลิก'})).toBeInTheDocument()
+    expect(screen.queryByRole('button',{name:'คืนกุญแจ'})).not.toBeInTheDocument()
   })
 
   it('returns an active owned key request and refreshes its history', async () => {
@@ -191,20 +194,20 @@ describe('Authentication entry point', () => {
       .mockResolvedValueOnce({data:[{id:'active-1',request_code:'KR-4',room_code:'S2407',room_name:'ห้อง S2407',room_type_name:'Computer Room',floor:'4',starts_at:'2026-11-08T15:00:00+07:00',ends_at:'2026-11-08T18:00:00+07:00',purpose:'ทดสอบ',purpose_type:'OTHER',course_code:null,lecturer_name:null,status:'APPROVED',can_cancel:true,can_return:true}],error:null} as never)
       .mockResolvedValueOnce({data:{id:'active-1',status:'RETURNED'},error:null} as never)
       .mockResolvedValueOnce({data:[],error:null} as never)
-    render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><AccountKeyRequestHistoryPage/></QueryClientProvider>)
-    const returnButton=await screen.findByRole('button',{name:'ยืนยันการคืนกุญแจ'})
-    expect(returnButton.closest('footer')).toHaveClass('equal-actions')
+    render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><MemoryRouter><AccountKeyRequestHistoryPage/></MemoryRouter></QueryClientProvider>)
+    const returnButton=await screen.findByRole('button',{name:'คืนกุญแจ'})
+    expect(returnButton.closest('footer')).toContainElement(screen.getByRole('button', { name: 'ยกเลิก' }))
     fireEvent.click(returnButton)
-    fireEvent.click(screen.getAllByRole('button',{name:'ยืนยันการคืนกุญแจ'}).at(-1)!)
+    fireEvent.click(screen.getByRole('button',{name:'ยืนยันการคืนกุญแจ'}))
 
     await waitFor(()=>expect(supabase.rpc).toHaveBeenCalledWith('return_my_key_request',{p_key_request_id:'active-1'}))
     await waitFor(()=>expect(supabase.rpc).toHaveBeenCalledTimes(3))
   })
 
-  it('styles a cancelled history status as muted', async () => {
+  it('styles a cancelled key request badge in gray', async () => {
     vi.mocked(supabase.rpc).mockResolvedValueOnce({data:[{id:'cancelled-1',request_code:'KR-3',room_code:'S2407',room_name:'ห้อง S2407',room_type_name:'ห้องปฏิบัติการ',floor:'4',starts_at:'2026-11-08T13:00:00+07:00',ends_at:'2026-11-08T14:00:00+07:00',purpose:'ทดสอบ',purpose_type:'OTHER',course_code:null,lecturer_name:null,status:'CANCELLED',can_cancel:false}],error:null} as never)
-    render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><AccountKeyRequestHistoryPage/></QueryClientProvider>)
-    expect(await screen.findByText('ยกเลิกแล้ว')).toHaveClass('muted')
+    render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><MemoryRouter><AccountKeyRequestHistoryPage/></MemoryRouter></QueryClientProvider>)
+    expect(await screen.findByText('ยกเลิกแล้ว')).toHaveAttribute('data-tone', 'gray')
   })
 
   it('presents the university login form when there is no session', async () => {
@@ -266,7 +269,7 @@ describe('Authentication entry point', () => {
 
     expect(await screen.findByRole('heading', { name: 'ห้องประชุมคณะ IT' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: '← กลับ' })).not.toBeInTheDocument()
-    expect(screen.getByText('Meeting Room')).toBeInTheDocument()
+    expect(screen.getByText('ห้องประชุม')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'IT KeySpace' }).closest('a')).toHaveAttribute('href', '/meeting-room')
     expect(screen.queryByRole('link', { name: 'ภาพรวม' })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'รายการจองห้องประชุม' })).toBeInTheDocument()
@@ -276,6 +279,37 @@ describe('Authentication entry point', () => {
     fireEvent.click(screen.getByRole('option', { name: '08:30' }))
     fireEvent.click(screen.getByRole('button', { name: 'จองห้องนี้' }))
     expect(screen.getByRole('dialog')).toHaveTextContent('กรุณาเข้าสู่ระบบ')
+  })
+
+  it('keeps past and future requester names on the daily meeting schedule', async () => {
+    vi.setSystemTime(new Date('2026-11-15T16:09:00+07:00'))
+    const identity = { userId: 'teacher-1', fullName: 'อาจารย์ทดสอบ', email: 'teacher@example.test', role: 'TEACHER' as const }
+    const events = [
+      { starts_at: '2026-11-15T14:30:00+07:00', ends_at: '2026-11-15T15:00:00+07:00', requester_name: 'อ. ผู้จองช่วงบ่าย' },
+      { starts_at: '2026-11-15T17:30:00+07:00', ends_at: '2026-11-15T18:00:00+07:00', requester_name: 'อ. ผู้จองช่วงเย็น' },
+    ]
+    vi.mocked(supabase.rpc).mockImplementation((async (name: string) => {
+      if (name === 'get_public_room_catalog') return { data: [{ id: 'meeting-1', code: 'MEETING-ROOM', name: 'MEETING-ROOM',
+        room_type_name: 'Meeting Room', active: true, usage_scope: 'MEETING' }], error: null }
+      if (name === 'get_public_room_schedule_events') return { data: events.map((event, index) => ({
+        ...event, id: `booking-${index}`, event_type: 'BOOKING', title: 'จองแล้ว', status: 'APPROVED',
+      })), error: null }
+      if (name === 'get_public_meeting_room_week') return { data: { opens_at: '08:00', closes_at: '18:00', viewer_id: identity.userId,
+        events: events.map(event => ({ ...event, category: 'TEACHER' })) }, error: null }
+      return { data: [], error: null }
+    }) as never)
+
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/meeting-room/meeting-1']}>
+      <Routes><Route path="/meeting-room/:roomId" element={<MeetingRoomDetailPage identity={identity} />}/></Routes>
+    </MemoryRouter></QueryClientProvider>)
+
+    const past = await screen.findByRole('button', { name: '14:30 อ. ผู้จองช่วงบ่าย' })
+    expect(past).toHaveAttribute('data-state', 'elapsed')
+    expect(past).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('button', { name: '16:00 ผ่านแล้ว' })).toHaveAttribute('data-state', 'elapsed')
+    expect(screen.getByRole('button', { name: '16:30 ว่าง' })).toHaveAttribute('data-state', 'free')
+    expect(screen.getByRole('button', { name: '17:30 อ. ผู้จองช่วงเย็น' })).toHaveAttribute('data-state', 'occupied')
   })
 
   it('opens the read-only weekly meeting calendar and limits week navigation', async () => {
@@ -305,7 +339,7 @@ describe('Authentication entry point', () => {
     const upcoming = await screen.findByRole('region', { name: 'รายการจองห้องประชุมล่วงหน้า' })
     expect(Array.from(upcoming.querySelectorAll('h3 time'), date => date.getAttribute('datetime'))).toEqual(['2026-11-16', '2026-11-17'])
     expect(upcoming).toHaveTextContent('รออนุมัติ · คณบดีและหัวหน้าสาขา')
-    fireEvent.click(screen.getByRole('tab', { name: 'จองย้อนหลัง' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'ประวัติการจอง' }))
     const history = await screen.findByRole('region', { name: 'รายการจองห้องประชุมย้อนหลัง' })
     expect(history.querySelectorAll('h3 time')).toHaveLength(5)
     expect(history.querySelector('h3 time')).toHaveAttribute('datetime', '2026-11-14')
@@ -541,6 +575,25 @@ describe('Authentication entry point', () => {
     })
   })
 
+  it.each(['current', 'key-tags'])('returns to the special-room tab from details in %s mode', async (mode) => {
+    vi.mocked(supabase.rpc).mockImplementation((async (name: string) => {
+      if (name === 'get_public_room_catalog') return { data: [{
+        id: 'special-1', code: 'STUDIO', name: 'Studio', room_type_name: 'Studio Room',
+        active: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: true,
+      }], error: null }
+      if (name === 'get_key_catalog_display') return { data: mode, error: null }
+      return { data: [], error: null }
+    }) as never)
+    renderPath('/keys')
+    fireEvent.click(await screen.findByRole('tab', { name: 'ห้องปฏิบัติการพิเศษ' }))
+    fireEvent.click(await screen.findByRole('link', { name: 'ดูรายละเอียด STUDIO' }))
+    const back = await screen.findByRole('link', { name: '← กลับ' })
+    expect(back).toHaveAttribute('href', '/keys?tab=special')
+    fireEvent.click(back)
+    expect(await screen.findByRole('tab', { name: 'ห้องปฏิบัติการพิเศษ' })).toHaveAttribute('aria-selected', 'true')
+    expect(await screen.findByRole('link', { name: 'ดูรายละเอียด STUDIO' })).toBeInTheDocument()
+  })
+
   it('opens room details before the anonymous key-request form', async () => {
     vi.setSystemTime(new Date('2026-11-08T07:30:00+07:00'))
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{ id: 'room-1', code: 'S2407', layout_key: 'S2407', name: 'ห้องปฏิบัติการคอมพิวเตอร์', room_type_name: 'ห้องทั่วไป', building: 'อาคาร 2', floor: '4', capacity: 30, active: true, academic_schedule_confirmed: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: false }], error: null } as never)
@@ -566,8 +619,11 @@ describe('Authentication entry point', () => {
     expect(screen.queryByText(/ไมโครโฟน/)).not.toBeInTheDocument()
   })
 
-  it('marks elapsed slots as unavailable for the current afternoon in room details', async () => {
-    vi.setSystemTime(new Date('2026-11-08T14:00:00+07:00'))
+  it.each([
+    { now: '14:00', bookedState: 'occupied', slotState: 'free' },
+    { now: '16:09', bookedState: 'elapsed', slotState: 'elapsed' },
+  ])('shows the key schedule at $now with the requester name and $bookedState styling', async ({ now, bookedState, slotState }) => {
+    vi.setSystemTime(new Date(`2026-11-08T${now}:00+07:00`))
     vi.mocked(supabase.rpc).mockImplementation((async (name: string) => {
       if (name === 'get_public_room_catalog') return { data: [{ id: 'room-1', code: 'S2407', layout_key: 'S2407', name: 'ห้องปฏิบัติการคอมพิวเตอร์', room_type_name: 'Computer Room', building: 'อาคาร 2', floor: '4', capacity: 30, active: true, academic_schedule_confirmed: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: false }], error: null } as never
       if (name === 'get_public_key_request_history') return { data: [{ id: 'req-1', requester_name: 'นศ. Sufeeyan Taleh · เปิดห้องเพื่อการเรียนการสอน', starts_at: '2026-11-08T14:30:00+07:00', ends_at: '2026-11-08T15:00:00+07:00', status: 'APPROVED' }], error: null } as never
@@ -581,9 +637,9 @@ describe('Authentication entry point', () => {
     expect(await screen.findByText('นศ. Sufeeyan Taleh · เปิดห้องเพื่อการเรียนการสอน')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /08:00.*ผ่านแล้ว/ })).toHaveAttribute('aria-disabled', 'true')
     expect(screen.getByRole('button', { name: /13:30.*ผ่านแล้ว/ })).toHaveAttribute('data-state', 'elapsed')
-    expect(screen.getByRole('button', { name: '14:30 นศ. Sufeeyan Taleh' })).toHaveAttribute('data-state', 'occupied')
-    expect(screen.getByRole('button', { name: /14:00.*ว่าง/ })).toHaveAttribute('aria-disabled', 'false')
-    expect(screen.getByRole('button', { name: /15:00.*ว่าง/ })).toHaveAttribute('data-state', 'free')
+    expect(screen.getByRole('button', { name: '14:30 นศ. Sufeeyan Taleh' })).toHaveAttribute('data-state', bookedState)
+    expect(screen.getByRole('button', { name: /16:30.*ว่าง/ })).toHaveAttribute('aria-disabled', 'false')
+    expect(screen.getByRole('button', { name: /16:00/ })).toHaveAttribute('data-state', slotState)
   })
 
   it('keeps ten key-request history rows in a three-row scroll area', async () => {
@@ -995,11 +1051,14 @@ describe('Authentication entry point', () => {
     expect(screen.getByTestId('guest-avatar')).toHaveClass('guest')
   })
 
-  it('reuses the person avatar and gradient action on the account profile', () => {
-    const identity = { userId: 'user-1', fullName: 'Sufeeyan Taleh', givenName: 'Sufeeyan', email: 'sufeeyan.tale@northbkk.ac.th', role: 'STUDENT' as const }
+  it('shows the SSO photo and falls back when the photo fails on the account profile', () => {
+    const identity = { userId: 'user-1', fullName: 'Sufeeyan Taleh', givenName: 'Sufeeyan', email: 'sufeeyan.tale@northbkk.ac.th', role: 'STUDENT' as const, avatarUrl: 'https://example.test/avatar.png' }
     render(<MemoryRouter><AccountProfilePage identity={identity}/></MemoryRouter>)
-    expect(screen.getByTestId('profile-person-icon').querySelector('svg')).toBeInTheDocument()
-    expect(screen.getByRole('link',{name:'ดูประวัติการทำรายการ'})).toHaveClass('profile-history-action')
+    const photo = screen.getByRole('img', { name: 'รูปโปรไฟล์ของ Sufeeyan Taleh' })
+    expect(photo).toHaveAttribute('src', identity.avatarUrl)
+    fireEvent.error(photo)
+    expect(screen.getByTestId('profile-person-icon')).toContainElement(screen.getByTestId('avatar-fallback'))
+    expect(screen.getByRole('link',{name:'การจองและกุญแจของฉัน'})).toHaveClass('profile-history-action')
   })
 
   it('shows the account email when the authenticated display name is blank', () => {
@@ -1274,5 +1333,7 @@ describe('elapsed booking status', () => {
   it('keeps a future approved booking cancellable', () => {
     expect(effectiveBookingStatus('APPROVED','2026-10-16T19:30:00+07:00',now)).toBe('APPROVED')
     expect(canCancelBooking('APPROVED','2026-10-16T19:30:00+07:00',now)).toBe(true)
+    expect(canCancelBooking('IN_USE','2026-10-16T19:30:00+07:00',now)).toBe(true)
+    expect(canCancelBooking('IN_USE','2026-10-16T18:30:00+07:00',now)).toBe(false)
   })
 })

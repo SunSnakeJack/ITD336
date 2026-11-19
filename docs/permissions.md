@@ -26,3 +26,4 @@ Changing the elapsed key-request slot exception requires `SETTINGS_MANAGE`. Read
 # Saturday booking exception
 
 The permission settings page lets a user with `SETTINGS_MANAGE` open one specified Saturday for room bookings and key requests. The exception expires when that date ends in Asia/Bangkok. The change is audited and the public policy returns only the current exception date. Existing booking limits, elapsed-slot settings, and academic schedule rules apply independently.
+The staff role picker offers Dean and Head of Department. Both inherit the priority booking permissions. Existing PRIORITY_USER assignments remain effective until an administrator selects a replacement on the account. Public account badges show คณบดี and หัวหน้าสาขา, and the request forms display both as อาจารย์.

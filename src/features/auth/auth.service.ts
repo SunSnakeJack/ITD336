@@ -1,9 +1,9 @@
 import type { UserAttributes } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabase/client'
 
-import type { AuthIdentity, RoleCode } from './auth.types'
+import { priorityRoles, type AuthIdentity, type RoleCode } from './auth.types'
 
-const ROLE_PRIORITY: RoleCode[] = ['ADMIN', 'PRIORITY_USER', 'STAFF', 'TEACHER', 'STUDENT']
+const ROLE_PRIORITY: RoleCode[] = ['ADMIN', ...priorityRoles, 'STAFF', 'TEACHER', 'STUDENT']
 
 export const getSession=()=>supabase.auth.getSession()
 export const signOut=()=>supabase.auth.signOut()
@@ -67,14 +67,13 @@ export async function getMyIdentity(userId: string): Promise<AuthIdentity> {
 
   if (roleError) throw new Error(roleError.message)
 
-  const role = ROLE_PRIORITY
-    .map((code) => roles.find((candidate) => candidate.code === code))
-    .find((candidate) => candidate !== undefined)
+  const assignedRoles = ROLE_PRIORITY.filter((code) => roles.some((candidate) => candidate.code === code))
 
   return {
     userId: profile.id,
     fullName: profile.full_name || profile.email,
     email: profile.email,
-    role: role ? role.code as RoleCode : null,
+    role: assignedRoles[0] ?? null,
+    roles: assignedRoles,
   }
 }

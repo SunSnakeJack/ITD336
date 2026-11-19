@@ -28,12 +28,13 @@
 .room-service-theme .key-room-tabs button[aria-selected="true"],
 .room-service-theme .meeting-schedule-tabs button[aria-selected="true"] {
   background: var(--room-yellow);
-  border-color: var(--room-ink);
+  border-color: transparent;
   color: var(--room-ink);
 }
 
 .room-service-theme .key-request-entry .primary-action:not(:disabled):not([aria-disabled="true"]) {
   background: var(--room-yellow) !important;
+  border-color: transparent !important;
   color: var(--room-ink) !important;
 }
 

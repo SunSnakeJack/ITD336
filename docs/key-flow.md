@@ -28,3 +28,4 @@ For teaching requests, the requester enters the course code independently of the
 active lecturer ID from the public directory. The database resolves the
 recipient and uses the existing lecturer notification outbox event.
 Teacher requests continue to identify the requester as the instructor.
+Before a request starts, its owner can adjust the time on the original Bangkok service date. The history editor uses the room schedule without the current request's interval and the database rechecks conflicts on save. Teaching requests retain their recorded teaching purpose and lecturer details.

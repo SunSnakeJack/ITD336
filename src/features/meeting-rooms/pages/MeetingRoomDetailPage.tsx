@@ -1,3 +1,4 @@
+import { thaiRoomType } from '../../rooms/utils/room-type-label'
 import { SelectField } from '../../../shared/components/SelectField'
 import { availableEndTimes, isHalfHourOccupied, timeSelectOptions } from '../../schedules/request-time-options'
 import { useQuery } from '@tanstack/react-query'
@@ -15,6 +16,9 @@ import '../../keys/pages/KeyRequestRoomDetailPage.css'
 import { meetingRoomDisplayName } from '../utils/meeting-room-display'
 import { MeetingWeekSchedule } from '../components/MeetingWeekSchedule'
 import { MeetingBookingList } from '../components/MeetingBookingList'
+import { getMeetingWeek } from '../meeting-week.service'
+import { meetingWeekStart } from '../utils/meeting-week'
+import { scheduleKeys } from '../../schedules/schedule.queries'
 import { canOverrideMeetingEvent, MEETING_TIMES } from '../utils/meeting-time-options'
 
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date())
@@ -37,6 +41,13 @@ export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | n
   const [end, setEnd] = useState<string | null>(null)
   const [loginOpen, setLoginOpen] = useState(false)
   const [scheduleView, setScheduleView] = useState<'daily' | 'weekly'>('daily')
+  const viewerId = identity?.userId ?? null
+  const weekStart = meetingWeekStart(date, 0)
+  const meetingWeek = useQuery({
+    queryKey: [...scheduleKeys.publicMeetingWeeks(), roomId, weekStart, viewerId],
+    queryFn: () => getMeetingWeek(roomId, weekStart, viewerId),
+    enabled: Boolean(room && viewerId && scheduleView === 'daily'),
+  })
   const scheduleId = useId()
 
   if (rooms.isPending) return <LoadingSpinner label="กำลังโหลดข้อมูลห้องประชุม…" />
@@ -45,10 +56,10 @@ export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | n
   const occupied = (time: string) => {
     const target = time === '18:00' ? '17:30' : time
     const overlapping = events.data?.filter((event) => isHalfHourOccupied(date, target, [event])) ?? []
-    return overlapping.find(event => !canOverrideMeetingEvent(identity?.role, event, new Date())) ?? overlapping[0]
+    return overlapping.find(event => !canOverrideMeetingEvent(identity, event, new Date())) ?? overlapping[0]
   }
   const canSelectOccupied = (event: ReturnType<typeof occupied>) =>
-    Boolean(event && canOverrideMeetingEvent(identity?.role, event, new Date()))
+    Boolean(event && canOverrideMeetingEvent(identity, event, new Date()))
   const unavailable = (time: string) => {
     const event = occupied(time)
     return Boolean(event && !canSelectOccupied(event)) || isSlotElapsedForBangkokDate(time, date)
@@ -61,12 +72,19 @@ export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | n
     const event = occupied(time)
     if (event?.eventType === 'BLOCK') return { state: 'closed', label: 'ปิดให้บริการ', disabled: true }
 
-    if (isSlotElapsedForBangkokDate(time, date)) return { state: 'elapsed', label: 'ผ่านแล้ว', disabled: true }
+    const requesterName = event?.eventType === 'BOOKING' ? meetingWeek.data?.events.find(item =>
+      item.requester_name && Date.parse(item.starts_at) === Date.parse(event.startsAt)
+        && Date.parse(item.ends_at) === Date.parse(event.endsAt),
+    )?.requester_name : undefined
+    const bookingLabel = requesterName?.trim() || 'จองแล้ว'
+    if (isSlotElapsedForBangkokDate(time, date)) {
+      return { state: 'elapsed', label: event ? bookingLabel : 'ผ่านแล้ว', disabled: true }
+    }
     if (isTimeSelected(time, start, selectedEnd)) {
       return { state: 'selected', label: time === start ? 'เลือก - เริ่ม' : time === selectedEnd ? 'เลือก - จบ' : 'เลือก', disabled: false }
     }
     if (event) return {
-      state: 'occupied', label: canSelectOccupied(event) ? 'จองแล้ว · เลือกเพื่อตรวจสอบสิทธิ์จองทับ' : 'จองแล้ว',
+      state: 'occupied', label: bookingLabel,
       disabled: !canSelectOccupied(event),
     }
     return { state: 'free', label: 'ว่าง', disabled: false }
@@ -83,7 +101,7 @@ export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | n
 
   return <section className="key-request-entry key-room-detail meeting-room-detail">
     <header className="key-detail-heading"><h1>{roomTitle}</h1><p>{room.description||'ยังไม่มีคำอธิบายห้อง'}</p><div className="key-detail-metadata"><span>{room.active ? 'เปิดใช้งาน' : 'ไม่พร้อมใช้'}</span><span>ต้องเข้าสู่ระบบ</span></div></header>
-    <article className="key-detail-card key-room-information"><div className="key-room-photo"><img src={room.imageUrl||defaultRoomImage} alt={`ภาพห้อง ${room.code}`} className="key-room-photo-image" /></div><div className="key-room-facts"><h2>ข้อมูลห้อง</h2><p><small>ประเภทห้อง</small><strong>{room.roomTypeName}</strong></p><p><small>ความจุ</small><strong>{room.capacity > 0 ? `${room.capacity} ที่นั่ง` : 'ยังไม่มีข้อมูล'}</strong></p></div><footer><strong>อุปกรณ์เพิ่มเติม</strong><span>{room.equipment?.length?room.equipment.join(' · '):'ยังไม่มีข้อมูลอุปกรณ์เพิ่มเติม'}</span></footer></article>
+    <article className="key-detail-card key-room-information"><div className="key-room-photo"><img src={room.imageUrl||defaultRoomImage} alt={`ภาพห้อง ${room.code}`} className="key-room-photo-image" /></div><div className="key-room-facts"><h2>ข้อมูลห้อง</h2><p><small>ประเภทห้อง</small><strong>{thaiRoomType(room.roomTypeName)}</strong></p><p><small>ความจุ</small><strong>{room.capacity > 0 ? `${room.capacity} ที่นั่ง` : 'ยังไม่มีข้อมูล'}</strong></p></div><footer><strong>อุปกรณ์เพิ่มเติม</strong><span>{room.equipment?.length?room.equipment.join(' · '):'ยังไม่มีข้อมูลอุปกรณ์เพิ่มเติม'}</span></footer></article>
     <MeetingBookingList key={room.id} roomId={room.id} active={room.active} viewerId={identity?.userId ?? null} />
     <article className="key-detail-card key-schedule-card">
       <div className="key-schedule-heading"><h2>ตารางเวลาการใช้ห้อง</h2></div>

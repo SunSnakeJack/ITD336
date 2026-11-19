@@ -1,7 +1,7 @@
 .key-schedule-grid [data-state="free"],
 .key-schedule-legend [data-state="free"] { --slot-bg: #e7f7eb; --slot-border: #bbdfc5; --slot-text: #15552a; }
 .key-schedule-grid [data-state="elapsed"],
-.key-schedule-legend [data-state="elapsed"] { --slot-bg: #fff4f4; --slot-border: #f0c8c8; --slot-text: #963f3f; }
+.key-schedule-legend [data-state="elapsed"] { --slot-bg: #edf0f3; --slot-border: #cbd2da; --slot-text: #475569; }
 .key-schedule-grid [data-state="closed"],
 .key-schedule-legend [data-state="closed"] { --slot-bg: #edf0f3; --slot-border: #d6dce3; --slot-text: #475569; }
 .key-schedule-grid [data-state="occupied"],

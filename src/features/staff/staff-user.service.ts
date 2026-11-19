@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase/client'
+const leadershipNames: Record<string, string> = { DEAN: 'Dean', DEPARTMENT_HEAD: 'Head of Department' }
 import type { StaffRegisteredUser, StaffRoleOption, StaffUserDirectoryItem } from './types/staff-user.types'
 import { getStaffUserStatusErrorMessage } from './utils/staff-user-status-error'
 
@@ -9,7 +10,9 @@ export async function getStaffUserDirectory():Promise<StaffUserDirectoryItem[]>{
   if(error){if(error.message.includes('FORBIDDEN'))throw new Error('บัญชีนี้ไม่มีสิทธิ์ดูรายชื่อผู้ใช้งาน');throw new Error(error.message)}
   return (data ?? []).map((row) => {
     const identity = { id: row.user_id, firstName: row.first_name ?? row.full_name, lastName: row.last_name ?? '',
-      fullName: row.full_name, email: row.email, roleCodes: row.role_codes ?? [], roleNames: row.role_names ?? [] }
+      fullName: row.full_name, email: row.email, roleCodes: row.role_codes ?? [],
+      roleNames: (row.role_codes ?? []).map((code, index) =>
+        leadershipNames[code] ?? row.role_names?.[index] ?? code) }
     if (row.pending_registration) return { ...identity, accountStatus: null, pendingRegistration: true }
     if (!row.account_status) throw new Error('ไม่สามารถอ่านสถานะบัญชีผู้ใช้งานได้')
     return { ...identity, accountStatus: row.account_status }
@@ -24,7 +27,8 @@ export async function updateStaffUserProfile(input:{userId:string;firstName:stri
 export async function getStaffRoleOptions():Promise<StaffRoleOption[]>{
   const{data,error}=await supabase.rpc('get_admin_role_options' as never) as unknown as{data:StaffRoleOption[]|null;error:{message:string}|null}
   if(error)throw new Error(error.message.includes('FORBIDDEN')?'บัญชีนี้ไม่มีสิทธิ์จัดการบทบาท':error.message)
-  return data??[]
+  return (data ?? []).filter(({ code }) => code !== 'PRIORITY_USER')
+    .map((role) => ({ ...role, name: leadershipNames[role.code] ?? role.name }))
 }
 
 export async function setStaffUserRoles(input:{userId:string;roleCodes:string[]}){

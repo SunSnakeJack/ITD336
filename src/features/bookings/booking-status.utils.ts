@@ -5,5 +5,5 @@ export function effectiveBookingStatus(status:BookingStatus,endsAt:string,now=Da
 }
 
 export function canCancelBooking(status:BookingStatus,endsAt:string,now=Date.now()){
-  return (status==='PENDING'||status==='APPROVED')&&new Date(endsAt).getTime()>now
+  return (status==='PENDING'||status==='APPROVED'||status==='IN_USE')&&new Date(endsAt).getTime()>now
 }

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { formatThaiDate } from '../utils/format-thai-date'
 
 interface KeyRequestSuccessProps {
+  catalogPath: string
   status: 'APPROVED' | 'PENDING_APPROVAL'
   roomCode: string
   date: string
@@ -12,7 +13,7 @@ interface KeyRequestSuccessProps {
   purpose: string
 }
 
-export function KeyRequestSuccess({ status, roomCode, date, startTime, endTime, purpose }: KeyRequestSuccessProps) {
+export function KeyRequestSuccess({ catalogPath, status, roomCode, date, startTime, endTime, purpose }: KeyRequestSuccessProps) {
   const pending = status === 'PENDING_APPROVAL'
 
   return <section className={`key-request-entry key-request-success ${pending ? 'pending' : 'approved'}`}>
@@ -31,6 +32,6 @@ export function KeyRequestSuccess({ status, roomCode, date, startTime, endTime, 
       </dl>
     </div>
     <div className="key-success-next"><b>ⓘ ขั้นตอนถัดไป</b><small>{pending ? 'กรุณารอผลการอนุมัติจากเจ้าหน้าที่ ระบบจะแจ้งสถานะคำขอผ่านอีเมลมหาวิทยาลัย เมื่อได้รับอนุมัติแล้วจึงติดต่อรับกุญแจตามวันและเวลาที่กำหนด' : 'กรุณาติดต่อรับกุญแจจากเจ้าหน้าที่ ณ ห้องสำนักงานคณะเทคโนโลยีสารสนเทศ ชั้น 4 ตามวันและเวลาที่กำหนด และส่งคืนกุญแจภายในระยะเวลาที่กำหนด ระบบจะส่งรายละเอียดและสถานะไปยังอีเมลมหาวิทยาลัย'}</small></div>
-    <Link className="primary-action" to="/keys">กลับสู่หน้าหลัก</Link>
+    <Link className="primary-action" to={catalogPath}>กลับสู่หน้าหลัก</Link>
   </section>
 }
