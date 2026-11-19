@@ -2,6 +2,10 @@
 
 STUDENT and TEACHER receive no administrative permission by default. They can read active room catalogs, their own profile, bookings, key loans, incidents/compensation relevant to them, and notifications. Booking/key requests use authenticated RPCs. For an active class occurrence in S2407–S2412, either role receives class-derived key permission; Student is the current UI focus and no enrollment lookup is required.
 
+On the first sign-in with a verified email, the database consumes the matching preassigned role or grants `STUDENT` when no preassignment exists. An existing role assignment takes precedence. Later sign-ins do not restore roles removed by an administrator.
+
+To prepare the faculty roster after migration `0083`, run `pwsh -File scripts/prepare-faculty-role-import.ps1 -Workbook <xlsx-path> -OutputSql <new-private-sql-path>`. Run the generated SQL as a database administrator against the intended environment. It skips existing accounts and preassignments and reports counts without printing contact details. Keep the generated file out of Git. Imported teachers appear in the admin directory as awaiting first sign-in. Importing the roster does not create Auth accounts or send invitations.
+
 V2 makes `STAFF` read-only with `ROOM_READ_ALL`, `SCHEDULE_READ_ALL`, `OCCUPANCY_READ`, and `REPORT_READ`. `ADMIN` receives management permissions. `PRIORITY_USER` receives only `BOOKING_OVERRIDE`; it can be combined with a base role without inheriting Admin authority.
 
 Role membership cannot be written by browser clients. Critical tables revoke direct mutation even though RLS is enabled. Profile self-update is column-granted only for name, university ID, and phone, preventing account-status or organization spoofing. Staff transitions are still validated inside RPCs; possession of a role label alone grants nothing.

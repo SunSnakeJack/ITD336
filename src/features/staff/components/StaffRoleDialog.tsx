@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
 import { SelectField } from '../../../shared/components/SelectField'
-import type { StaffRoleOption, StaffUserDirectoryItem } from '../types/staff-user.types'
+import type { StaffRoleOption, StaffRegisteredUser } from '../types/staff-user.types'
 
-interface StaffRoleDialogProps {user:StaffUserDirectoryItem;roles:StaffRoleOption[];pending:boolean;error?:string;onClose:()=>void;onSave:(input:{firstName:string;lastName:string;roleCodes:string[];accountStatus:StaffUserDirectoryItem['accountStatus']})=>void}
+interface StaffRoleDialogProps {user:StaffRegisteredUser;roles:StaffRoleOption[];pending:boolean;error?:string;onClose:()=>void;onSave:(input:{firstName:string;lastName:string;roleCodes:string[];accountStatus:StaffRegisteredUser['accountStatus']})=>void}
 
 export function StaffRoleDialog({user,roles,pending,error,onClose,onSave}:StaffRoleDialogProps){
   const[selected,setSelected]=useState(()=>new Set(user.roleCodes))
   const nameParts=user.fullName.trim().split(/\s+/)
   const[firstName,setFirstName]=useState(user.firstName??nameParts[0]??'')
   const[lastName,setLastName]=useState(user.lastName??nameParts.slice(1).join(' '))
-  const[accountStatus,setAccountStatus]=useState<StaffUserDirectoryItem['accountStatus']>(user.accountStatus)
+  const[accountStatus,setAccountStatus]=useState<StaffRegisteredUser['accountStatus']>(user.accountStatus)
   useEffect(()=>{const close=(event:KeyboardEvent)=>{if(event.key==='Escape'&&!pending)onClose()};document.addEventListener('keydown',close);return()=>document.removeEventListener('keydown',close)},[onClose,pending])
   const toggle=(code:string)=>setSelected((current)=>{const next=new Set(current);if(next.has(code))next.delete(code);else next.add(code);return next})
   const valid=firstName.trim().length>0

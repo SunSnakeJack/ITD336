@@ -4,6 +4,7 @@ import type { AuthIdentity } from '../../auth/auth.types'
 import keySpaceLogo from '../../../assets/it-keyspace.ico'
 import { StaffIcon } from './StaffIcon'
 import { getStaffPageTitle, staffNavigation } from '../staff-navigation'
+import { getStaffInitials } from '../utils/staff-user-directory'
 import '../staff.css'
 
 export function StaffLayout({ identity, onLogout }: { identity: AuthIdentity; onLogout: () => Promise<void> }) {
@@ -32,7 +33,7 @@ export function StaffLayout({ identity, onLogout }: { identity: AuthIdentity; on
       </nav>
       <div className="staff-sidebar-account">
         {accountOpen && <div className="staff-sidebar-account-menu"><button type="button" aria-label="ออกจากระบบ" onClick={() => void onLogout()}>ออกจากระบบ</button></div>}
-        <button className="staff-sidebar-foot" type="button" aria-label="เปิดเมนูบัญชี" aria-expanded={accountOpen} onClick={() => setAccountOpen(value => !value)}><span className="staff-sidebar-avatar" aria-hidden="true">{identity.fullName.slice(0, 2)}</span><span className="staff-sidebar-identity"><strong>{identity.fullName}</strong><em>ผู้ดูแลระบบ</em></span></button>
+        <button className="staff-sidebar-foot" type="button" aria-label="เปิดเมนูบัญชี" aria-expanded={accountOpen} onClick={() => setAccountOpen(value => !value)}><span className="staff-sidebar-avatar" aria-hidden="true">{getStaffInitials(identity.fullName)}</span><span className="staff-sidebar-identity"><strong>{identity.fullName}</strong><em>ผู้ดูแลระบบ</em></span></button>
       </div>
     </aside>
     <div className="staff-workspace">
