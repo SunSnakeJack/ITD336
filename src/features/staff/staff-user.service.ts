@@ -46,3 +46,18 @@ export async function setStaffUserStatus(input:{userId:string;status:StaffRegist
   if(data?.error){if(data.error==='LAST_ADMIN_REQUIRED')throw new Error('ไม่สามารถระงับหรือปิดใช้งานผู้ดูแลระบบคนสุดท้ายได้');throw new Error(String(data.error))}
   return data as{userId:string;status:StaffRegisteredUser['accountStatus']}
 }
+
+export async function removeStaffUser(user: StaffUserDirectoryItem) {
+  const { error } = await supabase.rpc('remove_admin_directory_user' as never, {
+    p_user_id: user.id,
+    p_pending_registration: user.pendingRegistration === true,
+  } as never)
+  if (!error) return
+  const messages: Record<string, string> = {
+    FORBIDDEN: 'บัญชีนี้ไม่มีสิทธิ์ลบผู้ใช้',
+    CANNOT_DELETE_SELF: 'ไม่สามารถลบบัญชีของตนเองได้',
+    LAST_ADMIN_REQUIRED: 'ไม่สามารถลบผู้ดูแลระบบคนสุดท้ายได้',
+    USER_NOT_FOUND: 'ไม่พบผู้ใช้หรือรายการสิทธิ์นี้แล้ว',
+  }
+  throw new Error(messages[error.message] ?? 'ไม่สามารถลบผู้ใช้ได้ กรุณาลองใหม่')
+}

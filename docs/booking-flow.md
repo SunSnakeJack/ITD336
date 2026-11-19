@@ -18,7 +18,7 @@ Saturdays are skipped and the configured Saturday exception is honored.
 In Staff Permission Settings, users with `SETTINGS_MANAGE` can set the limit
 to 1–30 days (default 3). Each change is audited and applies to new meeting
 bookings. Both meeting booking RPC paths enforce the same eligible dates.
-The form validates the requester identifier as digits for review only.
+The meeting booking form displays the authenticated requester's role, name, and email. Start options omit elapsed times on the selected Bangkok date and disable blocked half-hours. End options stop at the first conflicting half-hour. The booking RPC makes the final availability and permission decision.
 Meeting rooms use 08:00–18:00 Bangkok operating hours and auto-confirm
 new requests once role, date, hours and overlap checks pass. A caller with
 `BOOKING_OVERRIDE` can supersede one ordinary approved booking that has

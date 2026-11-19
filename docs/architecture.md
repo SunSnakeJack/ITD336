@@ -41,6 +41,10 @@ The authenticated header also subscribes to the user's RLS-filtered notification
 
 The room directory and room-detail routes are public. Guests read only through dedicated `security definer` catalog and schedule RPCs; they receive active room metadata, class occupancy, generic booking occupancy, and generic room-block occupancy. Direct anonymous table access remains disabled. Authentication is isolated at `/login`, while `/admin/*` retains an explicit role guard.
 
+After sign-in, the login route uses a validated internal return location for the keys, meeting-room, and account routes. Direct sign-in opens the staff dashboard for administrators and the key catalog for other users. Destination routes continue to enforce their own access rules.
+
+The key catalog has a global display setting under `/staff/display-settings`. Administrators with settings permission can choose the current catalog or the key-tag grid. Guests can read the selected mode. Both layouts use the same availability and key-request rules.
+
 Notifications are stored with IN_APP and EMAIL delivery queue rows. No provider is wired in this phase. A trusted Edge Function/server can later claim EMAIL rows. Supabase Storage is ready for later use but no bucket is created because no confirmed document workflow exists.
 
 ## Known technical boundaries

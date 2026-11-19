@@ -19,11 +19,11 @@ describe('staff user directory helpers', () => {
     const pending: StaffUserDirectoryItem = { ...users[0], pendingRegistration: true, accountStatus: null }
     expect(filterUserDirectory([pending], { search: 'TEACHER@', role: 'TEACHER', status: 'PENDING_REGISTRATION' })).toEqual([pending])
     expect(filterUserDirectory([pending], { search: '', role: 'ALL', status: 'ACTIVE' })).toEqual([])
-    expect(userDirectoryStats([pending])).toEqual({ total: 0, active: 0, suspended: 0 })
+    expect(userDirectoryStats([pending])).toEqual({ total: 1, active: 0, suspended: 0, pending: 1 })
   })
 
   it('summarizes active and suspended accounts without counting inactive accounts as suspended', () => {
-    expect(userDirectoryStats(users)).toEqual({ total: 3, active: 1, suspended: 1 })
+    expect(userDirectoryStats(users)).toEqual({ total: 3, active: 1, suspended: 1, pending: 0 })
   })
 
   it('combines search, role, and status filters', () => {

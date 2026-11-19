@@ -33,6 +33,11 @@ export function validateKeyRequest(input: KeyRequestRuleInput) {
     errors.email = 'กรุณาใช้อีเมลมหาวิทยาลัย @northbkk.ac.th'
   }
 
+  if (!Number.isFinite(Date.parse(input.startsAt)) || !Number.isFinite(Date.parse(input.endsAt))) {
+    errors.time = 'กรุณาเลือกเวลาเริ่มต้นและเวลาสิ้นสุด'
+    return { valid: false, errors }
+  }
+
   const start = bangkokParts(input.startsAt)
   const end = bangkokParts(input.endsAt)
   if (start.weekday === 'Sat' || end.weekday === 'Sat') {

@@ -7,16 +7,17 @@ import { StaffAddUserDialog } from '../components/StaffAddUserDialog'
 import { StaffPage, StaffQueryState, StatusBadge } from '../components/StaffPage'
 import { StaffRoleDialog } from '../components/StaffRoleDialog'
 import { staffRoleOptionsQuery, staffUserDirectoryQuery, staffUserKeys } from '../staff-user.queries'
-import { inviteStaffUser, setStaffUserRoles, setStaffUserStatus, updateStaffUserProfile } from '../staff-user.service'
-import type { StaffRegisteredUser } from '../types/staff-user.types'
+import { inviteStaffUser, removeStaffUser, setStaffUserRoles, setStaffUserStatus, updateStaffUserProfile } from '../staff-user.service'
+import type { StaffRegisteredUser, StaffUserDirectoryItem } from '../types/staff-user.types'
 import { filterUserDirectory, getStaffInitials, userDirectoryStats } from '../utils/staff-user-directory'
 import './StaffUserManagement.css'
 
 const PAGE_SIZE = 10
-const Icon = ({ type }: { type: 'edit' | 'pause' | 'disable' }) => <svg aria-hidden="true" viewBox="0 0 24 24">
+const Icon = ({ type }: { type: 'edit' | 'pause' | 'disable' | 'trash' }) => <svg aria-hidden="true" viewBox="0 0 24 24">
   {type === 'edit' && <><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></>}
   {type === 'pause' && <><rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/></>}
   {type === 'disable' && <><circle cx="9" cy="8" r="3"/><path d="M3 20c0-4 2-6 6-6 1.5 0 2.7.3 3.7 1"/><path d="m15 16 6 6m0-6-6 6"/></>}
+  {type === 'trash' && <><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7"/></>}
 </svg>
 
 export function StaffUsersPage() {
@@ -31,6 +32,7 @@ export function StaffUsersPage() {
   const [editing, setEditing] = useState<StaffRegisteredUser | null>(null)
   const adding = searchParams.get('dialog') === 'add'
   const [statusAction, setStatusAction] = useState<{ user: StaffRegisteredUser; status: StaffRegisteredUser['accountStatus'] } | null>(null)
+  const [removing, setRemoving] = useState<StaffUserDirectoryItem | null>(null)
   const [statusNotice, setStatusNotice] = useState('')
   const users = useMemo(() => query.data ?? [], [query.data])
   const stats = useMemo(() => userDirectoryStats(users), [users])
@@ -53,18 +55,38 @@ export function StaffUsersPage() {
   const closeAdd=()=>setSearchParams({}, { replace:true })
   const invite = useMutation({ mutationFn: inviteStaffUser, onSuccess: async () => { await refresh(); closeAdd() } })
   const status = useMutation({ mutationFn: setStaffUserStatus, onSuccess: async (_,input) => { await refresh(); setStatusNotice(input.status==='ACTIVE'?'เปิดใช้งานบัญชีเรียบร้อยแล้ว':input.status==='SUSPENDED'?'ระงับบัญชีเรียบร้อยแล้ว':'ปิดใช้งานบัญชีเรียบร้อยแล้ว'); setStatusAction(null) } })
+  const remove = useMutation({
+    mutationFn: removeStaffUser,
+    onSuccess: async () => {
+      await refresh()
+      setRemoving(null)
+      setStatusNotice('นำผู้ใช้ออกจากระบบเรียบร้อยแล้ว')
+    },
+  })
   const openStatus = (user: StaffRegisteredUser, nextStatus: StaffRegisteredUser['accountStatus']) => setStatusAction({ user, status: nextStatus })
 
   return <StaffPage eyebrow="User Management" title="จัดการผู้ใช้งาน" description="จัดการบัญชี บทบาท และสถานะผู้ใช้" hideHeader>
-    <div className="staff-user-stats" aria-label="สรุปผู้ใช้งาน"><article className="blue"><small>ผู้ใช้ทั้งหมด</small><strong>{stats.total}</strong><span>บัญชี</span></article><article className="teal"><small>เปิดใช้งาน</small><strong>{stats.active}</strong><span>บัญชี</span></article><article className="amber"><small>ระงับใช้งาน</small><strong>{stats.suspended}</strong><span>บัญชี</span></article></div>
+    <div className="staff-user-stats" aria-label="สรุปผู้ใช้งาน"><article className="blue"><small>ผู้ใช้ทั้งหมด</small><strong>{stats.total}</strong><span>บัญชี</span></article><article className="teal"><small>เปิดใช้งาน</small><strong>{stats.active}</strong><span>บัญชี</span></article><article className="amber"><small>ระงับบัญชี</small><strong>{stats.suspended}</strong><span>บัญชี</span></article><article className="slate"><small>ยังไม่เข้าสู่ระบบ</small><strong>{stats.pending}</strong><span>รายการ</span></article></div>
     {statusNotice&&<p className="staff-success-notice" role="status">{statusNotice}</p>}
     <div className="staff-user-filters"><label className="grow">ค้นหาผู้ใช้<span className="staff-user-search"><span aria-hidden="true">⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ค้นหาชื่อหรืออีเมล…" /></span></label><SelectField label="บทบาท" value={role} placeholder="ทุกบทบาท" options={[{value:'ALL',label:'ทุกบทบาท'},...(roles.data??[]).map(item=>({value:item.code,label:item.name}))]} onChange={setRole}/><SelectField label="สถานะ" value={accountStatus} placeholder="ทุกสถานะ" options={[{value:'ALL',label:'ทุกสถานะ'},{value:'ACTIVE',label:'เปิดใช้งาน'},{value:'SUSPENDED',label:'ระงับใช้งาน'},{value:'INACTIVE',label:'ปิดใช้งาน'},{value:'PENDING_REGISTRATION',label:'ยังไม่เข้าสู่ระบบ'}]} onChange={setAccountStatus}/></div>
     <StaffQueryState loading={query.isPending || roles.isPending} error={query.error || roles.error} empty={!users.length} emptyText="ยังไม่มีผู้ใช้งานในระบบ">
-      {!pageRows.length ? <div className="staff-empty">ไม่พบผู้ใช้ที่ตรงกับตัวกรอง</div> : <section className="staff-user-panel"><header><strong>รายชื่อผู้ใช้งาน</strong><span>แสดง {filtered.length} รายการ</span></header><div className="staff-table-wrap"><table className="staff-table staff-user-table"><thead><tr><th>ชื่อ–นามสกุล / อีเมล</th><th>บทบาท</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>{pageRows.map((user) => <tr key={user.id}><td><div className="staff-user-identity"><span aria-hidden="true">{getStaffInitials(user.fullName)}</span><div><strong>{user.fullName || 'ยังไม่มีชื่อ'}</strong><small>{user.email}</small></div></div></td><td><div className="staff-role-list">{user.roleCodes.length ? user.roleCodes.map((code, index) => <span className="staff-role-badge" data-role={code} key={code}>{user.roleNames[index] || code}</span>) : <span className="staff-role-empty">ยังไม่ได้กำหนด</span>}</div></td><td>{user.pendingRegistration ? <span className="staff-role-empty">ยังไม่เข้าสู่ระบบ</span> : <StatusBadge status={user.accountStatus}/>}</td><td>{user.pendingRegistration ? '—' : <div className="staff-user-actions"><button type="button" aria-label={`แก้ไขข้อมูล ${user.fullName}`} title="แก้ไขข้อมูล" onClick={() => { save.reset(); setEditing(user) }}><Icon type="edit"/></button>{user.accountStatus === 'ACTIVE' ? <><button className="suspend" type="button" aria-label={`ระงับบัญชี ${user.fullName}`} title="ระงับบัญชี" onClick={() => openStatus(user, 'SUSPENDED')}><Icon type="pause"/></button><button className="inactive" type="button" aria-label={`ปิดใช้งานบัญชี ${user.fullName}`} title="ปิดใช้งานบัญชี" onClick={() => openStatus(user, 'INACTIVE')}><Icon type="disable"/></button></> : <button className="activate" type="button" aria-label={`เปิดใช้งานบัญชี ${user.fullName}`} onClick={() => openStatus(user, 'ACTIVE')}>เปิดใช้งาน</button>}</div>}</td></tr>)}</tbody></table></div></section>}
+      {!pageRows.length ? <div className="staff-empty">ไม่พบผู้ใช้ที่ตรงกับตัวกรอง</div> : <section className="staff-user-panel"><header><strong>รายชื่อผู้ใช้งาน</strong><span>แสดง {filtered.length} รายการ</span></header><div className="staff-table-wrap"><table className="staff-table staff-user-table"><thead><tr><th>ชื่อ–นามสกุล / อีเมล</th><th>บทบาท</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>{pageRows.map((user) => <tr key={user.id}><td><div className="staff-user-identity"><span aria-hidden="true">{getStaffInitials(user.fullName)}</span><div><strong>{user.fullName || 'ยังไม่มีชื่อ'}</strong><small>{user.email}</small></div></div></td><td><div className="staff-role-list">{user.roleCodes.length ? user.roleCodes.map((code, index) => <span className="staff-role-badge" data-role={code} key={code}>{user.roleNames[index] || code}</span>) : <span className="staff-role-empty">ยังไม่ได้กำหนด</span>}</div></td><td>{user.pendingRegistration ? <span className="staff-role-empty">ยังไม่เข้าสู่ระบบ</span> : <StatusBadge status={user.accountStatus}/>}</td><td><div className="staff-user-actions">{!user.pendingRegistration && <><button type="button" aria-label={`แก้ไขข้อมูล ${user.fullName}`} title="แก้ไขข้อมูล" onClick={() => { save.reset(); setEditing(user) }}><Icon type="edit"/></button>{user.accountStatus === 'ACTIVE' ? <><button className="suspend" type="button" aria-label={`ระงับบัญชี ${user.fullName}`} title="ระงับบัญชี" onClick={() => openStatus(user, 'SUSPENDED')}><Icon type="pause"/></button><button className="inactive" type="button" aria-label={`ปิดใช้งานบัญชี ${user.fullName}`} title="ปิดใช้งานบัญชี" onClick={() => openStatus(user, 'INACTIVE')}><Icon type="disable"/></button></> : <button className="activate" type="button" aria-label={`เปิดใช้งานบัญชี ${user.fullName}`} onClick={() => openStatus(user, 'ACTIVE')}>เปิดใช้งาน</button>}</>}<button className="remove-user" type="button" aria-label={"ลบผู้ใช้ " + user.fullName} title="ลบผู้ใช้" onClick={() => { remove.reset(); setRemoving(user) }}><Icon type="trash"/></button></div></td></tr>)}</tbody></table></div></section>}
       <nav className="staff-pagination" aria-label="หน้ารายชื่อผู้ใช้"><span>แสดง {filtered.length ? (page - 1) * PAGE_SIZE + 1 : 0}–{Math.min(page * PAGE_SIZE, filtered.length)} จาก {filtered.length}</span><div><button type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>ก่อนหน้า</button><b>หน้า {page} / {pageCount}</b><button type="button" disabled={page === pageCount} onClick={() => setPage((value) => value + 1)}>ถัดไป</button></div></nav>
     </StaffQueryState>
     {editing && <StaffRoleDialog user={editing} roles={roles.data ?? []} pending={save.isPending} error={save.error?.message} onClose={() => setEditing(null)} onSave={(input) => save.mutate(input)}/>} 
     {adding && <StaffAddUserDialog roles={roles.data ?? []} pending={invite.isPending} error={invite.error?.message} onClose={closeAdd} onSave={(input) => invite.mutate(input)}/>} 
+    {removing && <ConfirmDialog
+      title="นำผู้ใช้ออกจากระบบ"
+      message={removing.fullName + " (" + removing.email + ") " + (removing.pendingRegistration
+        ? "จะถูกนำออกจากรายชื่อที่กำหนดสิทธิ์ล่วงหน้า"
+        : "จะถูกปิดสิทธิ์เข้าใช้งานและนำออกจากรายชื่อ โดยระบบจะเก็บประวัติการใช้งานไว้")}
+      confirmLabel="ลบผู้ใช้"
+      danger
+      pending={remove.isPending}
+      error={remove.error?.message}
+      onClose={() => { remove.reset(); setRemoving(null) }}
+      onConfirm={() => remove.mutate(removing)}
+    />}
     {statusAction && <ConfirmDialog title={statusAction.status === 'ACTIVE' ? 'เปิดใช้งานบัญชี' : statusAction.status === 'SUSPENDED' ? 'ระงับบัญชี' : 'ปิดใช้งานบัญชี'} message={`${statusAction.user.fullName} จะ${statusAction.status === 'ACTIVE' ? 'กลับเข้าสู่ระบบได้ตามปกติ' : statusAction.status === 'SUSPENDED' ? 'ถูกระงับและออกจากระบบ' : 'ไม่สามารถเข้าสู่ระบบ แต่ประวัติจะยังคงอยู่'}`} confirmLabel="ยืนยัน" danger={statusAction.status !== 'ACTIVE'} pending={status.isPending} error={status.error?.message} onClose={() => {status.reset();setStatusAction(null)}} onConfirm={() => status.mutate({ userId: statusAction.user.id, status: statusAction.status })}/>} 
   </StaffPage>
 }

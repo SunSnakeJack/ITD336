@@ -23,6 +23,7 @@ import { MeetingRoomDetailPage, MeetingRoomEntryPage } from "./features/meeting-
 import { MeetingRoomRequestPage } from "./features/meeting-rooms/pages/MeetingRoomRequestPage";
 import { StaffLayout } from "./features/staff/components/StaffLayout";
 import { StaffRoomDetailPage, StaffRoomFormPage, StaffSettingsPage } from "./features/staff/pages/StaffOverviewPages";
+import { StaffDisplaySettingsPage } from "./features/staff/pages/StaffDisplaySettingsPage";
 import { StaffRoomsPage } from "./features/staff/pages/StaffRoomsPage";
 import { StaffKeyRequestDetailPage, StaffMeetingRoomFormPage, StaffMeetingRoomsPage, StaffUserFormPage } from "./features/staff/pages/StaffManagementPages";
 import { StaffKeyRequestsPage } from "./features/staff/pages/StaffKeyRequestsPage";
@@ -92,7 +93,7 @@ function LoginRoute({
     );
   if (identity)
     return (
-      <Navigate to={identity.role === "ADMIN" ? "/staff" : returnTo} replace />
+      <Navigate to={returnTo ?? (identity.role === "ADMIN" ? "/staff" : "/keys")} replace />
     );
   return (
     <>
@@ -184,6 +185,7 @@ export function App() {
         <Route path="rooms/:roomId/edit" element={<StaffRoomFormPage />} />
         <Route path="rooms/:roomId" element={<StaffRoomDetailPage />} />
         <Route path="settings" element={<StaffSettingsPage />} />
+        <Route path="display-settings" element={<StaffDisplaySettingsPage />} />
         <Route path="users" element={<StaffUsersPage />} />
         <Route path="users/new" element={<StaffUserFormPage />} />
         <Route path="users/:userId/edit" element={<StaffUserFormPage />} />

@@ -13,6 +13,7 @@ export const staffNavigation: StaffNavigationItem[] = [
   { label: 'จัดการผู้ใช้งาน', to: '/staff/users', icon: 'users', group: 'จัดการ' },
   { label: 'จัดการข้อมูลห้อง', to: '/staff/rooms', icon: 'rooms', group: 'จัดการ' },
   { label: 'การตั้งค่าสิทธิ์', to: '/staff/settings', icon: 'settings', group: 'ระบบ' },
+  { label: 'การตั้งค่าการแสดงผล', to: '/staff/display-settings', icon: 'settings', group: 'ระบบ' },
 ]
 
 export const staffRoutePaths = [
@@ -22,6 +23,7 @@ export const staffRoutePaths = [
   '/staff/rooms/:roomId/edit',
   '/staff/rooms/:roomId',
   '/staff/settings',
+  '/staff/display-settings',
   '/staff/users',
   '/staff/users/new',
   '/staff/users/:userId/edit',
@@ -43,6 +45,7 @@ export const staffPageTitles: Record<string, string> = {
   '/staff': 'ภาพรวมระบบ',
   '/staff/rooms': 'จัดการข้อมูลห้อง',
   '/staff/settings': 'การตั้งค่าสิทธิ์',
+  '/staff/display-settings': 'การตั้งค่าการแสดงผล',
   '/staff/users': 'จัดการผู้ใช้งาน',
   '/staff/key-requests': 'จัดการการเบิกกุญแจ',
   '/staff/meeting-rooms': 'จัดการห้องประชุม',

@@ -1,5 +1,7 @@
 # Key flow
 
+Public key request forms show the requester status, name, and email. New requests omit the student or staff identifier. The request RPCs still accept an identifier from older clients. Time pickers hide elapsed starts, disable booked half-hours, and offer continuous end times up to the next blocked slot.
+
 For S2407–S2412, `get_room_slot_permissions` is the single decision boundary used by the room dialog. During an active class occurrence, every authenticated Student may create an auto-approved class key request; Teacher is intentionally supported by the same database rule for later UI reuse. This rule does not depend on enrollment data. Without a class, the user must own an approved room booking before requesting a key. Another user's booking never grants key permission.
 
 An auto-approved request is permission to receive a key, not proof of physical handover. S2407–S2412 currently have no tracked `room_keys` seed records, so an Admin must configure physical copies before CHECKED_OUT inventory can be assigned. Booking-derived key requests remain REQUESTED until staff approval.

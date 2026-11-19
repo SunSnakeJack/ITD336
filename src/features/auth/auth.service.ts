@@ -12,17 +12,26 @@ export const updateMyAuthProfile=(attributes:UserAttributes)=>supabase.auth.upda
 export const signInWithPassword = (email: string, password: string) =>
   supabase.auth.signInWithPassword({ email, password })
 
-export const normalizeAuthReturnTo = (returnTo: string | null | undefined) =>
-  returnTo && !returnTo.startsWith('//') && (/^\/(?:keys|meeting-room)(?:\/|\?|$)/.test(returnTo) || returnTo.startsWith('/account/'))
-    ? returnTo
-    : '/keys'
+export function normalizeAuthReturnTo(returnTo: string | null | undefined) {
+  const allowedPath = /^\/(?:keys|meeting-room|account)(?:\/|$)/
+  if (!returnTo) return undefined
+  const path = returnTo.split(/[?#]/, 1)[0]
+  if (!allowedPath.test(path)) return undefined
+  const destination = new URL(returnTo, 'https://app.invalid')
+  if (destination.origin !== 'https://app.invalid' || !allowedPath.test(destination.pathname)) return undefined
+  return destination.pathname + destination.search + destination.hash
+}
 
-export const signInWithGoogle = (returnTo = '/keys') => {
+export const signInWithGoogle = (returnTo?: string) => {
   const safeReturnTo = normalizeAuthReturnTo(returnTo)
+  const loginUrl = new URL('/login', window.location.origin)
+  if (safeReturnTo) {
+    loginUrl.search = `returnTo=${encodeURIComponent(safeReturnTo)}`
+  }
   return supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/login?returnTo=${encodeURIComponent(safeReturnTo)}`,
+      redirectTo: loginUrl.toString(),
       queryParams: { hd: 'northbkk.ac.th', prompt: 'select_account' },
     },
   })

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FormEvent, useMemo, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import type { AuthIdentity } from '../../auth/auth.types'
-import { publicRoomsQuery, scheduleKeys } from '../../schedules/schedule.queries'
+import { publicRoomsQuery, publicScheduleEventsQuery, scheduleKeys } from '../../schedules/schedule.queries'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
 import { createKeyRequest } from '../key.service'
 import type { KeyRequestResult } from '../key.types'
@@ -14,6 +14,9 @@ import { RequesterStatusSelect } from '../components/RequesterStatusSelect'
 import { KeyRequestReview } from '../components/KeyRequestReview'
 import { KeyRequestSuccess } from '../components/KeyRequestSuccess'
 import { SelectField } from '../../../shared/components/SelectField'
+import { availableEndTimes, isHalfHourOccupied, timeSelectOptions } from '../../schedules/request-time-options'
+import { isSlotElapsedForBangkokDate } from '../utils/key-catalog-time'
+import { formatThaiDate } from '../utils/format-thai-date'
 import './KeyRequestFormPage.css'
 
 const TIME_OPTIONS = Array.from({ length: 21 }, (_, index) => {
@@ -37,13 +40,13 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
   const [name, setName] = useState(identity?.fullName ?? '')
   const [email, setEmail] = useState(identity?.email ?? '')
   const [requesterType, setRequesterType] = useState<'STUDENT'|'TEACHER'>(() => identity?.role === 'TEACHER' ? 'TEACHER' : 'STUDENT')
-  const [requesterIdentifier, setRequesterIdentifier] = useState('')
   const [purposeType, setPurposeType] = useState<'TEACHING' | 'OTHER' | null>(null)
   const [purpose, setPurpose] = useState('')
   const [courseCode, setCourseCode] = useState('')
   const [referenceOptionId, setReferenceOptionId] = useState('')
-  const [startTime, setStartTime] = useState(searchParams.get('start') ?? '08:00')
-  const [endTime, setEndTime] = useState(searchParams.get('end') ?? '09:00')
+  const events = useQuery({ ...publicScheduleEventsQuery({ roomId, from: date, to: date }), enabled: Boolean(roomId && room && (!room.requiresSsoForKeyRequest || identity)) })
+  const [selectedStart, setStartTime] = useState(searchParams.get('start') ?? '08:00')
+  const [selectedEnd, setEndTime] = useState(searchParams.get('end') ?? '09:00')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [result, setResult] = useState<KeyRequestResult | null>(null)
   const [reviewing, setReviewing] = useState(false)
@@ -65,16 +68,27 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
   const selectedReference = referenceOptions.data?.find((option) => option.id === referenceOptionId)
   const courseRequired = purposeType === 'TEACHING'
 
+  const now = new Date()
+  const startOptions = timeSelectOptions(
+    TIME_OPTIONS.slice(0, -1).filter((time) => !isSlotElapsedForBangkokDate(time, date, now)),
+    (time) => isHalfHourOccupied(date, time, events.data ?? []),
+  )
+  const startTime = reviewing || result ? selectedStart
+    : startOptions.find((option) => option.value === selectedStart && !option.disabled)?.value ?? ''
+  const endOptions = timeSelectOptions(availableEndTimes(TIME_OPTIONS, startTime, (time) =>
+    isHalfHourOccupied(date, time, events.data ?? []),
+  ))
+  const endTime = reviewing || result || endOptions.some((option) => option.value === selectedEnd) ? selectedEnd : ''
   if (result) return <KeyRequestSuccess status={result.status} roomCode={room.code} date={date} startTime={startTime} endTime={endTime} purpose={effectivePurpose} />
 
   const requestInput = {
     roomId, requesterName, requesterEmail, purposeType: purposeType ?? 'OTHER', purpose: effectivePurpose,
     startsAt: `${date}T${startTime}:00+07:00`, endsAt: `${date}T${endTime}:00+07:00`,
     courseCode: courseRequired ? courseCode.trim() : undefined,
-    requesterType, requesterIdentifier, referenceOptionId: courseRequired && requesterType === 'STUDENT' ? referenceOptionId || undefined : undefined,
+    requesterType, referenceOptionId: courseRequired && requesterType === 'STUDENT' ? referenceOptionId || undefined : undefined,
   }
 
-  if (reviewing) return <KeyRequestReview roomCode={room.code} requesterIdentifier={requesterIdentifier} requesterName={requesterName} requesterEmail={requesterEmail} date={date} startTime={startTime} endTime={endTime} purpose={effectivePurpose} courseCode={courseRequired ? courseCode.trim() : undefined} lecturerName={courseRequired && requesterType === 'STUDENT' ? selectedReference?.lecturerName : undefined} submitting={save.isPending} error={save.error?.message} onBack={() => setReviewing(false)} onConfirm={() => save.mutate(requestInput)} />
+  if (reviewing) return <KeyRequestReview roomCode={room.code} requesterName={requesterName} requesterEmail={requesterEmail} date={date} startTime={startTime} endTime={endTime} purpose={effectivePurpose} courseCode={courseRequired ? courseCode.trim() : undefined} lecturerName={courseRequired && requesterType === 'STUDENT' ? selectedReference?.lecturerName : undefined} submitting={save.isPending} error={save.error?.message} onBack={() => setReviewing(false)} onConfirm={() => save.mutate(requestInput)} />
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -83,11 +97,10 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
     const ruleResult = validateKeyRequest({ email: requesterEmail, startsAt, endsAt, openSaturday: saturday.data })
     const nextErrors: Record<string, string> = { ...ruleResult.errors }
     if (!requesterName.trim()) nextErrors.name = 'กรุณากรอกชื่อ–นามสกุล'
-    if (!requesterIdentifier.trim()) nextErrors.requesterIdentifier = 'กรุณากรอกรหัสนักศึกษา / บุคลากร'
-    else if (!/^\d+$/.test(requesterIdentifier)) nextErrors.requesterIdentifier = 'รหัสนักศึกษา / บุคลากรต้องเป็นตัวเลขเท่านั้น'
     if (!purposeType) nextErrors.purposeType = 'กรุณาเลือกวัตถุประสงค์'
     if (purposeType === 'OTHER' && !purpose.trim()) nextErrors.purpose = 'กรุณาระบุวัตถุประสงค์'
-    if (endTime <= startTime) nextErrors.time = 'เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น'
+    if (!events.isSuccess) nextErrors.time = 'ไม่สามารถตรวจสอบช่วงเวลาว่างได้'
+    else if (!startTime || !endTime || endTime <= startTime) nextErrors.time = 'เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น'
     if (courseRequired) {
       if (!courseCode.trim()) nextErrors.courseCode = 'กรุณากรอกรหัสวิชา'
       if (requesterType === 'STUDENT' && !referenceOptionId) {
@@ -101,8 +114,7 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
 
   return <section className="key-request-entry key-booking-form-page"><Link className="back-link" to="/keys">‹ กลับหน้าหลัก</Link><header><h1>แบบฟอร์มการเบิกกุญแจ</h1><p>กรุณากรอกข้อมูลเพื่อดำเนินการเบิกกุญแจ</p></header><RequestStepper step={1} label="ขั้นตอนการเบิกกุญแจ" />
     <form className="key-request-form" onSubmit={submit} noValidate>
-      <section className="key-form-section" aria-labelledby="requester-heading"><h2 className="key-section-heading" id="requester-heading"><svg className="key-section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>ข้อมูลผู้เบิกกุญแจ</span></h2><div className="key-identity-row"><RequesterStatusSelect value={requesterType} onChange={setRequesterType}/><label>รหัสนักศึกษา / บุคลากร<input aria-label="รหัสนักศึกษา / บุคลากร" inputMode="numeric" pattern="[0-9]*" required placeholder="กรุณากรอกรหัส" value={requesterIdentifier} onChange={(event)=>setRequesterIdentifier(event.target.value.replace(/\D/g,''))}/>{errors.requesterIdentifier&&<small role="alert">{errors.requesterIdentifier}</small>}</label></div>
-      <label>ชื่อ–นามสกุล<input aria-label="ชื่อ–นามสกุล" required placeholder="กรุณากรอกชื่อ–นามสกุล" value={requesterName} readOnly={Boolean(room.requiresSsoForKeyRequest)} onChange={(event) => setName(event.target.value)} />{errors.name && <small role="alert">{errors.name}</small>}</label>
+      <section className="key-form-section" aria-labelledby="requester-heading"><h2 className="key-section-heading" id="requester-heading"><svg className="key-section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>ข้อมูลผู้เบิกกุญแจ</span></h2><div className="key-identity-row"><RequesterStatusSelect value={requesterType} onChange={setRequesterType}/><label>ชื่อ–นามสกุล<input aria-label="ชื่อ–นามสกุล" required placeholder="กรุณากรอกชื่อ–นามสกุล" value={requesterName} readOnly={Boolean(room.requiresSsoForKeyRequest)} onChange={(event) => setName(event.target.value)} />{errors.name && <small role="alert">{errors.name}</small>}</label></div>
       <label>อีเมล<input aria-label="อีเมล" type="email" required placeholder="name@northbkk.ac.th" value={requesterEmail} readOnly={Boolean(room.requiresSsoForKeyRequest)} onChange={(event) => setEmail(event.target.value)} />{errors.email && <small role="alert">{errors.email}</small>}</label></section>
       <fieldset className="key-purpose-options"><legend className="key-section-heading"><svg className="key-section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 12h6"/><path d="M9 16h6"/></svg><span>วัตถุประสงค์</span></legend><label className="key-purpose-choice"><input type="radio" name="purposeType" checked={purposeType==='TEACHING'} onChange={()=>setPurposeType('TEACHING')}/><span>เพื่อเปิดห้องการเรียนการสอน</span></label>{courseRequired && <div className="key-purpose-fields">
           <div className="key-purpose-row"><label htmlFor="course-code-input">รหัสวิชา</label><div className="key-purpose-input-wrap"><input id="course-code-input" aria-label="รหัสวิชา" placeholder="กรุณากรอกรหัสวิชา" value={courseCode} onChange={(event) => setCourseCode(event.target.value)} />{errors.courseCode && <small role="alert">{errors.courseCode}</small>}</div></div>
@@ -110,9 +122,11 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
         </div>}<label className="key-purpose-choice"><input type="radio" name="purposeType" checked={purposeType==='OTHER'} onChange={()=>setPurposeType('OTHER')}/><span>อื่นๆ</span></label>
       {purposeType === 'OTHER' && <div className="key-other-purpose-fields"><div className="key-other-purpose-field"><label htmlFor="other-purpose-input">ระบุวัตถุประสงค์ *</label><textarea id="other-purpose-input" aria-label="ระบุวัตถุประสงค์" required rows={2} placeholder="กรุณาระบุ เช่น ประชุมโครงงาน หรือจัดกิจกรรม" value={purpose} onChange={(event) => setPurpose(event.target.value)} />{errors.purpose && <small role="alert">{errors.purpose}</small>}</div></div>}{errors.purposeType&&<small role="alert">{errors.purposeType}</small>}</fieldset>
       <section className="key-form-section key-date-time-section" aria-labelledby="date-time-heading"><h2 className="key-section-heading" id="date-time-heading"><svg className="key-section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>เวลาที่เบิกกุญแจ</span></h2>
-      <div className="key-time-fields key-time-row"><SelectField label="เวลาเริ่มต้น" value={startTime} placeholder="เลือกเวลาเริ่มต้น" options={TIME_OPTIONS.slice(0, -1).map((time) => ({ value: time, label: time }))} onChange={setStartTime} placement="top"/><SelectField label="เวลาสิ้นสุด" value={endTime} placeholder="เลือกเวลาสิ้นสุด" options={TIME_OPTIONS.slice(1).map((time) => ({ value: time, label: time }))} onChange={setEndTime} placement="top"/></div></section>
+      <label>วันที่เบิก<input readOnly value={Number.isFinite(Date.parse(date)) ? formatThaiDate(date) : ''}/></label>
+      <div className="key-time-fields key-time-row"><SelectField label="เวลาเริ่มต้น" value={startTime} placeholder="เลือกเวลาเริ่มต้น" options={startOptions} onChange={(time) => { setStartTime(time); setEndTime('') }} placement="top"/><SelectField label="เวลาสิ้นสุด" value={endTime} placeholder="เลือกเวลาสิ้นสุด" options={endOptions} disabled={!startTime} onChange={setEndTime} placement="top"/></div></section>
       {(errors.date || errors.time || save.error) && <p className="panel-error" role="alert">{errors.date ?? errors.time ?? save.error?.message}</p>}
-      <div className="key-form-actions"><Link to={`/keys/rooms/${roomId}`}>ย้อนกลับ</Link><button className="primary-action">ถัดไป <span aria-hidden="true">→</span></button></div>
+      {events.isPending && <p role="status">กำลังตรวจสอบช่วงเวลาว่าง…</p>}
+      <div className="key-form-actions"><Link to={`/keys/rooms/${roomId}`}>ย้อนกลับ</Link><button className="primary-action" disabled={events.isPending}>ถัดไป <span aria-hidden="true">→</span></button></div>
     </form>
   </section>
 }

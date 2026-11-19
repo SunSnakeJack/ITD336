@@ -12,3 +12,12 @@ export function meetingTimeOptions(date: string, now: Date = new Date(), opensAt
     return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
   }).filter(time => new Date(`${date}T${time}:00+07:00`) > now)
 }
+
+export function canOverrideMeetingEvent(role: string | null | undefined, event: {
+  eventType: string
+  status?: string | null
+  startsAt: string
+}, now: Date) {
+  return role === 'PRIORITY_USER' && event.eventType === 'BOOKING'
+    && event.status === 'APPROVED' && new Date(event.startsAt) > now
+}
