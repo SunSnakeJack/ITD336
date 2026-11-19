@@ -3,7 +3,6 @@ import { formatThaiDate } from '../utils/format-thai-date'
 
 interface KeyRequestReviewProps {
   roomCode: string
-  requesterIdentifier: string
   requesterName: string
   requesterEmail: string
   date: string
@@ -24,7 +23,6 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
 
 export function KeyRequestReview({
   roomCode,
-  requesterIdentifier,
   requesterName,
   requesterEmail,
   date,
@@ -48,7 +46,6 @@ export function KeyRequestReview({
       <section className="key-review-card">
         <h2><svg className="key-review-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M5 20c0-4 3-7 7-7s7 3 7 7"/></svg>ข้อมูลผู้เบิกกุญแจ</h2>
         <dl>
-          <ReviewRow label="รหัสนักศึกษา / บุคลากร" value={requesterIdentifier} />
           <ReviewRow label="ชื่อ – นามสกุล" value={requesterName} />
           <ReviewRow label="อีเมล" value={requesterEmail} />
         </dl>

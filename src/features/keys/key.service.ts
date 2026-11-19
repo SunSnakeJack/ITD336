@@ -11,13 +11,13 @@ export async function returnMyKeyRequest(id:string){const{data,error}=await supa
 export async function getKeyRequestReferenceOptions():Promise<KeyRequestReferenceOption[]>{const {data,error}=await supabase.rpc('get_public_key_request_lecturers' as never) as unknown as {data:Array<{id:string;lecturer_name:string}>|null;error:{message:string}|null};if(error)throw new Error(error.message);return(data??[]).map((row)=>({id:row.id,lecturerName:row.lecturer_name}))}
 
 export async function createKeyRequest(input: CreateKeyRequestInput): Promise<KeyRequestResult> {
-  if (input.purposeType === 'TEACHING' && input.requesterType && input.requesterIdentifier) {
+  if (input.purposeType === 'TEACHING' && input.requesterType) {
     const { data, error } = await supabase.rpc('create_teaching_key_request' as never, {
       p_room_id: input.roomId,
       p_requester_name: input.requesterName.trim(),
       p_requester_email: input.requesterEmail.trim().toLowerCase(),
       p_requester_type: input.requesterType,
-      p_requester_identifier: input.requesterIdentifier.trim(),
+      p_requester_identifier: input.requesterIdentifier?.trim() ?? null,
       p_purpose: input.purpose.trim(),
       p_starts_at: input.startsAt,
       p_ends_at: input.endsAt,
@@ -28,7 +28,7 @@ export async function createKeyRequest(input: CreateKeyRequestInput): Promise<Ke
     if (error || !data) throwKeyRequestError(error?.message ?? 'KEY_REQUEST_FAILED')
     return dispatchCreatedRequestEmail(data)
   }
-  if(input.requesterType&&input.requesterIdentifier){const {data,error}=await supabase.rpc('create_key_request_v2' as never,{p_room_id:input.roomId,p_requester_name:input.requesterName.trim(),p_requester_email:input.requesterEmail.trim().toLowerCase(),p_requester_type:input.requesterType,p_requester_identifier:input.requesterIdentifier.trim(),p_purpose_type:input.purposeType,p_purpose:input.purpose.trim(),p_starts_at:input.startsAt,p_ends_at:input.endsAt,p_reference_option_id:input.referenceOptionId??null} as never) as unknown as {data:KeyRequestResult|null;error:{message:string}|null};if(!error&&data)return dispatchCreatedRequestEmail(data);if(error)throwKeyRequestError(error.message)}
+  if(input.requesterType){const {data,error}=await supabase.rpc('create_key_request_v2' as never,{p_room_id:input.roomId,p_requester_name:input.requesterName.trim(),p_requester_email:input.requesterEmail.trim().toLowerCase(),p_requester_type:input.requesterType,p_requester_identifier:input.requesterIdentifier?.trim()??null,p_purpose_type:input.purposeType,p_purpose:input.purpose.trim(),p_starts_at:input.startsAt,p_ends_at:input.endsAt,p_reference_option_id:input.referenceOptionId??null} as never) as unknown as {data:KeyRequestResult|null;error:{message:string}|null};if(!error&&data)return dispatchCreatedRequestEmail(data);if(error)throwKeyRequestError(error.message)}
   const { data, error } = await supabase.rpc('create_key_request' as never, {
     p_room_id: input.roomId,
     p_requester_name: input.requesterName.trim(),

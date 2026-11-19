@@ -1,3 +1,5 @@
+import { SelectField } from '../../../shared/components/SelectField'
+import { availableEndTimes, timeSelectOptions } from '../../schedules/request-time-options'
 import { isSaturdayClosed } from '../../schedules/saturday-policy'
 import { saturdayPolicyQuery } from '../../schedules/saturday-policy.queries'
 import { useQuery } from '@tanstack/react-query'
@@ -49,6 +51,10 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
   const isUnavailable = (time: string) => {
     return closed || Boolean(occupied(time)) || isSlotElapsedForBangkokDate(time, date, now, timingPolicy.data ?? false)
   }
+  const startOptions = timeSelectOptions(SLOTS.slice(0, -1), isUnavailable)
+  const endOptions = timeSelectOptions(availableEndTimes(SLOTS, start ?? '', isUnavailable))
+  const selectedEnd = endOptions.find(option => option.value === end)?.value ?? null
+  const changeStart = (time: string) => { setStart(time); setEnd(null); setSelectionNotice(null) }
   const getSlot = (time: string): RoomScheduleSlot => {
     const disabled = isUnavailable(time)
     const event = occupied(time)
@@ -57,8 +63,8 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
       ? history.data?.find(item => item.status === 'RETURNED' && covers(item, time)) : undefined
 
     if (closed) return { state: 'closed', label: 'ปิดให้บริการ', disabled }
-    if (!disabled && isTimeSelected(time, start, end)) {
-      const label = time === start ? 'เลือก - เริ่ม' : time === end ? 'เลือก - จบ' : 'เลือก'
+    if (!disabled && isTimeSelected(time, start, selectedEnd)) {
+      const label = time === start ? 'เลือก - เริ่ม' : time === selectedEnd ? 'เลือก - จบ' : 'เลือก'
       return { state: 'selected', label, disabled }
     }
     if (event?.eventType === 'BLOCK') return { state: 'closed', label: 'ปิดให้บริการ', disabled }
@@ -83,8 +89,8 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
     setEnd(null)
     setSelectionNotice(null)
   }
-  const requestPath = `/keys/rooms/${room.id}/request?date=${date}&start=${start ?? '08:00'}&end=${end ?? '09:00'}`
-  const canRequest=!closed&&room.active&&Boolean(start&&end)
+  const requestPath = `/keys/rooms/${room.id}/request?date=${date}&start=${start ?? '08:00'}&end=${selectedEnd ?? ''}`
+  const canRequest = !closed && room.active && Boolean(start && selectedEnd)
   const clearSelection=()=>{setStart(null);setEnd(null);setSelectionNotice(null)}
 
   return <section className="key-request-entry key-room-detail">
@@ -92,7 +98,7 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
     <header className="key-detail-heading"><h1>ห้อง {room.code}</h1><p>{room.description||'ยังไม่มีคำอธิบายห้อง'}</p><div className="key-detail-metadata"><span>{room.active?'เปิดใช้งาน':'ไม่พร้อมใช้'}</span><span>{room.requiresSsoForKeyRequest?'ต้องเข้าสู่ระบบ':'ไม่ต้องเข้าสู่ระบบ'}</span><span>{room.requiresSsoForKeyRequest?'รออนุมัติ':'ไม่ต้องรออนุมัติ'}</span></div></header>
     <article className="key-detail-card key-room-information"><div className="key-room-photo"><img src={room.imageUrl||defaultRoomImage} alt={`ภาพห้อง ${room.code}`} className="key-room-photo-image" loading="lazy" /></div><div className="key-room-facts"><h2>ข้อมูลห้อง</h2><p><small>ประเภทห้อง</small><strong>{room.roomTypeName}</strong></p><p><small>ความจุ</small><strong>{room.capacity>0?`${room.capacity} ที่นั่ง`:'ยังไม่มีข้อมูล'}</strong></p></div><footer><strong>อุปกรณ์เพิ่มเติม</strong><span>{room.equipment?.length?room.equipment.join(' · '):'ยังไม่มีข้อมูลอุปกรณ์เพิ่มเติม'}</span></footer></article>
     <article className="key-detail-card key-history"><h2>รายการผู้เบิกกุญแจ</h2>{history.isPending?<p className="key-detail-empty">กำลังโหลดรายการ…</p>:history.isError?<p className="key-detail-empty">ไม่สามารถโหลดรายการได้</p>:history.data?.length ? <RoomUsageHistory items={history.data.map(item => ({ ...item, title: item.requesterName }))} label="รายการผู้เบิกกุญแจทั้งหมด" heading="รายการเบิก" compact />:<p className="key-detail-empty">— ยังไม่มีรายการ —</p>}</article>
-    <article className="key-detail-card key-schedule-card"><div className="key-schedule-heading" data-testid="key-schedule-heading"><h2>ตารางเวลาการเบิกกุญแจ</h2><time dateTime={date}>{thaiDate(date)}<span className="sr-only"> ({date})</span></time><p>แตะครั้งแรกเพื่อเลือกเวลาเริ่มต้น แล้วแตะช่วงสุดท้ายที่ต้องการใช้งาน</p></div><RoomScheduleGrid times={SLOTS} getSlot={getSlot} onSelect={selectSlot} />{selectionNotice&&<p className="key-selection-notice" role="alert">{selectionNotice}</p>}{start && <div className="key-selected-time"><div className="key-time-summary"><span>เวลาเริ่มต้น<strong>{start}</strong></span><span>เวลาสิ้นสุด<strong>{end ?? 'กรุณาเลือก'}</strong></span></div><button type="button" className="key-reset-selection" onClick={clearSelection}>เลือกช่วงเวลาใหม่</button></div>}</article>
+    <article className="key-detail-card key-schedule-card"><div className="key-schedule-heading" data-testid="key-schedule-heading"><h2>ตารางเวลาการเบิกกุญแจ</h2><time dateTime={date}>{thaiDate(date)}<span className="sr-only"> ({date})</span></time><p>เลือกเวลาเริ่มต้นจากตารางหรือดรอปดาวน์ แล้วปรับเวลาสิ้นสุดได้ตามต้องการ</p></div><RoomScheduleGrid times={SLOTS} getSlot={getSlot} onSelect={selectSlot} />{selectionNotice&&<p className="key-selection-notice" role="alert">{selectionNotice}</p>}<div className="key-selected-time"><div className="key-time-summary"><SelectField label="เวลาเริ่มต้น" value={start ?? ''} placeholder="กรุณาเลือก" options={startOptions} disabled={!startOptions.some(option => !option.disabled)} onChange={changeStart}/><SelectField label="เวลาสิ้นสุด" value={selectedEnd ?? ''} placeholder="กรุณาเลือก" options={endOptions} disabled={!endOptions.length} onChange={setEnd}/></div>{start && <button type="button" className="key-reset-selection" onClick={clearSelection}>เลือกช่วงเวลาใหม่</button>}</div></article>
     {room.requiresSsoForKeyRequest && !identity ? <button className="primary-action" disabled={!canRequest} onClick={() => setShowLogin(true)}>เบิกกุญแจห้องนี้</button> : <Link className="primary-action" aria-disabled={!canRequest} to={canRequest ? requestPath : '#'}>เบิกกุญแจห้องนี้</Link>}
     {showLogin && <GoogleSsoModal returnTo={requestPath} onClose={() => setShowLogin(false)} />}
   </section>

@@ -10,6 +10,7 @@ describe('staff navigation contract', () => {
       '/staff/rooms/:roomId/edit',
       '/staff/rooms/:roomId',
       '/staff/settings',
+      '/staff/display-settings',
       '/staff/users',
       '/staff/users/new',
       '/staff/users/:userId/edit',
@@ -30,7 +31,7 @@ describe('staff navigation contract', () => {
 
   it('keeps primary navigation concise while linking every module', () => {
     expect(staffNavigation.map((item) => item.label)).toEqual([
-      'แดชบอร์ด', 'จัดการผู้ใช้งาน', 'จัดการข้อมูลห้อง', 'การตั้งค่าสิทธิ์',
+      'แดชบอร์ด', 'จัดการผู้ใช้งาน', 'จัดการข้อมูลห้อง', 'การตั้งค่าสิทธิ์', 'การตั้งค่าการแสดงผล',
     ])
     expect(staffNavigation.every((item) => item.to.startsWith('/staff'))).toBe(true)
   })

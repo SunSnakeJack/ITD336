@@ -12,7 +12,7 @@ import { AccountIdentitySummary } from './AccountIdentitySummary'
 export function PublicLayout({ identity, loading, onLogout }: { identity: AuthIdentity | null; loading: boolean; onLogout: () => Promise<void> }) {
   const location=useLocation()
   const pathname=location.pathname
-  const returnTo=`${pathname}${location.search}`
+  const returnTo=`${pathname}${location.search}${location.hash}`
   const meetingRoomMode=pathname.startsWith('/meeting-room')
   const keyHeaderHome=meetingRoomMode?'/meeting-room':'/keys'
   const [menuOpen,setMenuOpen]=useState(false)

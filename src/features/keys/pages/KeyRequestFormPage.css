@@ -85,7 +85,8 @@
   }
 
   .key-booking-form-page .key-request-form label,
-  .key-booking-form-page .app-select-label {
+  .key-booking-form-page .app-select-label,
+  .key-room-detail .key-time-summary .app-select-label {
     color: #0e38aa;
     font-size: 12px;
     font-weight: 400;
@@ -100,7 +101,8 @@
   .key-booking-form-page input:not([type='radio']),
   .key-booking-form-page select,
   .key-booking-form-page textarea,
-  .key-booking-form-page .app-select-trigger {
+  .key-booking-form-page .app-select-trigger,
+  .key-room-detail .key-time-summary .app-select-trigger {
     border: 1px solid #f3f3f3;
     border-radius: 8px;
     box-shadow: 2px 2px 2px rgb(196 196 196 / 60%);

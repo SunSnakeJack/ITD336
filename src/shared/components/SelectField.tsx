@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 export interface SelectFieldOption<T extends string> {
   value: T
   label: string
+  disabled?: boolean
 }
 
 interface SelectFieldProps<T extends string> {
@@ -81,6 +82,7 @@ export function SelectField<T extends string>({
               <button
                 type="button"
                 role="option"
+                disabled={option.disabled}
                 aria-selected={option.value === value}
                 onClick={() => {
                   onChange(option.value)

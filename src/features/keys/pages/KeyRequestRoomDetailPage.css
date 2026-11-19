@@ -304,7 +304,7 @@
     gap: 8px;
   }
 
-  .key-room-detail .key-time-summary span {
+  .key-room-detail .key-time-summary > span {
     color: #697586;
     padding: 8px 12px;
   }

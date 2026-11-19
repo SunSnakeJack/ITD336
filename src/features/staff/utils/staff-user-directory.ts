@@ -18,7 +18,8 @@ export function filterUserDirectory(users: StaffUserDirectoryItem[], filters: Us
 
 export function userDirectoryStats(users: StaffUserDirectoryItem[]) {
   return {
-    total: users.filter((user) => !user.pendingRegistration).length,
+    total: users.length,
+    pending: users.filter((user) => user.pendingRegistration).length,
     active: users.filter((user) => user.accountStatus === 'ACTIVE').length,
     suspended: users.filter((user) => user.accountStatus === 'SUSPENDED').length,
   }

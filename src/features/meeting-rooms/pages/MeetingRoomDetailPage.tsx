@@ -1,3 +1,5 @@
+import { SelectField } from '../../../shared/components/SelectField'
+import { availableEndTimes, isHalfHourOccupied, timeSelectOptions } from '../../schedules/request-time-options'
 import { useQuery } from '@tanstack/react-query'
 import { useId, useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
@@ -6,14 +8,14 @@ import { GoogleSsoModal } from '../../auth/components/GoogleSsoModal'
 import { publicRoomsQuery, publicScheduleEventsQuery } from '../../schedules/schedule.queries'
 import { RoomScheduleGrid, type RoomScheduleSlot } from '../../schedules/components/RoomScheduleGrid'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
-import { bangkokClock, isSlotElapsedForBangkokDate } from '../../keys/utils/key-catalog-time'
+import { isSlotElapsedForBangkokDate } from '../../keys/utils/key-catalog-time'
 import { isSelectableRange, isTimeSelected } from '../../keys/utils/key-slot-selection'
 import defaultRoomImage from '../../../assets/default-room.jpg'
 import '../../keys/pages/KeyRequestRoomDetailPage.css'
 import { meetingRoomDisplayName } from '../utils/meeting-room-display'
 import { MeetingWeekSchedule } from '../components/MeetingWeekSchedule'
 import { MeetingBookingList } from '../components/MeetingBookingList'
-import { MEETING_TIMES } from '../utils/meeting-time-options'
+import { canOverrideMeetingEvent, MEETING_TIMES } from '../utils/meeting-time-options'
 
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date())
 const thaiDate = (date: string) => new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(`${date}T00:00:00+07:00`))
@@ -42,22 +44,26 @@ export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | n
 
   const occupied = (time: string) => {
     const target = time === '18:00' ? '17:30' : time
-    return events.data?.find(event => target >= bangkokClock(event.startsAt) && target < bangkokClock(event.endsAt))
+    const overlapping = events.data?.filter((event) => isHalfHourOccupied(date, target, [event])) ?? []
+    return overlapping.find(event => !canOverrideMeetingEvent(identity?.role, event, new Date())) ?? overlapping[0]
   }
   const canSelectOccupied = (event: ReturnType<typeof occupied>) =>
-    identity?.role === 'PRIORITY_USER' && event?.eventType === 'BOOKING' && event.status === 'APPROVED'
-      && new Date(event.startsAt) > new Date()
+    Boolean(event && canOverrideMeetingEvent(identity?.role, event, new Date()))
   const unavailable = (time: string) => {
     const event = occupied(time)
     return Boolean(event && !canSelectOccupied(event)) || isSlotElapsedForBangkokDate(time, date)
   }
+  const startOptions = timeSelectOptions(MEETING_TIMES.slice(0, -1), unavailable)
+  const endOptions = timeSelectOptions(availableEndTimes(MEETING_TIMES, start ?? '', unavailable))
+  const selectedEnd = endOptions.find(option => option.value === end)?.value ?? null
+  const changeStart = (time: string) => { setStart(time); setEnd(null) }
   const getSlot = (time: string): RoomScheduleSlot => {
     const event = occupied(time)
     if (event?.eventType === 'BLOCK') return { state: 'closed', label: 'ปิดให้บริการ', disabled: true }
 
     if (isSlotElapsedForBangkokDate(time, date)) return { state: 'elapsed', label: 'ผ่านแล้ว', disabled: true }
-    if (isTimeSelected(time, start, end)) {
-      return { state: 'selected', label: time === start ? 'เลือก - เริ่ม' : time === end ? 'เลือก - จบ' : 'เลือก', disabled: false }
+    if (isTimeSelected(time, start, selectedEnd)) {
+      return { state: 'selected', label: time === start ? 'เลือก - เริ่ม' : time === selectedEnd ? 'เลือก - จบ' : 'เลือก', disabled: false }
     }
     if (event) return {
       state: 'occupied', label: canSelectOccupied(event) ? 'จองแล้ว · เลือกเพื่อตรวจสอบสิทธิ์จองทับ' : 'จองแล้ว',
@@ -71,8 +77,8 @@ export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | n
     if (time > start && isSelectableRange(start, time, MEETING_TIMES, unavailable)) setEnd(time)
     else { setStart(time); setEnd(null) }
   }
-  const requestPath = `/meeting-room/${room.id}/request?date=${date}&start=${start ?? '08:00'}&end=${end ?? '09:00'}`
-  const canRequest = room.active && Boolean(start && end)
+  const requestPath = `/meeting-room/${room.id}/request?date=${date}&start=${start ?? '08:00'}&end=${selectedEnd ?? ''}`
+  const canRequest = room.active && Boolean(start && selectedEnd)
   const roomTitle = meetingRoomDisplayName(room)
 
   return <section className="key-request-entry key-room-detail meeting-room-detail">
@@ -97,9 +103,9 @@ export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | n
       <div id={`${scheduleId}-panel`} role="tabpanel" aria-labelledby={`${scheduleId}-${scheduleView}`}>
         {scheduleView === 'weekly' ? <MeetingWeekSchedule key={identity?.userId ?? 'guest'} roomId={room.id}
           roomName={roomTitle} today={date} viewerId={identity?.userId ?? null} /> : <>
-          <div className="key-schedule-heading"><time>{thaiDate(date)}</time><p>แตะครั้งแรกเพื่อเลือกเวลาเริ่มต้น แล้วแตะช่วงสุดท้ายที่ต้องการใช้งาน</p></div>
+          <div className="key-schedule-heading"><time>{thaiDate(date)}</time><p>เลือกเวลาเริ่มต้นจากตารางหรือดรอปดาวน์ แล้วปรับเวลาสิ้นสุดได้ตามต้องการ</p></div>
           <RoomScheduleGrid times={MEETING_TIMES} getSlot={getSlot} onSelect={selectSlot} occupiedLabel="จองแล้ว" />
-          {start && <div className="key-selected-time"><div className="key-time-summary"><span>เวลาเริ่มต้น<strong>{start}</strong></span><span>เวลาสิ้นสุด<strong>{end ?? 'กรุณาเลือก'}</strong></span></div><button type="button" className="key-reset-selection" onClick={() => { setStart(null); setEnd(null) }}>เลือกช่วงเวลาใหม่</button></div>}
+          <div className="key-selected-time"><div className="key-time-summary"><SelectField label="เวลาเริ่มต้น" value={start ?? ''} placeholder="กรุณาเลือก" options={startOptions} disabled={!startOptions.some(option => !option.disabled)} onChange={changeStart}/><SelectField label="เวลาสิ้นสุด" value={selectedEnd ?? ''} placeholder="กรุณาเลือก" options={endOptions} disabled={!endOptions.length} onChange={setEnd}/></div>{start && <button type="button" className="key-reset-selection" onClick={() => { setStart(null); setEnd(null) }}>เลือกช่วงเวลาใหม่</button>}</div>
         </>}
       </div>
     </article>

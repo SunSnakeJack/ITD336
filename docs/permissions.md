@@ -4,6 +4,8 @@ STUDENT and TEACHER receive no administrative permission by default. They can re
 
 On the first sign-in with a verified email, the database consumes the matching preassigned role or grants `STUDENT` when no preassignment exists. An existing role assignment takes precedence. Later sign-ins do not restore roles removed by an administrator.
 
+Administrators can remove a pending preassignment or remove a registered user from the staff directory. For a registered user, the removal bans future sign-ins and marks the profile inactive while retaining its ID and linked history. Each removal is audited. The acting administrator cannot remove their own account.
+
 To prepare the faculty roster after migration `0083`, run `pwsh -File scripts/prepare-faculty-role-import.ps1 -Workbook <xlsx-path> -OutputSql <new-private-sql-path>`. Run the generated SQL as a database administrator against the intended environment. It skips existing accounts and preassignments and reports counts without printing contact details. Keep the generated file out of Git. Imported teachers appear in the admin directory as awaiting first sign-in. Importing the roster does not create Auth accounts or send invitations.
 
 V2 makes `STAFF` read-only with `ROOM_READ_ALL`, `SCHEDULE_READ_ALL`, `OCCUPANCY_READ`, and `REPORT_READ`. `ADMIN` receives management permissions. `PRIORITY_USER` receives only `BOOKING_OVERRIDE`; it can be combined with a base role without inheriting Admin authority.
