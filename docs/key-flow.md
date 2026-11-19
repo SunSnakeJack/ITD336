@@ -29,3 +29,6 @@ active lecturer ID from the public directory. The database resolves the
 recipient and uses the existing lecturer notification outbox event.
 Teacher requests continue to identify the requester as the instructor.
 Before a request starts, its owner can adjust the time on the original Bangkok service date. The history editor uses the room schedule without the current request's interval and the database rechecks conflicts on save. Teaching requests retain their recorded teaching purpose and lecturer details.
+## สถานะคืนกุญแจในรายการบันทึก
+
+แดชบอร์ดเจ้าหน้าที่แสดง **เกินกำหนด** เมื่อรายการเบิกที่อนุมัติแล้วหรือกำลังใช้งานเลยเวลาสิ้นสุดและยังไม่มีเวลาคืนจริง รวมถึงรายการยืมที่ยังถือกุญแจอยู่ หากบันทึกคืนหลังเวลาสิ้นสุดจะแสดง **คืนล่าช้า** ส่วนการคืนตรงเวลาหรือก่อนกำหนดแสดง **คืนแล้ว** รายงาน PDF ใช้เกณฑ์เดียวกัน ณ เวลาที่สร้างรายงาน การคำนวณนี้ใช้สำหรับการแสดงผลและไม่เปลี่ยนสถานะในฐานข้อมูล

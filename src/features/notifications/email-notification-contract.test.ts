@@ -56,10 +56,29 @@ describe('key-request email notifications',()=>{
     for(const[template,status,subject]of cases){
       const email=renderKeyRequestEmail(template,{...base,status})
       expect(email.subject).toContain(subject)
-      expect(email.html).toContain('10:00')
-      expect(email.html).toContain('11:00')
+      expect(email.html).toContain('<b>วันและเวลา:</b> 8 พฤศจิกายน 2569 เวลา 10:00–11:00 น. (เวลาประเทศไทย)')
       expect(email.html).not.toContain('2026-11-08T03:00:00Z')
     }
+  })
+
+  it('renders both Bangkok dates when a booking crosses local midnight', () => {
+    const email = renderKeyRequestEmail('booking-submitted', {
+      requestCode: 'B1', roomName: 'ห้องประชุม', purpose: 'ประชุม', status: 'APPROVED',
+      startsAt: '2026-11-19T16:30:00Z', endsAt: '2026-11-19T17:15:00Z',
+      links: { track: '', cancel: '', returnKey: '' },
+    })
+    expect(email.subject).toBe('ยืนยันการจองห้องสำเร็จ')
+    expect(email.html).toContain('19 พฤศจิกายน 2569 เวลา 23:30 – 20 พฤศจิกายน 2569 เวลา 00:15 น. (เวลาประเทศไทย)')
+  })
+
+  it('limits the booking enqueue and production claim to confirmation, cancellation and reminders', () => {
+    const migration = readFileSync(join(process.cwd(), 'supabase/migrations/0090_limit_meeting_booking_emails.sql'), 'utf8')
+    expect(migration).toContain("v_is_meeting is not true or new.status='APPROVED'")
+    expect(migration).toContain("new.status='CANCELLED' or (v_is_meeting is not true and new.status in ('APPROVED','REJECTED'))")
+    expect(migration).toContain("template_key in ('booking-cancelled','booking-starting-soon')")
+    expect(migration).toContain("template_key='booking-submitted' and payload->>'status'='APPROVED'")
+    expect(migration).toContain("where b.id=q.entity_id and rt.usage_scope<>'MEETING'")
+    expect(migration).toContain("'key-request-approved','key-request-rejected'")
   })
 
   it('queues cancelled and returned notifications idempotently',()=>{

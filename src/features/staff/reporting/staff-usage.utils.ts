@@ -1,4 +1,19 @@
 import type{StaffUsageRow,UsageCategory}from'./staff-usage.types'
+
+export function staffUsageStatus(row: Pick<StaffUsageRow, 'source' | 'status' | 'endsAt' | 'returnedAt'>, now: number) {
+ const {source, status, endsAt, returnedAt} = row
+ const outstanding = source === 'KEY_REQUEST'
+  ? status === 'APPROVED' || status === 'IN_USE'
+  : source === 'KEY_LOAN' && (status === 'CHECKED_OUT' || status === 'LATE')
+ const returned = (source === 'KEY_REQUEST' || source === 'KEY_LOAN') && status === 'RETURNED'
+ if (!outstanding && !returned) return status
+
+ const end = Date.parse(endsAt)
+ const actualReturn = returnedAt ? Date.parse(returnedAt) : NaN
+ if (!Number.isFinite(end)) return status
+ if (Number.isFinite(actualReturn)) return actualReturn > end ? 'RETURNED_LATE' : 'RETURNED'
+ return outstanding && now > end ? 'LATE' : status
+}
 export interface UsageFilters{category:''|UsageCategory;roomId:string;from:string;to:string}
 const bangkokDay=new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Bangkok'})
 export function filterUsageRows(rows:StaffUsageRow[],filters:UsageFilters){return rows.filter(row=>{

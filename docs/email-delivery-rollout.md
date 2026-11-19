@@ -11,6 +11,11 @@ assumption, not a no-show penalty. Terminal transitions cancel pending start rem
 0068 adds booking submission/status/start-reminder events and a server-only context RPC.
 No historical submission or admin-notice backfill is performed.
 
+0090 limits meeting-room email to automatic confirmation at creation, cancellation,
+and the start reminder. The production claim excludes queued pending-submission,
+approval, and rejection messages. Key-request email events use the existing
+rules. Deploy the email worker to enable the shared Thai date and time format.
+
 The production worker requires RESEND_FROM to be ITD336 <noreply@itd336.app>,
 ITD336_RESEND_API_KEY, and a scheduler bearer matching CRON_SECRET.
 Migration 0071 adds a service-only claim restricted to supported templates
