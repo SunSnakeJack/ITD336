@@ -1,13 +1,19 @@
 import { supabase } from '../../lib/supabase/client'
-import type { StaffRoleOption, StaffUserDirectoryItem } from './types/staff-user.types'
+import type { StaffRegisteredUser, StaffRoleOption, StaffUserDirectoryItem } from './types/staff-user.types'
 import { getStaffUserStatusErrorMessage } from './utils/staff-user-status-error'
 
-interface StaffUserDirectoryRow {user_id:string;first_name:string|null;last_name:string|null;full_name:string;email:string;account_status:StaffUserDirectoryItem['accountStatus'];role_codes:string[]|null;role_names:string[]|null}
+interface StaffUserDirectoryRow {user_id:string;first_name:string|null;last_name:string|null;full_name:string;email:string;account_status:StaffUserDirectoryItem['accountStatus'];role_codes:string[]|null;role_names:string[]|null;pending_registration:boolean}
 
 export async function getStaffUserDirectory():Promise<StaffUserDirectoryItem[]>{
-  const{data,error}=await supabase.rpc('get_admin_user_directory_v2' as never) as unknown as{data:StaffUserDirectoryRow[]|null;error:{message:string}|null}
+  const{data,error}=await supabase.rpc('get_admin_user_directory_v3' as never) as unknown as{data:StaffUserDirectoryRow[]|null;error:{message:string}|null}
   if(error){if(error.message.includes('FORBIDDEN'))throw new Error('บัญชีนี้ไม่มีสิทธิ์ดูรายชื่อผู้ใช้งาน');throw new Error(error.message)}
-  return(data??[]).map((row)=>({id:row.user_id,firstName:row.first_name??row.full_name,lastName:row.last_name??'',fullName:row.full_name,email:row.email,accountStatus:row.account_status,roleCodes:row.role_codes??[],roleNames:row.role_names??[]}))
+  return (data ?? []).map((row) => {
+    const identity = { id: row.user_id, firstName: row.first_name ?? row.full_name, lastName: row.last_name ?? '',
+      fullName: row.full_name, email: row.email, roleCodes: row.role_codes ?? [], roleNames: row.role_names ?? [] }
+    if (row.pending_registration) return { ...identity, accountStatus: null, pendingRegistration: true }
+    if (!row.account_status) throw new Error('ไม่สามารถอ่านสถานะบัญชีผู้ใช้งานได้')
+    return { ...identity, accountStatus: row.account_status }
+  })
 }
 
 export async function updateStaffUserProfile(input:{userId:string;firstName:string;lastName:string}){
@@ -34,9 +40,9 @@ export async function inviteStaffUser(input:{email:string;fullName:string;roleCo
   return data as{userId:string}
 }
 
-export async function setStaffUserStatus(input:{userId:string;status:StaffUserDirectoryItem['accountStatus']}){
+export async function setStaffUserStatus(input:{userId:string;status:StaffRegisteredUser['accountStatus']}){
   const{data,error}=await supabase.functions.invoke('admin-user-management',{body:{action:'SET_STATUS',...input}})
   if(error)throw new Error(await getStaffUserStatusErrorMessage(error))
   if(data?.error){if(data.error==='LAST_ADMIN_REQUIRED')throw new Error('ไม่สามารถระงับหรือปิดใช้งานผู้ดูแลระบบคนสุดท้ายได้');throw new Error(String(data.error))}
-  return data as{userId:string;status:StaffUserDirectoryItem['accountStatus']}
+  return data as{userId:string;status:StaffRegisteredUser['accountStatus']}
 }
