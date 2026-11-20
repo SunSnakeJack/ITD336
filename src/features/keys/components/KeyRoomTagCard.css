@@ -1,35 +1,35 @@
 .key-tag-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.25rem), 1fr));
-  gap: .65rem;
+  gap: .65rem .625rem;
 }
 
-.key-tag-room { display: grid; grid-template-rows: 1fr auto; gap: .55rem; min-width: 0; }
-.key-tag-hanger { position: relative; isolation: isolate; display: flex; min-height: 10.5rem; padding: 2.25rem .3rem 0 1rem; }
-.key-tag-rail { position: absolute; inset: 0 0 auto; height: .95rem; border-radius: .25rem; background: #ffe500; }
-.key-tag-ring { position: absolute; top: .35rem; left: 42%; width: 1.55rem; height: 2.25rem; border: 2px solid #a48a43; border-radius: 50%; transform: rotate(-22deg); }
-.key-tag-icon { position: absolute; top: 2.2rem; left: 0; width: 2.65rem; height: 3.8rem; object-fit: contain; opacity: .8; }
+.key-tag-room { display: grid; grid-template-rows: 1fr auto; gap: .8rem; min-width: 0; }
+.key-tag-hanger { position: relative; isolation: isolate; display: flex; min-height: 10.75rem; padding: 2.3rem .4rem 0 24%; }
+.key-tag-rail { position: absolute; inset: 0 0 auto; height: 1.05rem; border-radius: .3rem; background: #ffe500; }
+.key-tag-icon { position: absolute; top: 0; left: 0; width: min(75%, 4.75rem); height: 8.3rem; object-fit: contain; object-position: top left; }
 .key-tag-label {
   position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: .25rem;
+  gap: .2rem;
   min-width: 0;
   border: 1px solid #c7b777;
   border-radius: .55rem;
-  background: #fffbea;
+  background: #fffbef;
   color: #0a0047;
-  padding: .65rem .35rem .5rem;
+  padding: .3rem .4rem .5rem;
   text-align: left;
   text-decoration: none;
 }
-.key-tag-label::before { content: ""; align-self: center; width: .4rem; height: .4rem; border: 1px solid #a48a43; border-radius: 50%; background: #fff; }
+.key-tag-label::before { content: ""; align-self: center; width: .4rem; height: .4rem; margin-bottom: .4rem; border: 1px solid #58606a; border-radius: 50%; background: #fff; }
+.key-tag-label::after { content: ""; position: absolute; left: calc(50% - .3rem); top: -.65rem; width: .4rem; height: 1.15rem; border-right: 2px solid #6e7782; border-radius: 50%; transform: rotate(-25deg); pointer-events: none; }
 .key-tag-label strong { font-size: .95rem; overflow-wrap: anywhere; }
 .key-tag-label small { font-size: .68rem; }
 .key-tag-label .key-tag-available { color: #166534; }
 .key-tag-times { display: grid; gap: .2rem; border-top: 1px solid #e7ddb5; padding-top: .25rem; font-size: .66rem; font-variant-numeric: tabular-nums; }
-.key-tag-details { display: grid; place-items: center; min-height: 2.75rem; border: 1px solid #e1cd67; border-radius: .35rem; background: #fff; color: #0a0047; font-size: .75rem; text-align: center; text-decoration: none; }
+.key-tag-details { display: grid; place-items: center; min-height: 1.65rem; padding: .15rem; border: 1px solid #e1cd67; border-radius: .3rem; background: #fff; color: #0a0047; font-size: .75rem; text-align: center; text-decoration: none; }
 .key-tag-details:hover, a.key-tag-label:hover, button.key-tag-label:hover { background: #fff2a2; }
 .key-tag-grid .key-room-empty { grid-column: 1 / -1; }
 

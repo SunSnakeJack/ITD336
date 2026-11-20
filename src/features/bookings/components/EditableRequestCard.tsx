@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabase/client'
 import { SelectField } from '../../../shared/components/SelectField'
@@ -32,7 +33,9 @@ export function EditableRequestCard({ id, type, start, end, purpose, editable, p
   id: string; type: 'booking' | 'key_request'; start: string; end: string; purpose: string;
   editable: boolean; purposeEditable?: boolean;
 }) {
-  const [draft, setDraft] = useState<{ start: string; end: string; purpose: string } | null>(null)
+  const [params] = useSearchParams()
+  const [draft, setDraft] = useState<{ start: string; end: string; purpose: string } | null>(() =>
+    editable && params.get('edit') === id ? { start: bangkokClock(start), end: bangkokClock(end), purpose } : null)
   const editing = editable && draft !== null
   const client = useQueryClient()
   const availability = useQuery({

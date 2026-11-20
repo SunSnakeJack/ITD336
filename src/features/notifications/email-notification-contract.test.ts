@@ -61,6 +61,23 @@ describe('key-request email notifications',()=>{
     }
   })
 
+  it('renders explicit web confirmation and edit links when enabled by the worker', () => {
+    const email = renderKeyRequestEmail('key-request-updated', {
+      requestCode: 'KR-1', roomName: 'S2407', purpose: 'Lab', status: 'APPROVED',
+      startsAt: '2026-11-08T03:00:00Z', endsAt: '2026-11-08T04:00:00Z',
+      showWebActions: true, links: { track: '', returnKey: '',
+        cancel: 'https://example.test/key-request-action#action=CANCEL&token=test',
+        edit: 'https://example.test/account/requests?item=test&edit=test' },
+      logoUrl: 'https://example.test/images/it-keyspace-brand.png',
+    })
+    expect(email.subject).toBe('แก้ไขคำขอเบิกกุญแจแล้ว')
+    expect(email.html).toContain('ไปยืนยันการยกเลิกคำขอ')
+    expect(email.html).toContain('#action=CANCEL&amp;token=test')
+    expect(email.html).toContain('แก้ไขรายการ')
+    expect(email.html).toContain('src="https://example.test/images/it-keyspace-brand.png"')
+    expect(email.html).not.toContain('ไปยืนยันคืนกุญแจ')
+  })
+
   it('renders both Bangkok dates when a booking crosses local midnight', () => {
     const email = renderKeyRequestEmail('booking-submitted', {
       requestCode: 'B1', roomName: 'ห้องประชุม', purpose: 'ประชุม', status: 'APPROVED',
@@ -92,7 +109,7 @@ describe('key-request email notifications',()=>{
   it('keeps the worker in test-recipient mode with Resend idempotency',()=>{
     const workerPath=join(process.cwd(),'supabase/functions/email-worker/index.ts')
     const worker=existsSync(workerPath)?readFileSync(workerPath,'utf8'):''
-    expect(worker).toContain("from:delivery.from")
+    expect(worker).toContain("from:sender")
     expect(worker).toContain('RESEND_ALLOWED_RECIPIENT')
     expect(worker).toContain("'Idempotency-Key'")
     expect(worker).toContain('PRODUCTION_DISPATCH_NOT_READY')
@@ -102,7 +119,8 @@ describe('key-request email notifications',()=>{
     expect(worker).toContain('ITD336_SENDER_REQUIRED')
     expect(worker).not.toContain("db.rpc('claim_notification_outbox'")
     expect(worker).not.toContain("db.rpc('claim_notification_outbox_test'")
-    expect(worker).not.toContain('PUBLIC_SITE_URL')
+    expect(worker).toContain("if (mode === 'production' && site &&")
+    expect(worker).toContain("IT KeySpace <noreply@itd336.app>")
     expect(worker).not.toContain('/key-request-action?action=')
     expect(worker).not.toContain('/functions/v1/key-request-action?')
   })

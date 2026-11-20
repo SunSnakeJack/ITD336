@@ -72,16 +72,12 @@
   }
 
   .key-booking-form-page .key-form-section h2,
-  .key-booking-form-page .key-purpose-options legend {
+  .key-booking-form-page .key-purpose-heading {
     color: #0a0047;
     font-size: 16px;
     font-weight: 500;
     margin: 0;
     padding: 0;
-  }
-
-  .key-booking-form-page .key-purpose-options legend {
-    margin-bottom: 12px;
   }
 
   .key-booking-form-page .key-request-form label,

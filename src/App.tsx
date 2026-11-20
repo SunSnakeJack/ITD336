@@ -66,13 +66,15 @@ function AccountGuard({
   loading: boolean;
   children: ReactNode;
 }) {
+  const location = useLocation()
   if (loading)
     return (
       <main className="session-loading">
         <LoadingSpinner label="กำลังตรวจสอบบัญชี…" />
       </main>
     );
-  return identity ? children : <Navigate to="/login" replace />;
+  const returnTo = normalizeAuthReturnTo(location.pathname + location.search)
+  return identity ? children : <Navigate to={returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : '/login'} replace />;
 }
 
 function LoginRoute({

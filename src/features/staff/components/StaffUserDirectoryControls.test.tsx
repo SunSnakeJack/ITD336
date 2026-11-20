@@ -18,23 +18,23 @@ describe('staff directory controls', () => {
     (accountStatus, label, nextStatus) => {
       const user = { ...active, accountStatus }
       const onStatus = vi.fn()
-      const { container } = render(<StaffDirectoryActions user={user} onEdit={vi.fn()} onStatus={onStatus} onRemove={vi.fn()}/>)
+      const { container } = render(<StaffDirectoryActions user={user} onEdit={vi.fn()} onStatus={onStatus} onRemove={vi.fn()} onEditLecturerName={vi.fn()}/>)
       expect(screen.getByRole('button', { name: 'แก้ไขข้อมูล อาจารย์ทดสอบ' })).toBeInTheDocument()
       const trigger = screen.getByRole('button', { name: 'จัดการบัญชี อาจารย์ทดสอบ' })
       const popover = container.querySelector('[popover="auto"]')
       expect(trigger.getAttribute('popovertarget')).toBe(popover?.id)
-      const button = popover?.querySelector('button')
+      const button = popover?.querySelector('.suspend-user, .activate-user')
       expect(button).toHaveTextContent(label)
       if (button) fireEvent.click(button)
       expect(onStatus).toHaveBeenCalledWith(user, nextStatus)
     },
   )
 
-  it('offers only removal for an account that has not signed in', () => {
-    const user: StaffUserDirectoryItem = { ...active, accountStatus: null, pendingRegistration: true }
+  it('offers only removal for a non-teacher account that has not signed in', () => {
+    const user: StaffUserDirectoryItem = { ...active, roleCodes: ['STUDENT'], accountStatus: null, pendingRegistration: true }
     const { container } = render(<>
       <StaffDirectoryStatus user={user}/>
-      <StaffDirectoryActions user={user} onEdit={vi.fn()} onStatus={vi.fn()} onRemove={vi.fn()}/>
+      <StaffDirectoryActions user={user} onEdit={vi.fn()} onStatus={vi.fn()} onRemove={vi.fn()} onEditLecturerName={vi.fn()}/>
     </>)
     expect(screen.getByText('ยังไม่เข้าสู่ระบบ')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /แก้ไขข้อมูล/ })).not.toBeInTheDocument()
@@ -42,4 +42,17 @@ describe('staff directory controls', () => {
     expect(actions).toHaveLength(1)
     expect(actions[0]).toHaveTextContent('ลบผู้ใช้')
   })
+
+  it.each<StaffUserDirectoryItem>([active, { ...active, accountStatus: null, pendingRegistration: true }])(
+    'opens the lecturer name editor from the popover for a Teacher account',
+    user => {
+      const onEditLecturerName = vi.fn()
+      const { container } = render(<StaffDirectoryActions user={user} onEdit={vi.fn()} onStatus={vi.fn()}
+        onRemove={vi.fn()} onEditLecturerName={onEditLecturerName} lecturerNamesReady />)
+      const action = screen.getByText('แก้ไขชื่ออาจารย์')
+      expect(container.querySelector('[popover="auto"]')).toContainElement(action)
+      fireEvent.click(action)
+      expect(onEditLecturerName).toHaveBeenCalledWith(user)
+    },
+  )
 })

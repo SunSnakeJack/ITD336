@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { ScheduleRoom } from '../../schedules/schedule.types'
-import keyIcon from '../../../assets/key-room.svg'
+import keyIcon from '../../../assets/key-tag-hardware.svg'
 import './KeyRoomTagCard.css'
 
 interface KeyRoomTagCardProps {
@@ -30,7 +30,6 @@ export function KeyRoomTagCard({ room, available, schedule, requestPath, onSignI
   return <article className="key-tag-room">
     <div className="key-tag-hanger">
       <span className="key-tag-rail" aria-hidden="true" />
-      <span className="key-tag-ring" aria-hidden="true" />
       <img className="key-tag-icon" src={keyIcon} alt="" />
       {requestPath ? onSignIn
         ? <button className="key-tag-label" type="button" aria-label={actionLabel} onClick={onSignIn}>{content}</button>

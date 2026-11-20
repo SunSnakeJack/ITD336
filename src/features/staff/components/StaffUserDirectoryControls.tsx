@@ -31,11 +31,13 @@ export function StaffDirectoryStatus({ user }: { user: StaffUserDirectoryItem })
   </span>
 }
 
-export function StaffDirectoryActions({ user, onEdit, onStatus, onRemove }: {
+export function StaffDirectoryActions({ user, onEdit, onStatus, onRemove, onEditLecturerName, lecturerNamesReady = false }: {
   user: StaffUserDirectoryItem
   onEdit: (user: StaffRegisteredUser) => void
   onStatus: (user: StaffRegisteredUser, status: 'ACTIVE' | 'SUSPENDED') => void
   onRemove: (user: StaffUserDirectoryItem) => void
+  onEditLecturerName: (user: StaffUserDirectoryItem) => void
+  lecturerNamesReady?: boolean
 }) {
   const id = useId()
   const menu = useRef<HTMLDivElement>(null)
@@ -46,6 +48,7 @@ export function StaffDirectoryActions({ user, onEdit, onStatus, onRemove }: {
   const name = user.fullName || user.email
   const active = !user.pendingRegistration && user.accountStatus === 'ACTIVE'
   const statusLabel = active ? 'ระงับบัญชี' : 'เปิดใช้งานบัญชี'
+  const canEditLecturerName = user.roleCodes.includes('TEACHER')
 
   return <div className="staff-user-actions">
     {!user.pendingRegistration && <button type="button" className="staff-user-edit"
@@ -58,7 +61,8 @@ export function StaffDirectoryActions({ user, onEdit, onStatus, onRemove }: {
         const popover = menu.current
         if (!popover) return
         popover.style.left = `${Math.max(8, bounds.right - 176)}px`
-        if (window.innerHeight - bounds.bottom >= 100 || bounds.top < 100) {
+        const menuHeight = canEditLecturerName && !user.pendingRegistration ? 140 : 100
+        if (window.innerHeight - bounds.bottom >= menuHeight || bounds.top < menuHeight) {
           popover.style.top = `${bounds.bottom + 4}px`
           popover.style.bottom = 'auto'
         } else {
@@ -69,6 +73,10 @@ export function StaffDirectoryActions({ user, onEdit, onStatus, onRemove }: {
       <StaffUserIcon name="more"/>
     </button>
     <div className="staff-user-action-menu" id={id} popover="auto" ref={menu}>
+      {canEditLecturerName && <button type="button" disabled={!lecturerNamesReady}
+        onClick={() => select(() => onEditLecturerName(user))}>
+        <StaffUserIcon name="edit"/>แก้ไขชื่ออาจารย์
+      </button>}
       {!user.pendingRegistration && <button type="button" className={active ? 'suspend-user' : 'activate-user'}
         aria-label={`${statusLabel} ${name}`}
         onClick={() => select(() => onStatus(user, active ? 'SUSPENDED' : 'ACTIVE'))}>

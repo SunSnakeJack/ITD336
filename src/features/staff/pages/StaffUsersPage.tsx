@@ -100,11 +100,9 @@ export function StaffUsersPage() {
       {!pageRows.length ? <div className="staff-empty">ไม่พบผู้ใช้ที่ตรงกับตัวกรอง</div> : <section className="staff-user-panel"><header><strong>รายชื่อผู้ใช้งาน</strong><span>แสดง {filtered.length} รายการ</span></header><div className="staff-table-wrap"><table className="staff-table staff-user-table"><thead><tr><th>ชื่อ–นามสกุล / อีเมล</th><th>บทบาท</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>{pageRows.map((user) => <tr key={user.id}><td><div className="staff-user-identity"><span aria-hidden="true">{getStaffInitials(displayName(user))}</span><div><strong>{displayName(user) || 'ยังไม่มีชื่อ'}</strong><small>{user.email}</small></div></div></td><td><div className="staff-role-list">{user.roleCodes.length ? user.roleCodes.map((code, index) => <span className="staff-role-badge" data-role={code} key={code}>{user.roleNames[index] || code}</span>) : <span className="staff-role-empty">ยังไม่ได้กำหนด</span>}</div></td><td><StaffDirectoryStatus user={user}/></td><td><StaffDirectoryActions user={user}
         onEdit={item => { save.reset(); setEditing(item) }}
         onStatus={(item, nextStatus) => { status.reset(); openStatus(item, nextStatus) }}
-        onRemove={item => { remove.reset(); setRemoving(item) }}/>
-        {user.roleCodes.includes('TEACHER') && <button type="button" className="staff-user-edit mt-1"
-          disabled={!lecturerNames.data} onClick={() => { saveNames.reset(); setEditingLecturer(user) }}>
-          แก้ไขชื่ออาจารย์
-        </button>}</td></tr>)}</tbody></table></div></section>}
+        onRemove={item => { remove.reset(); setRemoving(item) }}
+        lecturerNamesReady={Boolean(lecturerNames.data)}
+        onEditLecturerName={item => { saveNames.reset(); setEditingLecturer(item) }}/></td></tr>)}</tbody></table></div></section>}
       <nav className="staff-pagination" aria-label="หน้ารายชื่อผู้ใช้"><span>แสดง {filtered.length ? (page - 1) * PAGE_SIZE + 1 : 0}–{Math.min(page * PAGE_SIZE, filtered.length)} จาก {filtered.length}</span><div><button type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>ก่อนหน้า</button><b>หน้า {page} / {pageCount}</b><button type="button" disabled={page === pageCount} onClick={() => setPage((value) => value + 1)}>ถัดไป</button></div></nav>
     </StaffQueryState>
     {editing && <StaffRoleDialog user={editing} roles={roles.data ?? []} pending={save.isPending} error={save.error?.message} onClose={() => setEditing(null)} onSave={(input) => save.mutate(input)}/>} 

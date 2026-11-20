@@ -133,20 +133,26 @@ describe('Authentication entry point', () => {
     }
   })
 
-  it('automatically completes an email cancellation through the frontend', async () => {
+  it('confirms an email cancellation only after the user clicks', async () => {
     vi.mocked(supabase.functions.invoke).mockResolvedValue({data:{ok:true,requestCode:'KR-1',status:'CANCELLED'},error:null} as never)
     renderPath(`/key-request-action?action=CANCEL&token=${'a'.repeat(64)}`)
+    const confirm = await screen.findByRole('button', { name: 'ยืนยันการยกเลิก' })
+    expect(supabase.functions.invoke).toHaveBeenCalledExactlyOnceWith('key-request-action',{body:{action:'CANCEL',token:'a'.repeat(64),preview:true}})
+    fireEvent.click(confirm)
     expect(await screen.findByRole('heading',{name:'ยกเลิกคำขอสำเร็จ'})).toBeInTheDocument()
     expect(supabase.functions.invoke).toHaveBeenCalledWith('key-request-action',{body:{action:'CANCEL',token:'a'.repeat(64)}})
-    expect(supabase.functions.invoke).toHaveBeenCalledTimes(1)
+    expect(supabase.functions.invoke).toHaveBeenCalledTimes(2)
   })
 
-  it('automatically completes an email return through the frontend', async () => {
+  it('confirms an email key return only after the user clicks', async () => {
     vi.mocked(supabase.functions.invoke).mockResolvedValue({data:{ok:true,requestCode:'KR-2',status:'RETURNED'},error:null} as never)
     renderPath(`/key-request-action?action=RETURN&token=${'c'.repeat(64)}`)
+    const confirm = await screen.findByRole('button', { name: 'ยืนยันคืนกุญแจ' })
+    expect(supabase.functions.invoke).toHaveBeenCalledExactlyOnceWith('key-request-action',{body:{action:'RETURN',token:'c'.repeat(64),preview:true}})
+    fireEvent.click(confirm)
     expect(await screen.findByRole('heading',{name:'ยืนยันคืนกุญแจสำเร็จ'})).toBeInTheDocument()
     expect(supabase.functions.invoke).toHaveBeenCalledWith('key-request-action',{body:{action:'RETURN',token:'c'.repeat(64)}})
-    expect(supabase.functions.invoke).toHaveBeenCalledTimes(1)
+    expect(supabase.functions.invoke).toHaveBeenCalledTimes(2)
   })
 
   it('shows an expired secure-link error without changing a request', async () => {
@@ -936,13 +942,44 @@ describe('Authentication entry point', () => {
     renderPath('/keys/rooms/room-1/request')
 
     expect(await screen.findByRole('heading', { name: 'ข้อมูลผู้เบิกกุญแจ' })).toHaveClass('key-section-heading')
-    expect(screen.getByText('วัตถุประสงค์').closest('legend')).toHaveClass('key-section-heading')
+    expect(screen.getByRole('group', { name: 'วัตถุประสงค์' }))
+      .toContainElement(screen.getByRole('heading', { name: 'วัตถุประสงค์' }))
     expect(screen.getByRole('heading', { name: 'เวลาที่เบิกกุญแจ' })).toHaveClass('key-section-heading')
 
     fireEvent.click(screen.getByRole('radio', { name: 'อื่นๆ' }))
     const purpose = screen.getByLabelText('ระบุวัตถุประสงค์')
     expect(purpose.closest('.key-other-purpose-field')).toBeInTheDocument()
     expect(screen.getByText('ระบุวัตถุประสงค์ *', { selector: 'label' })).toBeInTheDocument()
+  })
+
+  it('fills the regular-room form once the SSO session loads after opening the URL', async () => {
+    vi.mocked(supabase.rpc).mockImplementation((async (name: string) => ({
+      data: name === 'get_public_room_catalog' ? [{
+        id: 'room-1', code: 'S2407', name: 'S2407', active: true,
+        usage_scope: 'LABORATORY', requires_sso_for_key_request: false,
+      }] : [], error: null,
+    })) as never)
+    const payload = btoa(JSON.stringify({ iat: Math.floor(Date.now() / 1000) }))
+    let resolveSession: (value: unknown) => void = () => undefined
+    const loadingSession = new Promise(resolve => { resolveSession = resolve })
+    vi.mocked(supabase.auth.getSession).mockReturnValueOnce(loadingSession as never)
+    const tables = vi.mocked(supabase.from)
+    const original = tables.getMockImplementation()
+    tables.mockImplementation(((table: string) => {
+      if (table === 'profiles') return { select: () => ({ eq: () => ({ single: async () => ({
+        data: { id: 'student-1', full_name: 'Test Student', email: 'student@northbkk.ac.th', account_status: 'ACTIVE' }, error: null,
+      }) }) }) }
+      if (table === 'user_roles') return { select: () => ({ eq: async () => ({ data: [], error: null }) }) }
+      return original?.(table as never)
+    }) as never)
+    try {
+      renderPath('/keys/rooms/room-1/request')
+      resolveSession({ data: { session: { access_token: `x.${payload}.x`, user: { id: 'student-1', user_metadata: {} } } }, error: null })
+      expect(await screen.findByLabelText('ชื่อ–นามสกุล')).toHaveValue('Test Student')
+      expect(screen.getByLabelText('อีเมล')).toHaveValue('student@northbkk.ac.th')
+    } finally {
+      if (original) tables.mockImplementation(original)
+    }
   })
 
   it('requires an explicit end after selecting a start slot', async () => {

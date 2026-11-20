@@ -16,7 +16,8 @@ and the start reminder. The production claim excludes queued pending-submission,
 approval, and rejection messages. Key-request email events use the existing
 rules. Deploy the email worker to enable the shared Thai date and time format.
 
-The production worker requires RESEND_FROM to be ITD336 <noreply@itd336.app>,
+The production worker sends as IT KeySpace <noreply@itd336.app>. RESEND_FROM
+also accepts the previous ITD336 display name during rollout. The worker requires
 ITD336_RESEND_API_KEY, and a scheduler bearer matching CRON_SECRET.
 The web form uses the request RPC result. The RPC queues notifications and
 the production scheduler dispatches them. To opt into direct scoped test delivery,
@@ -27,8 +28,20 @@ created and scheduled at or after EMAIL_PRODUCTION_START_AT. Use an explicit
 UTC cutover time and keep it fixed. Older rows remain in the database.
 Each production row is claimed once. Provider idempotency keys provide an
 additional safeguard. Reconcile uncertain outcomes with Resend before any
-manual recovery. Outgoing emails contain no action links or Gmail markup.
-Overdue polling and Priority displacement are excluded from production claims.
+manual recovery. The worker uses ordinary web links for supported actions.
+Migration 0099 adds request edits, special-room expiry, overdue key returns,
+and priority replacement to production delivery. New events go to the
+requester affected by the change. Deadline events are deduplicated per request
+and only consider deadlines in the last day and at or after the production cutoff.
+
+Set PUBLIC_SITE_URL to the HTTPS frontend origin to show the website logo in
+email and include web actions in production messages. The sender avatar is
+controlled separately by each recipient's email client.
+Deploy both email-worker and key-request-action together with the frontend.
+Cancel and return links expire after 24 hours and require explicit confirmation
+on the website. An edit link opens the existing editor after sign-in. Disable
+provider click tracking for these links to avoid routing action tokens through
+tracking URLs.
 Keep the scheduler inactive until Vault is configured and the SQL is verified.
 Never expose CRON_SECRET, Resend keys, or service-role keys to frontend code.
 
