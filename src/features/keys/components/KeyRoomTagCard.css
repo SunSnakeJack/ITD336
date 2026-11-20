@@ -36,6 +36,19 @@
 @media (min-width: 340px) {
   .key-tag-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+@media (min-width: 340px) and (max-width: 480px) {
+  .key-tag-grid { column-gap: .375rem; }
+  .key-tag-hanger { padding-inline: clamp(.8rem, 4.25vw, 1.15rem) 0; }
+  .key-tag-icon { left: 0; width: min(68%, 4.5rem); }
+  .key-tag-label { padding-inline: .3rem; }
+  .key-tag-label strong { font-size: 1rem; }
+}
+@media (min-width: 375px) and (max-width: 480px) {
+  .key-tag-label small { font-size: .7rem; }
+  .key-tag-times { font-size: .7rem; }
+  .key-tag-label > small,
+  .key-tag-times > span { white-space: nowrap; }
+}
 @media (min-width: 720px) {
   .key-tag-grid { grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); }
 }
