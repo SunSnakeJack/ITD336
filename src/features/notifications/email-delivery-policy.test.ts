@@ -17,7 +17,7 @@ describe('email delivery policy', () => {
     expect(emailDeliveryPolicy('production', undefined, 'IT <mail@example.com>')).toMatchObject({ recipient: null })
   })
   it('renders admin notices without borrower action links', () => {
-    const rendered = renderKeyRequestEmail('key-request-admin-notice', { requestCode: 'K1', roomName: '<Room>', startsAt: '2026-11-13T03:00:00Z', endsAt: '2026-11-13T04:00:00Z', purpose: 'เรียน', status: 'PENDING_APPROVAL', links: { track: '', cancel: 'https://example.com/cancel', returnKey: '' } })
+    const rendered = renderKeyRequestEmail('key-request-admin-notice', { requestCode: 'K1', roomName: '<Room>', startsAt: '2026-11-13T03:00:00Z', endsAt: '2026-11-13T04:00:00Z', purpose: 'เรียน', status: 'PENDING_APPROVAL' })
     expect(rendered.subject).toBe('มีคำขอใช้ห้องรออนุมัติ')
     expect(rendered.html).toContain('&lt;Room&gt;')
     expect(rendered.html).not.toContain('https://example.com/cancel')

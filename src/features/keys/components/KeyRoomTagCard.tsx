@@ -19,7 +19,8 @@ export function KeyRoomTagCard({ room, available, schedule, requestPath, onSignI
     : isAvailable ? 'มีช่วงเวลาว่าง' : 'ไม่มีช่วงเวลาว่าง'
   const content = <>
     <strong>{room.code}</strong>
-    <small className={isAvailable ? 'key-tag-available' : undefined}>{status}</small>
+    <small className={isAvailable ? 'key-tag-available'
+      : room.active && schedule === 'ready' ? 'key-tag-unavailable' : undefined}>{status}</small>
     {isAvailable && <span className="key-tag-times">
       <small>เวลาว่างวันนี้</small>
       {available.map((range) => <span key={range}>{range}</span>)}

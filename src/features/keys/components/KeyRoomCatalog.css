@@ -33,8 +33,10 @@
   .key-room-catalog-page .key-room-tabs button {
     border-bottom-width: 1px;
     font-size: 14px;
-    min-height: 42px;
-    padding: 8px 4px 12px;
+    display: grid;
+    place-items: center;
+    min-height: 36px;
+    padding: 6px 4px;
   }
 
   .key-room-catalog-page .key-room-tabs button[aria-selected="true"] {

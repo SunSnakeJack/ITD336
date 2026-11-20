@@ -28,20 +28,15 @@ created and scheduled at or after EMAIL_PRODUCTION_START_AT. Use an explicit
 UTC cutover time and keep it fixed. Older rows remain in the database.
 Each production row is claimed once. Provider idempotency keys provide an
 additional safeguard. Reconcile uncertain outcomes with Resend before any
-manual recovery. The worker uses ordinary web links for supported actions.
+manual recovery.
 Migration 0099 adds request edits, special-room expiry, overdue key returns,
 and priority replacement to production delivery. New events go to the
 requester affected by the change. Deadline events are deduplicated per request
 and only consider deadlines in the last day and at or after the production cutoff.
 
-Set PUBLIC_SITE_URL to the HTTPS frontend origin to show the website logo in
-email and include web actions in production messages. The sender avatar is
-controlled separately by each recipient's email client.
-Deploy both email-worker and key-request-action together with the frontend.
-Cancel and return links expire after 24 hours and require explicit confirmation
-on the website. An edit link opens the existing editor after sign-in. Disable
-provider click tracking for these links to avoid routing action tokens through
-tracking URLs.
+New notification emails show the subject and request details. The logo header
+and web action links are paused while their design is reviewed. The worker
+does not issue action tokens for new emails during this pause.
 Keep the scheduler inactive until Vault is configured and the SQL is verified.
 Never expose CRON_SECRET, Resend keys, or service-role keys to frontend code.
 

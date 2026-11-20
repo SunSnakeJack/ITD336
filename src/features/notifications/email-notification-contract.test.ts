@@ -28,7 +28,7 @@ describe('key-request email notifications',()=>{
   })
 
   it('renders pending, approved, rejected, reminder and ended email variants',()=>{
-    const base={requestCode:'KR-1',roomName:'S2407',startsAt:'2026-11-08T10:00:00+07:00',endsAt:'2026-11-08T11:00:00+07:00',purpose:'ทดสอบ',links:{track:'https://example.test/t',cancel:'https://example.test/c',returnKey:'https://example.test/r'}}
+    const base={requestCode:'KR-1',roomName:'S2407',startsAt:'2026-11-08T10:00:00+07:00',endsAt:'2026-11-08T11:00:00+07:00',purpose:'ทดสอบ'}
     expect(renderKeyRequestEmail('key-request-submitted',{...base,status:'PENDING_APPROVAL'}).subject).toContain('รออนุมัติ')
     expect(renderKeyRequestEmail('key-request-approved',{...base,status:'APPROVED'}).subject).toContain('อนุมัติ')
     expect(renderKeyRequestEmail('key-request-rejected',{...base,status:'REJECTED'}).subject).toContain('ไม่อนุมัติ')
@@ -38,7 +38,7 @@ describe('key-request email notifications',()=>{
   })
 
   it('renders only cancel and return actions without a tracking action',()=>{
-    const email=renderKeyRequestEmail('key-request-submitted',{requestCode:'KR-1',roomName:'S2407',startsAt:'2026-11-08T10:00:00+07:00',endsAt:'2026-11-08T11:00:00+07:00',purpose:'ทดสอบ',status:'APPROVED',links:{track:'https://example.test/t',cancel:'https://example.test/c',returnKey:'https://example.test/r'}})
+    const email=renderKeyRequestEmail('key-request-submitted',{requestCode:'KR-1',roomName:'S2407',startsAt:'2026-11-08T10:00:00+07:00',endsAt:'2026-11-08T11:00:00+07:00',purpose:'ทดสอบ',status:'APPROVED'})
     expect(email.html).not.toContain('ยกเลิกคำขอ')
     expect(email.html).not.toContain('ยืนยันคืนกุญแจ')
     expect(email.html).not.toContain('ติดตามสถานะ')
@@ -46,7 +46,7 @@ describe('key-request email notifications',()=>{
   })
 
   it('renders every key-request lifecycle email with Bangkok local time',()=>{
-    const base={requestCode:'KR-1',roomName:'S2407',startsAt:'2026-11-08T03:00:00Z',endsAt:'2026-11-08T04:00:00Z',purpose:'ทดสอบ',links:{track:'https://example.test/t',cancel:'https://example.test/c',returnKey:'https://example.test/r'}}
+    const base={requestCode:'KR-1',roomName:'S2407',startsAt:'2026-11-08T03:00:00Z',endsAt:'2026-11-08T04:00:00Z',purpose:'ทดสอบ'}
     const cases=[
       ['key-request-submitted','APPROVED','สำเร็จ'],['key-request-submitted','PENDING_APPROVAL','รออนุมัติ'],
       ['key-request-approved','APPROVED','อนุมัติ'],['key-request-rejected','REJECTED','ไม่อนุมัติ'],
@@ -61,28 +61,20 @@ describe('key-request email notifications',()=>{
     }
   })
 
-  it('renders explicit web confirmation and edit links when enabled by the worker', () => {
+  it('renders updated request details without a logo or links', () => {
     const email = renderKeyRequestEmail('key-request-updated', {
       requestCode: 'KR-1', roomName: 'S2407', purpose: 'Lab', status: 'APPROVED',
       startsAt: '2026-11-08T03:00:00Z', endsAt: '2026-11-08T04:00:00Z',
-      showWebActions: true, links: { track: '', returnKey: '',
-        cancel: 'https://example.test/key-request-action#action=CANCEL&token=test',
-        edit: 'https://example.test/account/requests?item=test&edit=test' },
-      logoUrl: 'https://example.test/images/it-keyspace-brand.png',
-    })
+      })
     expect(email.subject).toBe('แก้ไขคำขอเบิกกุญแจแล้ว')
-    expect(email.html).toContain('ไปยืนยันการยกเลิกคำขอ')
-    expect(email.html).toContain('#action=CANCEL&amp;token=test')
-    expect(email.html).toContain('แก้ไขรายการ')
-    expect(email.html).toContain('src="https://example.test/images/it-keyspace-brand.png"')
-    expect(email.html).not.toContain('ไปยืนยันคืนกุญแจ')
+    expect(email.html).toContain('S2407')
+    expect(email.html).not.toMatch(/<(?:a|img)\b/i)
   })
 
   it('renders both Bangkok dates when a booking crosses local midnight', () => {
     const email = renderKeyRequestEmail('booking-submitted', {
       requestCode: 'B1', roomName: 'ห้องประชุม', purpose: 'ประชุม', status: 'APPROVED',
-      startsAt: '2026-11-19T16:30:00Z', endsAt: '2026-11-19T17:15:00Z',
-      links: { track: '', cancel: '', returnKey: '' },
+      startsAt: '2026-11-19T16:30:00Z', endsAt: '2026-11-19T17:15:00Z'
     })
     expect(email.subject).toBe('ยืนยันการจองห้องสำเร็จ')
     expect(email.html).toContain('19 พฤศจิกายน 2569 เวลา 23:30 – 20 พฤศจิกายน 2569 เวลา 00:15 น. (เวลาประเทศไทย)')
@@ -119,7 +111,7 @@ describe('key-request email notifications',()=>{
     expect(worker).toContain('ITD336_SENDER_REQUIRED')
     expect(worker).not.toContain("db.rpc('claim_notification_outbox'")
     expect(worker).not.toContain("db.rpc('claim_notification_outbox_test'")
-    expect(worker).toContain("if (mode === 'production' && site &&")
+    expect(worker).not.toContain('issue_key_request_action_bundle')
     expect(worker).toContain("IT KeySpace <noreply@itd336.app>")
     expect(worker).not.toContain('/key-request-action?action=')
     expect(worker).not.toContain('/functions/v1/key-request-action?')
@@ -193,7 +185,7 @@ describe('key-request email notifications',()=>{
   })
 
   it('does not grant request cancellation authority to lecturer notices',()=>{
-    const base={requestCode:'KR-1',roomName:'S2407',startsAt:'2026-11-08T03:00:00Z',endsAt:'2026-11-08T04:00:00Z',purpose:'ทดสอบ',status:'APPROVED',links:{track:'https://example.test/t',cancel:'https://example.test/c',returnKey:'https://example.test/r'}}
+    const base={requestCode:'KR-1',roomName:'S2407',startsAt:'2026-11-08T03:00:00Z',endsAt:'2026-11-08T04:00:00Z',purpose:'ทดสอบ',status:'APPROVED'}
     const email=renderKeyRequestEmail('key-request-lecturer-notice',base)
     expect(email.html).not.toContain('ยกเลิกคำขอ')
     expect(email.html).not.toContain('https://example.test/c')

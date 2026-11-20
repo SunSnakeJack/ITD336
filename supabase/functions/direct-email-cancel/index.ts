@@ -1,4 +1,4 @@
-import {createClient} from 'npm:@supabase/supabase-js@2.57.4'
+import {createClient} from 'npm:@supabase/supabase-js@2.119.2'
 import {createGmailSelfTestScope} from '../_shared/gmail-self-test-guard.ts'
 import {sha256Hex,signGmailKeyActionToken} from '../_shared/gmail-key-action.ts'
 import {renderKeyRequestEmail} from '../_shared/email-templates.ts'
@@ -29,8 +29,7 @@ Deno.serve(async(req)=>{
   const rawToken=await signGmailKeyActionToken(payload,secret)
   const{error:tokenError}=await db.rpc('issue_gmail_key_action_token',{p_outbox_id:payload.jti,p_key_request_id:requestId,p_recipient_email:allowed,p_action:'CANCEL',p_expires_at:new Date(payload.exp*1000).toISOString(),p_raw_token:rawToken})
   if(tokenError)return json({ok:false,error:'TOKEN_ISSUE_FAILED'},500)
-  const actionUrl=`${url}/functions/v1/direct-email-cancel?token=${encodeURIComponent(rawToken)}`
-  const rendered=renderKeyRequestEmail('key-request-submitted',{requestCode:item.request_code,roomName:item.room_name,startsAt:item.starts_at,endsAt:item.ends_at,purpose:item.purpose,status:item.status,links:{track:'',cancel:actionUrl,returnKey:''},gmailAction:null})
+  const rendered=renderKeyRequestEmail('key-request-submitted',{requestCode:item.request_code,roomName:item.room_name,startsAt:item.starts_at,endsAt:item.ends_at,purpose:item.purpose,status:item.status})
   const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{authorization:`Bearer ${resendKey}`,'content-type':'application/json','Idempotency-Key':`direct-cancel-self-test:${requestId}`},body:JSON.stringify({from:'ITD336 <onboarding@resend.dev>',to:[allowed],subject:`[ทดสอบ] ${rendered.subject}`,html:rendered.html})})
   if(!response.ok)return json({ok:false,error:'EMAIL_SEND_FAILED'},502)
   return json({ok:true,requestId,emailSent:true},200)

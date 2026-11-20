@@ -1,13 +1,9 @@
-import { createClient } from 'npm:@supabase/supabase-js@2.57.4'
+import { createClient } from 'npm:@supabase/supabase-js@2.119.2'
 import { renderKeyRequestEmail } from '../_shared/email-templates.ts'
 import {emailDeliveryPolicy,matchesTestRecipient} from '../_shared/email-delivery-policy.ts'
 
 type OutboxRow={id:string;entity_type:string;entity_id:string;recipient_email:string;template_key:string;payload:Record<string,unknown>;idempotency_key:string}
 type RequestRow={request_code:string;status:string;starts_at:string;ends_at:string;purpose:string;decision_reason:string|null;room_name:string}
-const ownerActionTemplates = new Set([
- 'key-request-submitted','key-request-approved','key-request-starting-soon',
- 'key-request-ending-soon','key-request-ended','key-request-overdue','key-request-updated',
-])
 const corsHeaders={'access-control-allow-origin':'*','access-control-allow-headers':'authorization, x-client-info, apikey, content-type'}
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...corsHeaders,'content-type':'application/json'}})
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -24,12 +20,6 @@ Deno.serve(async(req)=>{
  const cronAuthorized=Boolean(cronSecret)&&req.headers.get('authorization')===`Bearer ${cronSecret}`
  const cutoff=Deno.env.get('EMAIL_PRODUCTION_START_AT')
  if(mode==='production'&&(!cronAuthorized||!cutoff||!Number.isFinite(Date.parse(cutoff))))return json({error:'PRODUCTION_DISPATCH_NOT_READY'},403)
- let site: URL | undefined
- const siteUrl = Deno.env.get('PUBLIC_SITE_URL')
- if (siteUrl) {
-  try { site = new URL(siteUrl) } catch { return json({error:'PUBLIC_SITE_URL_INVALID'},503) }
-  if (site.protocol !== 'https:' || site.username || site.password) return json({error:'PUBLIC_SITE_URL_INVALID'},503)
- }
  const body=await req.json().catch(()=>({})) as{entityId?:string;dispatchToken?:string;templateKey?:string};const entityId=body.entityId?.trim()??'';const dispatchToken=body.dispatchToken??'';const templateKey=body.templateKey??''
  if(!cronAuthorized&&(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(entityId)||dispatchToken.length<32))return json({error:'INVALID_ENTITY_DISPATCH'},400)
  const url=Deno.env.get('SUPABASE_URL');const serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');const resendKey=Deno.env.get('ITD336_RESEND_API_KEY')
@@ -62,36 +52,8 @@ Deno.serve(async(req)=>{
    if(['key-request-starting-soon','key-request-ending-soon','key-request-ended','key-request-overdue'].includes(row.template_key)&&!['APPROVED','IN_USE'].includes(item.status))throw new Error('STALE_TIMED_NOTIFICATION')
    if(row.template_key.endsWith('-starting-soon')&&Date.parse(item.starts_at)<=Date.now())throw new Error('STALE_TIMED_NOTIFICATION')
    if(row.template_key==='booking-starting-soon'&&item.status!=='APPROVED')throw new Error('STALE_TIMED_NOTIFICATION')
-   const links = { track: '', cancel: '', returnKey: '', edit: '' }
-   if (mode === 'production' && site && (booking || ownerActionTemplates.has(row.template_key))) {
-    const details = new URL('/account/requests', site)
-    details.searchParams.set('item', row.entity_id)
-    if (!booking) details.searchParams.set('tab', 'keys')
-    links.track = details.href
-    const future = Date.parse(item.starts_at) > Date.now()
-    if (future && ['PENDING','PENDING_APPROVAL','APPROVED'].includes(item.status)) {
-     details.searchParams.set('edit', row.entity_id)
-     links.edit = details.href
-    }
-    const cancellable = ['PENDING_APPROVAL','APPROVED','IN_USE'].includes(item.status) && Date.parse(item.ends_at) > Date.now()
-    const returnable = ['APPROVED','IN_USE'].includes(item.status)
-    if (!booking && (cancellable || returnable)) {
-     const {data: tokens, error: tokenError} = await db.rpc('issue_key_request_action_bundle', {
-      p_key_request_id: row.entity_id,
-      p_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-     })
-     if (tokenError || !tokens) throw new Error('ACTION_LINK_ISSUE_FAILED')
-     const actionUrl = (action: string, token: string) => {
-      const link = new URL('/key-request-action', site)
-      link.hash = new URLSearchParams({action, token}).toString()
-      return link.href
-     }
-     if (cancellable) links.cancel = actionUrl('CANCEL', tokens.cancel_token)
-     if (returnable) links.returnKey = actionUrl('RETURN', tokens.return_token)
-    }
-   }
    const details = (field: string, fallback: string) => typeof row.payload[field] === 'string' ? String(row.payload[field]) : fallback
-   const rendered=renderKeyRequestEmail(row.template_key,{requestCode:item.request_code,roomName:item.room_name,startsAt:details('starts_at',item.starts_at),endsAt:details('ends_at',item.ends_at),purpose:details('purpose',item.purpose),status:details('status',item.status),reason:String(row.payload.reason??item.decision_reason??'')||null,links,showWebActions:mode==='production',logoUrl:site?new URL('/images/it-keyspace-brand.png',site).href:undefined})
+   const rendered=renderKeyRequestEmail(row.template_key,{requestCode:item.request_code,roomName:item.room_name,startsAt:details('starts_at',item.starts_at),endsAt:details('ends_at',item.ends_at),purpose:details('purpose',item.purpose),status:details('status',item.status),reason:String(row.payload.reason??item.decision_reason??'')||null})
    const response=await fetch('https://api.resend.com/emails',{method:'POST',signal:AbortSignal.timeout(10_000),headers:{authorization:`Bearer ${resendKey}`,'content-type':'application/json','Idempotency-Key':row.idempotency_key},body:JSON.stringify({from:sender,to:[row.recipient_email],subject:rendered.subject,html:rendered.html})})
    const provider=await response.json().catch(()=>({})) as{id?:string;message?:string}
    if(!response.ok||!provider.id)throw new Error(`RESEND_${response.status}`)

@@ -64,8 +64,10 @@ export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | n
     const event = occupied(time)
     return Boolean(event && !canSelectOccupied(event)) || isSlotElapsedForBangkokDate(time, date)
   }
-  const startOptions = timeSelectOptions(MEETING_TIMES.slice(0, -1), unavailable)
-  const endOptions = timeSelectOptions(availableEndTimes(MEETING_TIMES, start ?? '', unavailable))
+  const now = new Date()
+  const hasNotElapsed = (time: string) => !isSlotElapsedForBangkokDate(time, date, now)
+  const startOptions = timeSelectOptions(MEETING_TIMES.slice(0, -1).filter(hasNotElapsed), unavailable)
+  const endOptions = timeSelectOptions(availableEndTimes(MEETING_TIMES, start ?? '', unavailable).filter(hasNotElapsed))
   const selectedEnd = endOptions.find(option => option.value === end)?.value ?? null
   const changeStart = (time: string) => { setStart(time); setEnd(null) }
   const getSlot = (time: string): RoomScheduleSlot => {
@@ -122,8 +124,8 @@ export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | n
         {scheduleView === 'weekly' ? <MeetingWeekSchedule key={identity?.userId ?? 'guest'} roomId={room.id}
           roomName={roomTitle} today={date} viewerId={identity?.userId ?? null} /> : <>
           <div className="key-schedule-heading"><time>{thaiDate(date)}</time><p>เลือกเวลาเริ่มต้นจากตารางหรือดรอปดาวน์ แล้วปรับเวลาสิ้นสุดได้ตามต้องการ</p></div>
-          <RoomScheduleGrid times={MEETING_TIMES} getSlot={getSlot} onSelect={selectSlot} occupiedLabel="จองแล้ว" />
-          <div className="key-selected-time"><div className="key-time-summary"><SelectField label="เวลาเริ่มต้น" value={start ?? ''} placeholder="กรุณาเลือก" options={startOptions} disabled={!startOptions.some(option => !option.disabled)} onChange={changeStart}/><SelectField label="เวลาสิ้นสุด" value={selectedEnd ?? ''} placeholder="กรุณาเลือก" options={endOptions} disabled={!endOptions.length} onChange={setEnd}/></div>{start && <button type="button" className="key-reset-selection" onClick={() => { setStart(null); setEnd(null) }}>เลือกช่วงเวลาใหม่</button>}</div>
+          <RoomScheduleGrid times={MEETING_TIMES} upcomingTimes={MEETING_TIMES.filter(hasNotElapsed)} serviceEnded={now.getTime() >= Date.parse(`${date}T${MEETING_TIMES.at(-1)}:00+07:00`)} hasSelectableStart={events.isSuccess && room.active ? startOptions.some(option => !option.disabled) : undefined} getSlot={getSlot} onSelect={selectSlot} occupiedLabel="จองแล้ว" />
+          <div className="key-selected-time"><div className="key-time-summary"><SelectField label="เวลาเริ่มต้น" value={start ?? ''} placeholder="กรุณาเลือก" options={startOptions} disabled={!startOptions.some(option => !option.disabled)} onChange={changeStart}/><SelectField label="เวลาสิ้นสุด" value={selectedEnd ?? ''} placeholder={start ? "กรุณาเลือก" : "เลือกเวลาเริ่มต้นก่อน"} options={endOptions} disabled={!endOptions.length} onChange={setEnd}/></div>{start && <button type="button" className="key-reset-selection" onClick={() => { setStart(null); setEnd(null) }}>เลือกช่วงเวลาใหม่</button>}</div>
         </>}
       </div>
     </article>

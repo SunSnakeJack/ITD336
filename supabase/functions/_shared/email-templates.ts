@@ -1,4 +1,4 @@
-export interface KeyRequestEmailData{requestCode:string;roomName:string;startsAt:string;endsAt:string;purpose:string;status:string;reason?:string|null;links:{track:string;cancel:string;returnKey:string;edit?:string};showWebActions?:boolean;logoUrl?:string;gmailAction?:{name:string;url:string}|null}
+export interface KeyRequestEmailData{requestCode:string;roomName:string;startsAt:string;endsAt:string;purpose:string;status:string;reason?:string|null}
 export interface RenderedEmail{subject:string;html:string}
 const escapeHtml=(value:string)=>value.replace(/[&<>'"]/g,(char)=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]??char))
 const bangkokDate = new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', dateStyle: 'long' })
@@ -24,16 +24,5 @@ export function renderKeyRequestEmail(templateKey:string,data:KeyRequestEmailDat
    'key-request-expired': 'คำขอเบิกกุญแจห้องพิเศษหมดอายุ',
  }
  const heading = changeSubjects[templateKey] ?? subject
- const actions = data.showWebActions ? [
-   [data.links.track, 'ดูรายการ'],
-   [data.links.edit, 'แก้ไขรายการ'],
-   [data.links.cancel, 'ไปยืนยันการยกเลิกคำขอ'],
-   [data.links.returnKey, 'ไปยืนยันคืนกุญแจ'],
- ].filter(([url]) => url?.startsWith('https://')).map(([url, label]) =>
-   `<p><a href="${escapeHtml(url!)}">${label}</a></p>`).join('') : ''
- const logo = data.logoUrl?.startsWith('https://')
-   ? `<img src="${escapeHtml(data.logoUrl)}" width="72" alt="IT KeySpace" style="display:block;height:auto;border:0">`
-   : ''
- const brand = `<table role="presentation" cellpadding="0" cellspacing="0"><tr><td bgcolor="#fff3bd" style="padding:4px 8px;border-radius:8px">${logo}</td><td style="padding-left:10px;font-weight:bold">IT KeySpace</td></tr></table>`
- return{subject:heading,html:`<!doctype html><html lang="th"><head></head><body style="font-family:Arial,sans-serif;color:#111">${brand}<h2>${escapeHtml(heading)}</h2>${detail}${reason}${actions}<p style="color:#64748b;font-size:12px">อีเมลอัตโนมัติจาก IT KeySpace</p></body></html>`}
+ return{subject:heading,html:`<!doctype html><html lang="th"><head></head><body style="font-family:Arial,sans-serif;color:#111"><h2>${escapeHtml(heading)}</h2>${detail}${reason}<p style="color:#64748b;font-size:12px">อีเมลอัตโนมัติจาก IT KeySpace</p></body></html>`}
 }

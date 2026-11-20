@@ -110,3 +110,29 @@
 .usage-screen-table .staff-table td :is(strong, small, .staff-badge, .staff-decision-actions button) {
   font-size: inherit;
 }
+.usage-filterbar .usage-filter-control:has(.app-select-field) {
+  position: relative;
+}
+.usage-filterbar .usage-filter-control > .app-select-field {
+  position: static;
+}
+.usage-filterbar .usage-filter-control .app-select-options {
+  inset-inline: -1px;
+  min-width: 0;
+  max-width: none;
+  width: auto;
+}
+.usage-filterbar .usage-filter-control:nth-child(5) { flex: 0 1 205px; }
+.usage-key-return {
+  background: #167d3e;
+  border: 0;
+  border-radius: .4rem;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  min-height: 30px;
+  padding: .2rem .55rem;
+  width: 100%;
+}
+.usage-key-return:hover { background: #126632; }
+.usage-return-message { padding: .35rem 1rem; }

@@ -10,6 +10,10 @@ const room: ScheduleRoom = {
 }
 
 describe('key tag catalog card', () => {
+  it('marks a room with no available slots as unavailable', () => {
+    render(<MemoryRouter><KeyRoomTagCard room={room} schedule="ready" available={[]} /></MemoryRouter>)
+    expect(screen.getByText('ไม่มีช่วงเวลาว่าง')).toHaveClass('key-tag-unavailable')
+  })
   it('shows each available range and links to the room detail and request', () => {
     render(<MemoryRouter><KeyRoomTagCard room={room} schedule="ready"
       available={['08:00–10:00', '13:00–16:00']} requestPath="/keys/rooms/room-1/request" /></MemoryRouter>)

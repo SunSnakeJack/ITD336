@@ -95,7 +95,7 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
     requesterType, referenceOptionId: courseRequired && requesterType === 'STUDENT' ? referenceOptionId || undefined : undefined,
   }
 
-  if (reviewing) return <KeyRequestReview roomCode={room.code} requesterName={requesterName} requesterEmail={requesterEmail} date={date} startTime={startTime} endTime={endTime} purpose={effectivePurpose} courseCode={courseRequired ? courseCode.trim() : undefined} lecturerName={courseRequired && requesterType === 'STUDENT' ? selectedReference?.lecturerName : undefined} submitting={save.isPending} error={save.error?.message} onBack={() => setReviewing(false)} onConfirm={() => save.mutate(requestInput)} />
+  if (reviewing) return <KeyRequestReview roomCode={room.code} requesterName={requesterName} requesterEmail={requesterEmail} requesterStatus={ROLE_LABELS[requesterType]} date={date} startTime={startTime} endTime={endTime} purpose={effectivePurpose} courseCode={courseRequired ? courseCode.trim() : undefined} lecturerName={courseRequired && requesterType === 'STUDENT' ? selectedReference?.lecturerName : undefined} submitting={save.isPending} error={save.error?.message} onBack={() => setReviewing(false)} onConfirm={() => save.mutate(requestInput)} />
 
   const submit = (event: FormEvent) => {
     event.preventDefault()

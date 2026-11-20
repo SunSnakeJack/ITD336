@@ -3,6 +3,21 @@ import type { StaffUsageRow, UsageCategory } from './staff-usage.types'
 
 interface Row { transaction_id:string;source:string;room_id:string;room_code:string;room_name:string;room_category:UsageCategory;purpose:string;user_name:string;starts_at:string;ends_at:string;returned_at:string|null;status:string }
 
+export async function confirmOverdueRoomKeyReturns({ roomId, count }: { roomId: string; count: number | null }) {
+  // Migration 0101 provides this RPC. Validate its integer response until types can be regenerated.
+  const { data, error } = await supabase.rpc('staff_confirm_overdue_key_returns' as never, {
+    p_room_id: roomId,
+    p_expected_count: count,
+  } as never)
+  const updatedCount: unknown = data
+  if (error?.code === '42501') throw new Error('บัญชีนี้ไม่มีสิทธิ์ยืนยันการรับกุญแจ')
+  if (error?.message === 'OVERDUE_RETURN_SET_CHANGED') {
+    throw new Error('รายการเกินกำหนดมีการเปลี่ยนแปลง กรุณาปิดหน้าต่างแล้วเปิดใหม่เพื่อตรวจสอบจำนวนล่าสุด')
+  }
+  if (error || typeof updatedCount !== 'number') throw new Error('บันทึกการคืนกุญแจไม่สำเร็จ กรุณาลองใหม่')
+  return updatedCount
+}
+
 export async function getStaffUsageHistory(): Promise<StaffUsageRow[]> {
   const { data, error } = await supabase.rpc('get_staff_usage_history' as never) as unknown as { data:Row[]|null;error:{message:string}|null }
   if (error) throw new Error(error.message)

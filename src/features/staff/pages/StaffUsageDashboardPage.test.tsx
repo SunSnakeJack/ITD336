@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { StaffUsageDashboardPage } from './StaffUsageDashboardPage'
-import { getStaffUsageHistory } from '../reporting/staff-usage.service'
+import { confirmOverdueRoomKeyReturns, getStaffUsageHistory } from '../reporting/staff-usage.service'
 import { approveBooking, rejectBooking } from '../../bookings/booking.service'
 
 vi.mock('../../bookings/booking.service', () => ({
@@ -10,7 +10,7 @@ vi.mock('../../bookings/booking.service', () => ({
   rejectBooking: vi.fn().mockResolvedValue({ status: 'REJECTED' }),
 }))
 
-vi.mock('../reporting/staff-usage.service', () => ({ getStaffUsageHistory: vi.fn().mockResolvedValue([{
+vi.mock('../reporting/staff-usage.service', () => ({ confirmOverdueRoomKeyReturns: vi.fn(), getStaffUsageHistory: vi.fn().mockResolvedValue([{
   transactionId: 'request-1', source: 'KEY_REQUEST', roomId: 'room-1', roomCode: 'S2407', roomName: 'ห้อง S2407',
   roomCategory: 'GENERAL_LAB', purpose: 'สอน', userName: 'ผู้ใช้', startsAt: '2026-11-13T01:00:00Z',
   endsAt: '2026-11-13T02:00:00Z', returnedAt: null, status: 'PENDING_APPROVAL',
@@ -86,7 +86,7 @@ describe('StaffUsageDashboardPage layout', () => {
     expect(filters).toHaveClass('usage-filterbar-compact')
     expect(filters).not.toHaveClass('staff-toolbar')
     expect(filters?.nextElementSibling).toHaveClass('usage-records-panel')
-    expect(container.querySelectorAll('.usage-filter-control')).toHaveLength(4)
+    expect(container.querySelectorAll('.usage-filter-control')).toHaveLength(5)
     fireEvent.click(screen.getByRole('button', { name: 'ประเภทห้อง ทุกประเภท' }))
     expect(screen.getByRole('listbox', { name: 'ตัวเลือกประเภทห้อง' }).closest('.usage-filter-control')).not.toBeNull()
     expect(container.querySelector('.usage-rooms .usage-card-header')).toHaveTextContent('รวม 1 ครั้ง')
@@ -100,5 +100,34 @@ describe('StaffUsageDashboardPage layout', () => {
     expect(container.querySelector('.usage-purpose')).toHaveAttribute('tabindex', '0')
     expect(container.querySelector('.usage-records-footer')).toHaveTextContent('แสดง 1–1 จาก 1 รายการ')
     expect(screen.getByRole('button', { name: 'หน้า 1' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('combines room and status filters and confirms overdue returns beyond the date filter', async () => {
+    const rows = (await getStaffUsageHistory()).map(row => ({
+      ...row, status: 'APPROVED', startsAt: '2020-11-13T01:00:00Z', endsAt: '2020-11-13T02:00:00Z',
+    }))
+    const [row] = rows
+    vi.mocked(getStaffUsageHistory).mockResolvedValueOnce([
+      row,
+      { ...row, transactionId: 'older', startsAt: '2020-11-12T01:00:00Z', endsAt: '2020-11-12T02:00:00Z' },
+      { ...row, transactionId: 'other-room', roomId: 'room-2', roomCode: 'S2408' },
+      { ...row, transactionId: 'returned', status: 'RETURNED_VERIFIED', returnedAt: '2020-11-13T03:00:00Z' },
+    ])
+    vi.mocked(confirmOverdueRoomKeyReturns).mockResolvedValue(2)
+    const client = new QueryClient()
+    render(<QueryClientProvider client={client}><StaffUsageDashboardPage /></QueryClientProvider>)
+    fireEvent.click(await screen.findByRole('button', { name: 'ห้อง ทุกห้อง' }))
+    fireEvent.click(screen.getByRole('option', { name: /^S2407$/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'สถานะห้อง ทุกสถานะ' }))
+    fireEvent.click(screen.getByRole('option', { name: 'เกินกำหนด' }))
+    fireEvent.change(screen.getByLabelText('ตั้งแต่วันที่'), { target: { value: '2020-11-13' } })
+    fireEvent.click(screen.getByRole('button', { name: 'ยืนยันรับกุญแจ' }))
+    const dialog = within(screen.getByRole('dialog'))
+    expect(dialog.getByText(/S2407/)).toBeInTheDocument()
+    expect(await dialog.findByText(/2 รายการ/)).toBeInTheDocument()
+    expect(confirmOverdueRoomKeyReturns).toHaveBeenCalledExactlyOnceWith({ roomId: 'room-1', count: null })
+    fireEvent.click(dialog.getByRole('button', { name: 'ยืนยันว่าได้รับกุญแจ' }))
+    await waitFor(() => expect(confirmOverdueRoomKeyReturns).toHaveBeenCalledWith({ roomId: 'room-1', count: 2 }, expect.anything()))
+    expect(await screen.findByText('บันทึกคืนกุญแจแล้ว 2 รายการ')).toBeInTheDocument()
   })
 })

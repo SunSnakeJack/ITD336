@@ -5,6 +5,10 @@ the current layout without checkout history. The last option omits the
 checkout history query and section on both catalog tabs. Schedule availability
 and the history on each room detail page remain available.
 
+The admin display setting for elapsed room slots defaults to enabled. It
+controls the daily schedule on key and meeting room detail pages. Availability
+and time selection continue to follow the existing room policy.
+
 Public key request forms show the requester status, name, and email. New requests omit the student or staff identifier. The request RPCs still accept an identifier from older clients. Time pickers hide elapsed starts, disable booked half-hours, and offer continuous end times up to the next blocked slot.
 
 For S2407–S2412, `get_room_slot_permissions` is the single decision boundary used by the room dialog. During an active class occurrence, every authenticated Student may create an auto-approved class key request; Teacher is intentionally supported by the same database rule for later UI reuse. This rule does not depend on enrollment data. Without a class, the user must own an approved room booking before requesting a key. Another user's booking never grants key permission.
@@ -51,3 +55,7 @@ Before a request starts, its owner can adjust the time on the original Bangkok s
 แดชบอร์ดเจ้าหน้าที่แสดง **เกินกำหนด** เมื่อรายการเบิกที่อนุมัติแล้วหรือกำลังใช้งานเลยเวลาสิ้นสุดและยังไม่มีเวลาคืนจริง รวมถึงรายการยืมที่ยังถือกุญแจอยู่ หากบันทึกคืนหลังเวลาสิ้นสุดจะแสดง **คืนล่าช้า** ส่วนการคืนตรงเวลาหรือก่อนกำหนดแสดง **คืนแล้ว** รายงาน PDF ใช้เกณฑ์เดียวกัน ณ เวลาที่สร้างรายงาน การคำนวณนี้ใช้สำหรับการแสดงผลและไม่เปลี่ยนสถานะในฐานข้อมูล
 
 สำหรับคำขอห้องพิเศษที่ยังรออนุมัติ ตั้งแต่เวลาเริ่มจนถึงก่อนเวลาสิ้นสุดจะแสดง **รออนุมัติ · เริ่มแล้ว** เจ้าหน้าที่ยังอนุมัติให้ใช้เวลาที่เหลือได้ โดยเก็บช่วงเวลาที่ขอไว้ในประวัติ เมื่อถึงเวลาสิ้นสุดจะแสดง **หมดอายุ** และฐานข้อมูลจะปฏิเสธการอนุมัติหรือไม่อนุมัติคำขอนั้น
+
+## การตรวจรับกุญแจในแดชบอร์ดแอดมิน
+
+ผู้มีสิทธิ์ `KEY_MANAGE` สามารถยืนยันว่าได้รับกุญแจจริงจากรายการ **เกินกำหนด** โดยระบบบันทึกการคืนให้คำขอและรายการยืมที่แสดงในแดชบอร์ดของห้องเดียวกันซึ่งสิ้นสุดเวลาแล้วและยังไม่ได้คืน ครอบคลุมรายการนอกหน้าปัจจุบันและนอกตัวกรอง ระบบแสดง **คืนแล้ว** สำหรับการตรวจรับครั้งนี้ พร้อมบันทึกเวลาคืนและผู้ตรวจรับในประวัติการตรวจสอบ

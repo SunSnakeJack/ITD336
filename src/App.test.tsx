@@ -279,7 +279,8 @@ describe('Authentication entry point', () => {
     expect(screen.getByRole('img', { name: 'IT KeySpace' }).closest('a')).toHaveAttribute('href', '/meeting-room')
     expect(screen.queryByRole('link', { name: 'ภาพรวม' })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'รายการจองห้องประชุม' })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /08:00.*ว่าง/ }))
+    expect(screen.getByRole('button', { name: 'เวลาสิ้นสุด เลือกเวลาเริ่มต้นก่อน' })).toBeDisabled()
+    fireEvent.click(await screen.findByRole('button', { name: /08:00.*ว่าง/ }))
     expect(screen.getByRole('button', { name: 'จองห้องนี้' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'เวลาสิ้นสุด กรุณาเลือก' }))
     fireEvent.click(screen.getByRole('option', { name: '08:30' }))
@@ -312,6 +313,10 @@ describe('Authentication entry point', () => {
 
     const past = await screen.findByRole('button', { name: '14:30 อ. ผู้จองช่วงบ่าย' })
     expect(past).toHaveAttribute('data-state', 'elapsed')
+    fireEvent.click(screen.getByRole('button', { name: 'เวลาเริ่มต้น กรุณาเลือก' }))
+    expect(screen.queryByRole('option', { name: '16:00' })).not.toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '16:30' })).toBeInTheDocument()
+    fireEvent.keyDown(screen.getByRole('button', { name: 'เวลาเริ่มต้น กรุณาเลือก' }), { key: 'Escape' })
     expect(past).toHaveAttribute('aria-disabled', 'true')
     expect(screen.getByRole('button', { name: '16:00 ผ่านแล้ว' })).toHaveAttribute('data-state', 'elapsed')
     expect(screen.getByRole('button', { name: '16:30 ว่าง' })).toHaveAttribute('data-state', 'free')
@@ -382,7 +387,7 @@ describe('Authentication entry point', () => {
     expect(next).toBeDisabled()
     await waitFor(() => expect(supabase.rpc).toHaveBeenCalledWith('get_public_meeting_room_week', { p_room_id: 'meeting-1', p_week_start: '2026-11-22' }))
     fireEvent.click(daily)
-    expect(screen.getByRole('button', { name: /08:00.*ว่าง/ })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /08:00.*ว่าง/ })).toBeInTheDocument()
   })
 
   it('uses the authenticated meeting-room booking form and review flow', async () => {
@@ -627,13 +632,16 @@ describe('Authentication entry point', () => {
     renderPath('/keys/rooms/room-1')
     expect(await screen.findByRole('heading', { name: 'ห้อง S2407' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'รายการผู้เบิกกุญแจ' })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /08:00.*ว่าง/ }))
+    expect(screen.getByRole('button', { name: 'เวลาสิ้นสุด เลือกเวลาเริ่มต้นก่อน' })).toBeDisabled()
+    fireEvent.click(await screen.findByRole('button', { name: /08:00.*ว่าง/ }))
     fireEvent.click(screen.getByRole('button', { name: 'เวลาเริ่มต้น 08:00' }))
     fireEvent.click(screen.getByRole('option', { name: '08:30' }))
     expect(screen.getByRole('link', { name: 'เบิกกุญแจห้องนี้' })).toHaveAttribute('aria-disabled', 'true')
     fireEvent.click(screen.getByRole('button', { name: 'เวลาสิ้นสุด กรุณาเลือก' }))
     fireEvent.click(screen.getByRole('option', { name: '09:00' }))
     expect(screen.getByRole('link', { name: 'เบิกกุญแจห้องนี้' })).toHaveAttribute('href', expect.stringContaining('/request'))
+    fireEvent.click(screen.getByRole('button', { name: 'เลือกช่วงเวลาใหม่' }))
+    expect(screen.getByRole('button', { name: 'เวลาสิ้นสุด เลือกเวลาเริ่มต้นก่อน' })).toBeDisabled()
   })
 
   it('shows honest fallbacks when room media and equipment data are unavailable', async () => {
@@ -667,6 +675,9 @@ describe('Authentication entry point', () => {
     expect(screen.getByRole('button', { name: '14:30 นศ. Sufeeyan Taleh' })).toHaveAttribute('data-state', bookedState)
     expect(screen.getByRole('button', { name: /16:30.*ว่าง/ })).toHaveAttribute('aria-disabled', 'false')
     expect(screen.getByRole('button', { name: /16:00/ })).toHaveAttribute('data-state', slotState)
+    fireEvent.click(screen.getByRole('button', { name: 'เวลาเริ่มต้น กรุณาเลือก' }))
+    expect(screen.queryByRole('option', { name: '08:00' })).not.toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '16:30' })).toBeInTheDocument()
   })
 
   it('keeps ten key-request history rows in a three-row scroll area', async () => {
@@ -846,6 +857,7 @@ describe('Authentication entry point', () => {
     expect(screen.getByRole('heading', { name: 'ข้อมูลผู้เบิกกุญแจ' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'ข้อมูลการเบิก' })).toBeInTheDocument()
     expect(document.querySelectorAll('.key-review-icon')).toHaveLength(2)
+    expect(screen.getByText('สถานะผู้เบิก').nextElementSibling).toHaveTextContent('นักศึกษา')
     expect(document.querySelector('.key-review-actions')).toHaveClass('key-review-actions')
     expect(screen.queryByText('รหัสนักศึกษา / บุคลากร')).not.toBeInTheDocument()
     expect(screen.getByText('S2407')).toBeInTheDocument()
@@ -1006,7 +1018,7 @@ describe('Authentication entry point', () => {
     expect(screen.getByRole('button', { name: /11:30.*เลือก - เริ่ม/ })).toHaveClass('selected')
     expect(screen.getByRole('button', { name: /12:30.*เลือก - จบ/ })).toHaveClass('selected')
     fireEvent.click(screen.getByRole('button', { name: 'เลือกช่วงเวลาใหม่' }))
-    expect(screen.getByRole('button', { name: 'เวลาสิ้นสุด กรุณาเลือก' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'เวลาสิ้นสุด เลือกเวลาเริ่มต้นก่อน' })).toBeDisabled()
     expect(screen.getByRole('link', { name: 'เบิกกุญแจห้องนี้' })).toHaveAttribute('aria-disabled', 'true')
   })
 
@@ -1080,7 +1092,7 @@ describe('Authentication entry point', () => {
     fireEvent.click(screen.getByRole('button', { name: /14:00.*ว่าง/ }))
     expect(screen.getByRole('alert')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /11:30.*เลือก/ }))
-    expect(screen.getByRole('button', { name: 'เวลาสิ้นสุด กรุณาเลือก' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'เวลาสิ้นสุด เลือกเวลาเริ่มต้นก่อน' })).toBeDisabled()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /11:30.*ว่าง/ })).not.toHaveClass('selected')
     expect(screen.getByRole('link', { name: 'เบิกกุญแจห้องนี้' })).toHaveAttribute('aria-disabled', 'true')

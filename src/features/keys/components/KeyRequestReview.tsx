@@ -5,6 +5,7 @@ interface KeyRequestReviewProps {
   roomCode: string
   requesterName: string
   requesterEmail: string
+  requesterStatus: string
   date: string
   startTime: string
   endTime: string
@@ -25,6 +26,7 @@ export function KeyRequestReview({
   roomCode,
   requesterName,
   requesterEmail,
+  requesterStatus,
   date,
   startTime,
   endTime,
@@ -46,6 +48,7 @@ export function KeyRequestReview({
       <section className="key-review-card">
         <h2><svg className="key-review-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M5 20c0-4 3-7 7-7s7 3 7 7"/></svg>ข้อมูลผู้เบิกกุญแจ</h2>
         <dl>
+          <ReviewRow label="สถานะผู้เบิก" value={requesterStatus} />
           <ReviewRow label="ชื่อ – นามสกุล" value={requesterName} />
           <ReviewRow label="อีเมล" value={requesterEmail} />
         </dl>

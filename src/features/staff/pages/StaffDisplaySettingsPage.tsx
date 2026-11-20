@@ -4,6 +4,7 @@ import { keyCatalogDisplayQuery } from '../../keys/key-catalog-display.queries'
 import { setKeyCatalogDisplay, type KeyCatalogDisplay } from '../../keys/key-catalog-display.service'
 import { StaffPage, StaffQueryState } from '../components/StaffPage'
 import { StaffLecturerLanguageSettings } from '../components/StaffLecturerLanguageSettings'
+import { StaffScheduleDisplaySettings } from '../components/StaffScheduleDisplaySettings'
 
 const options = [
   { value: 'current', label: 'แบบปัจจุบัน' },
@@ -45,5 +46,6 @@ export function StaffDisplaySettingsPage() {
       </form>
     </StaffQueryState>
     <StaffLecturerLanguageSettings />
+    <StaffScheduleDisplaySettings />
   </StaffPage>
 }

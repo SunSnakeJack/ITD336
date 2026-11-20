@@ -78,11 +78,14 @@
 }
 
 @media (max-width: 480px) {
-  .key-mobile-header {
+  .public-main > .key-mobile-header {
+    position: relative;
+    z-index: 5;
+    margin-top: 0;
     border-bottom-color: #0a0047;
     height: 50px;
     min-height: 50px !important;
-    padding-left: 12px !important;
+    padding-left: max(2px, env(safe-area-inset-left)) !important;
     padding-right: 12px !important;
   }
 

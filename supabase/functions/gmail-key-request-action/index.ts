@@ -1,4 +1,4 @@
-import {createClient} from 'npm:@supabase/supabase-js@2.57.4'
+import {createClient} from 'npm:@supabase/supabase-js@2.119.2'
 import {createRemoteJWKSet,jwtVerify} from 'npm:jose@6.2.10'
 import {createGmailKeyRequestActionHandler} from './core.ts'
 import {createGmailSelfTestScope} from '../_shared/gmail-self-test-guard.ts'

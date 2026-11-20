@@ -23,3 +23,15 @@ verify_jwt = false
 
 [functions.key-request-action]
 verify_jwt = false
+
+[functions.gmail-action-test]
+verify_jwt = false
+
+[functions.gmail-key-request-action]
+verify_jwt = false
+
+[functions.direct-email-cancel]
+verify_jwt = false
+
+[functions.direct-email-return]
+verify_jwt = false

@@ -98,28 +98,37 @@ export type Database = {
         Row: {
           action: string
           actor_id: string | null
+          actor_kind: string | null
+          actor_name: string | null
           created_at: string
           entity_id: string | null
           entity_type: string
           id: number
+          ip_address: unknown
           metadata: Json
         }
         Insert: {
           action: string
           actor_id?: string | null
+          actor_kind?: string | null
+          actor_name?: string | null
           created_at?: string
           entity_id?: string | null
           entity_type: string
           id?: never
+          ip_address?: unknown
           metadata?: Json
         }
         Update: {
           action?: string
           actor_id?: string | null
+          actor_kind?: string | null
+          actor_name?: string | null
           created_at?: string
           entity_id?: string | null
           entity_type?: string
           id?: never
+          ip_address?: unknown
           metadata?: Json
         }
         Relationships: [
@@ -1212,6 +1221,7 @@ export type Database = {
           returned_at: string | null
           returned_to: string | null
           room_id: string
+          staff_verified_room_return: boolean
           status: Database["public"]["Enums"]["key_loan_status"]
           updated_at: string
           usage_source: Database["public"]["Enums"]["key_usage_source"]
@@ -1239,6 +1249,7 @@ export type Database = {
           returned_at?: string | null
           returned_to?: string | null
           room_id: string
+          staff_verified_room_return?: boolean
           status?: Database["public"]["Enums"]["key_loan_status"]
           updated_at?: string
           usage_source?: Database["public"]["Enums"]["key_usage_source"]
@@ -1266,6 +1277,7 @@ export type Database = {
           returned_at?: string | null
           returned_to?: string | null
           room_id?: string
+          staff_verified_room_return?: boolean
           status?: Database["public"]["Enums"]["key_loan_status"]
           updated_at?: string
           usage_source?: Database["public"]["Enums"]["key_usage_source"]
@@ -1407,6 +1419,27 @@ export type Database = {
           },
         ]
       }
+      key_request_lecturers: {
+        Row: {
+          active: boolean
+          email: string
+          id: string
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          email: string
+          id?: string
+          name: string
+        }
+        Update: {
+          active?: boolean
+          email?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       key_request_reference_options: {
         Row: {
           active: boolean
@@ -1511,6 +1544,7 @@ export type Database = {
           requester_type: string | null
           returned_at: string | null
           room_id: string
+          staff_verified_room_return: boolean
           starts_at: string
           status: string
           submitted_at: string
@@ -1541,6 +1575,7 @@ export type Database = {
           requester_type?: string | null
           returned_at?: string | null
           room_id: string
+          staff_verified_room_return?: boolean
           starts_at: string
           status: string
           submitted_at?: string
@@ -1571,6 +1606,7 @@ export type Database = {
           requester_type?: string | null
           returned_at?: string | null
           room_id?: string
+          staff_verified_room_return?: boolean
           starts_at?: string
           status?: string
           submitted_at?: string
@@ -1819,10 +1855,70 @@ export type Database = {
         }
         Relationships: []
       }
+      preassigned_user_additional_roles: {
+        Row: {
+          preassignment_id: string
+          role_code: string
+        }
+        Insert: {
+          preassignment_id: string
+          role_code: string
+        }
+        Update: {
+          preassignment_id?: string
+          role_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preassigned_user_additional_roles_preassignment_id_fkey"
+            columns: ["preassignment_id"]
+            isOneToOne: false
+            referencedRelation: "preassigned_user_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preassigned_user_additional_roles_role_code_fkey"
+            columns: ["role_code"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      preassigned_user_roles: {
+        Row: {
+          email: string
+          full_name: string
+          id: string
+          role_code: string
+        }
+        Insert: {
+          email: string
+          full_name: string
+          id?: string
+          role_code: string
+        }
+        Update: {
+          email?: string
+          full_name?: string
+          id?: string
+          role_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preassigned_user_roles_role_code_fkey"
+            columns: ["role_code"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_status: Database["public"]["Enums"]["account_status"]
           created_at: string
+          deleted_at: string | null
           email: string
           first_name: string | null
           full_name: string
@@ -1839,6 +1935,7 @@ export type Database = {
         Insert: {
           account_status?: Database["public"]["Enums"]["account_status"]
           created_at?: string
+          deleted_at?: string | null
           email: string
           first_name?: string | null
           full_name?: string
@@ -1855,6 +1952,7 @@ export type Database = {
         Update: {
           account_status?: Database["public"]["Enums"]["account_status"]
           created_at?: string
+          deleted_at?: string | null
           email?: string
           first_name?: string | null
           full_name?: string
@@ -3589,6 +3687,10 @@ export type Database = {
       }
     }
     Functions: {
+      add_admin_preassigned_user: {
+        Args: { p_email: string; p_full_name: string; p_role_codes: string[] }
+        Returns: string
+      }
       approve_booking: {
         Args: { p_booking_id: string; p_reason?: string }
         Returns: Json
@@ -3639,6 +3741,38 @@ export type Database = {
           p_key_loan_id: string
         }
         Returns: Json
+      }
+      claim_new_production_emails: {
+        Args: { p_start_at: string; p_worker_id: string }
+        Returns: {
+          attempt_count: number
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          lease_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          next_attempt_at: string
+          notification_type: string
+          payload: Json
+          provider_message_id: string | null
+          recipient_email: string
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          template_key: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notification_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       claim_notification_outbox: {
         Args: { p_limit?: number; p_worker_id: string }
@@ -3937,6 +4071,22 @@ export type Database = {
         }
         Returns: Json
       }
+      create_teaching_key_request: {
+        Args: {
+          p_course_code: string
+          p_course_name: string
+          p_ends_at: string
+          p_lecturer_id: string
+          p_purpose: string
+          p_requester_email: string
+          p_requester_identifier: string
+          p_requester_name: string
+          p_requester_type: string
+          p_room_id: string
+          p_starts_at: string
+        }
+        Returns: Json
+      }
       deactivate_academic_schedule: {
         Args: { p_reason: string; p_schedule_id: string }
         Returns: undefined
@@ -3945,6 +4095,16 @@ export type Database = {
         Args: { p_decision: string; p_key_request_id: string; p_reason: string }
         Returns: Json
       }
+      dispatch_scheduled_emails: { Args: never; Returns: undefined }
+      edit_own_request_purpose: {
+        Args: { p_id: string; p_purpose: string; p_type: string }
+        Returns: undefined
+      }
+      enqueue_key_email_deadlines: {
+        Args: { p_cutoff: string }
+        Returns: undefined
+      }
+      enqueue_overdue_key_request_emails: { Args: never; Returns: undefined }
       find_academic_schedule_conflict: {
         Args: {
           p_day_of_week: number
@@ -3993,6 +4153,22 @@ export type Database = {
         }[]
       }
       get_admin_key_request_timing_setting: { Args: never; Returns: boolean }
+      get_admin_lecturer_display_names: {
+        Args: never
+        Returns: {
+          email: string
+          name_en: string
+          name_th: string
+        }[]
+      }
+      get_admin_role_catalog: {
+        Args: never
+        Returns: {
+          code: string
+          locked: boolean
+          name: string
+        }[]
+      }
       get_admin_role_options: {
         Args: never
         Returns: {
@@ -4026,6 +4202,32 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_admin_user_directory_v3: {
+        Args: never
+        Returns: {
+          account_status: Database["public"]["Enums"]["account_status"]
+          email: string
+          first_name: string
+          full_name: string
+          last_name: string
+          pending_registration: boolean
+          role_codes: string[]
+          role_names: string[]
+          user_id: string
+        }[]
+      }
+      get_booking_email_context: {
+        Args: { p_booking_id: string }
+        Returns: {
+          decision_reason: string
+          ends_at: string
+          purpose: string
+          request_code: string
+          room_name: string
+          starts_at: string
+          status: string
+        }[]
+      }
       get_direct_cancel_sent_outbox: {
         Args: { p_key_request_id: string; p_recipient_email: string }
         Returns: {
@@ -4042,6 +4244,7 @@ export type Database = {
           starts_at: string
         }[]
       }
+      get_key_catalog_display: { Args: never; Returns: string }
       get_key_request_allow_past_slots: { Args: never; Returns: boolean }
       get_key_request_email_context: {
         Args: { p_key_request_id: string }
@@ -4053,6 +4256,28 @@ export type Database = {
           room_name: string
           starts_at: string
           status: string
+        }[]
+      }
+      get_lecturer_name_language: { Args: never; Returns: string }
+      get_meeting_advance_booking_days: { Args: never; Returns: number }
+      get_meeting_booking_policy: {
+        Args: never
+        Returns: {
+          allowed_dates: string[]
+          closes_at: string
+          opens_at: string
+        }[]
+      }
+      get_meeting_room_booking_list: {
+        Args: { p_room_id: string; p_upcoming: boolean }
+        Returns: {
+          category: string
+          ends_at: string
+          pending: boolean
+          purpose: string
+          requester_name: string
+          starts_at: string
+          viewer_id: string
         }[]
       }
       get_my_key_requests: {
@@ -4096,6 +4321,20 @@ export type Database = {
           status: string
         }[]
       }
+      get_open_saturday: { Args: never; Returns: string }
+      get_own_request_edit_context: {
+        Args: { p_id: string; p_type: string }
+        Returns: {
+          closes_at: string
+          opens_at: string
+          room_id: string
+          service_date: string
+        }[]
+      }
+      get_own_request_edit_times: {
+        Args: { p_id: string; p_type: string }
+        Returns: Json
+      }
       get_public_key_request_history: {
         Args: { p_limit?: number; p_room_id: string }
         Returns: {
@@ -4106,6 +4345,22 @@ export type Database = {
           status: string
         }[]
       }
+      get_public_key_request_lecturers: {
+        Args: never
+        Returns: {
+          id: string
+          lecturer_name: string
+        }[]
+      }
+      get_public_key_request_lecturers_v2: {
+        Args: never
+        Returns: {
+          id: string
+          lecturer_name: string
+          name_en: string
+          name_th: string
+        }[]
+      }
       get_public_key_request_options: {
         Args: never
         Returns: {
@@ -4114,6 +4369,27 @@ export type Database = {
           id: string
           lecturer_name: string
         }[]
+      }
+      get_public_meeting_room_history: {
+        Args: { p_room_id: string }
+        Returns: {
+          category: string
+          ends_at: string
+          starts_at: string
+        }[]
+      }
+      get_public_meeting_room_upcoming: {
+        Args: { p_room_id: string }
+        Returns: {
+          category: string
+          ends_at: string
+          pending: boolean
+          starts_at: string
+        }[]
+      }
+      get_public_meeting_room_week: {
+        Args: { p_room_id: string; p_week_start: string }
+        Returns: Json
       }
       get_public_room_catalog: {
         Args: never
@@ -4198,6 +4474,20 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_show_elapsed_room_slots: { Args: never; Returns: boolean }
+      get_staff_audit_logs: {
+        Args: { p_actions: string[]; p_actor: string; p_page: number }
+        Returns: Json
+      }
+      get_staff_audit_logs_search: {
+        Args: {
+          p_actions: string[]
+          p_actor: string
+          p_page: number
+          p_search: string
+        }
+        Returns: Json
+      }
       get_staff_usage_history: {
         Args: never
         Returns: {
@@ -4275,10 +4565,25 @@ export type Database = {
           room_name: string
         }[]
       }
+      manage_admin_role_label: {
+        Args: { p_code: string; p_name: string; p_operation: string }
+        Returns: undefined
+      }
       mark_all_notifications_read: { Args: never; Returns: number }
       mark_notification_read: {
         Args: { p_notification_id: string }
         Returns: undefined
+      }
+      meeting_room_has_pending_overlap: {
+        Args: { p_ends_at: string; p_room_id: string; p_starts_at: string }
+        Returns: boolean
+      }
+      meeting_room_operating_hours: {
+        Args: never
+        Returns: {
+          closes_at: string
+          opens_at: string
+        }[]
       }
       override_booking: {
         Args: {
@@ -4287,6 +4592,10 @@ export type Database = {
           p_reason: string
           p_requires_key?: boolean
         }
+        Returns: Json
+      }
+      preview_key_request_email_action: {
+        Args: { p_action: string; p_raw_token: string }
         Returns: Json
       }
       reconcile_expired_bookings: { Args: never; Returns: number }
@@ -4302,6 +4611,10 @@ export type Database = {
       reject_booking: {
         Args: { p_booking_id: string; p_reason: string }
         Returns: Json
+      }
+      remove_admin_directory_user: {
+        Args: { p_pending_registration: boolean; p_user_id: string }
+        Returns: undefined
       }
       report_key_damage: {
         Args: { p_description: string; p_key_loan_id: string }
@@ -4338,6 +4651,16 @@ export type Database = {
         Returns: Json
       }
       request_key: { Args: { p_booking_id: string }; Returns: Json }
+      reschedule_own_request: {
+        Args: {
+          p_end: string
+          p_id: string
+          p_purpose: string
+          p_start: string
+          p_type: string
+        }
+        Returns: undefined
+      }
       return_key: {
         Args: { p_condition?: string; p_key_loan_id: string; p_notes?: string }
         Returns: Json
@@ -4370,6 +4693,15 @@ export type Database = {
         Args: { p_enabled: boolean }
         Returns: boolean
       }
+      set_admin_lecturer_display_names: {
+        Args: {
+          p_name_en: string
+          p_name_th: string
+          p_pending_registration: boolean
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       set_admin_room_active: {
         Args: { p_active: boolean; p_room_id: string }
         Returns: string
@@ -4378,6 +4710,16 @@ export type Database = {
         Args: { p_role_codes: string[]; p_user_id: string }
         Returns: Json
       }
+      set_key_catalog_display: { Args: { p_mode: string }; Returns: string }
+      set_lecturer_name_language: {
+        Args: { p_language: string }
+        Returns: string
+      }
+      set_meeting_advance_booking_days: {
+        Args: { p_days: number }
+        Returns: number
+      }
+      set_open_saturday: { Args: { p_date: string }; Returns: string }
       set_room_availability: {
         Args: { p_active: boolean; p_room_id: string }
         Returns: boolean
@@ -4385,6 +4727,24 @@ export type Database = {
       set_room_schedule_confirmation: {
         Args: { p_confirmed: boolean; p_room_id: string }
         Returns: undefined
+      }
+      set_show_elapsed_room_slots: {
+        Args: { p_show: boolean }
+        Returns: boolean
+      }
+      special_key_request_display_status: {
+        Args: {
+          p_category: string
+          p_end: string
+          p_now: string
+          p_start: string
+          p_status: string
+        }
+        Returns: string
+      }
+      staff_confirm_overdue_key_returns: {
+        Args: { p_expected_count: number; p_room_id: string }
+        Returns: number
       }
       update_admin_user_profile: {
         Args: { p_first_name: string; p_last_name: string; p_user_id: string }

@@ -40,3 +40,15 @@
   border: 1px solid;
   border-radius: 3px;
 }
+.key-room-detail .key-time-summary > .app-select-field:last-child .app-select-trigger:disabled {
+  background: #f1f4f7;
+  border-color: #d6dde5;
+  color: #67758a;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.key-room-detail .key-time-summary > .app-select-field:last-child .app-select-trigger:disabled .key-select-arrow {
+  color: #67758a;
+  opacity: .55;
+}
