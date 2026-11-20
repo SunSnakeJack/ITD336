@@ -18,6 +18,10 @@ rules. Deploy the email worker to enable the shared Thai date and time format.
 
 The production worker requires RESEND_FROM to be ITD336 <noreply@itd336.app>,
 ITD336_RESEND_API_KEY, and a scheduler bearer matching CRON_SECRET.
+The web form uses the request RPC result. The RPC queues notifications and
+the production scheduler dispatches them. To opt into direct scoped test delivery,
+use a development build with VITE_EMAIL_TEST_DISPATCH=true and the worker
+configured in test mode. The worker still enforces its test recipient and scope.
 Migration 0071 adds a service-only claim restricted to supported templates
 created and scheduled at or after EMAIL_PRODUCTION_START_AT. Use an explicit
 UTC cutover time and keep it fixed. Older rows remain in the database.
@@ -37,6 +41,17 @@ Before activation:
    Store the secret in Vault or the scheduler's secret store, never in migration SQL.
    The linked project's job was inactive and both Vault entries were absent.
 6. Confirm provider delivery and inbox receipt for every new event.
+
+## Diagnosing delivery failures
+
+| Signal | Check |
+| --- | --- |
+| Key-request RPC fails | Inspect the RPC response for validation, time conflicts, or authorization. An unsuccessful RPC does not establish that a notification was queued. |
+| Worker responds 400 or 405 | Check the entity dispatch arguments for a scoped test, or check that the scheduler used POST. |
+| Worker responds 403 | Check the mode, scheduler authorization and cutover, or the permitted test entity and batch scope. |
+| Worker responds 503 | Check the delivery mode, sender, approved test recipient and worker configuration. |
+| Worker responds 500 | Check the claim RPC error and database permissions. |
+| Worker responds 200 with failed rows | Check outbox errors for recipient validation, context lookup, stale timed notifications, provider errors and network timeouts. Check Edge Function logs for completion RPC failures. |
 
 Database checks: NOT RUN — AUTH TEST USERS REQUIRED.
 ## Rollback

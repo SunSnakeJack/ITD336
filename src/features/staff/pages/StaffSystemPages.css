@@ -1,0 +1,27 @@
+.staff-audit-filters { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; margin-bottom: 1rem; }
+.staff-audit-chips, .staff-role-settings-actions { display: flex; gap: .5rem; }
+.staff-audit-filters .app-select-field { min-width: min(14rem, 100%); }
+.staff-audit-search { display: grid; flex: 1 1 16rem; min-width: 0; gap: .3rem; }
+.staff-audit-search label { color: #334155; font-size: .82rem; font-weight: 700; }
+.staff-audit-search > div { display: flex; min-height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; }
+.staff-audit-search > div:focus-within { outline: 2px solid #3155d5; outline-offset: 1px; }
+.staff-audit-search input { width: 100%; min-width: 0; border: 0; border-radius: inherit; background: transparent; padding: .55rem .75rem; font: inherit; outline: none; }
+.staff-audit-search input::-webkit-search-cancel-button { appearance: none; }
+.staff-audit-search button { border: 0; border-radius: inherit; background: transparent; min-width: 44px; font-size: 1.2rem; }
+@media (max-width: 640px) { .staff-audit-search { flex-basis: 100%; } }
+.staff-audit-chips button, .staff-role-settings-actions button {
+  min-height: 40px;
+  padding: .4rem .8rem;
+  background: #fff;
+  color: var(--staff-ink);
+  border: 1px solid var(--staff-border);
+  border-radius: .6rem;
+}
+.staff-audit-chips button[aria-pressed="true"] { background: #fff1bf; border-color: #b3861b; font-weight: 700; }
+.staff-audit-table th:first-child, .staff-audit-table td:first-child { white-space: nowrap; }
+.staff-audit-table td { overflow-wrap: anywhere; }
+.staff-role-settings-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; }
+.staff-role-settings-heading h2 { margin: 0; padding-bottom: .4rem; border-bottom: 3px solid var(--staff-yellow); }
+.staff-role-settings-table { min-width: 620px; }
+.staff-role-settings-actions button:last-child { color: #b42318; }
+.staff-role-label-form { display: grid; gap: .75rem; margin-top: .75rem; }

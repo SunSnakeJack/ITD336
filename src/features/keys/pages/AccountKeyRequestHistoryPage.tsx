@@ -10,7 +10,7 @@ import { cancelMyKeyRequest, returnMyKeyRequest } from '../key.service'
 import { keyLoanKeys, myKeyRequestsQuery } from '../key.queries'
 
 export function AccountKeyRequestHistoryPage({ embedded = false }: { embedded?: boolean } = {}) {
-  const query = useQuery(myKeyRequestsQuery())
+  const query = useQuery({ ...myKeyRequestsQuery(), refetchInterval: 15_000 })
   const requestFocus = useRequestFocus(query.isSuccess)
   const client = useQueryClient()
   const [action, setAction] = useState<{ type: 'return' | 'cancel'; id: string } | null>(null)
@@ -22,9 +22,9 @@ export function AccountKeyRequestHistoryPage({ embedded = false }: { embedded?: 
   return <section className={embedded ? "key-history-page embedded-key-history" : "key-account-page key-history-page"}>
     {!embedded && <h1>การจองและกุญแจของฉัน</h1>}<header><h2>รายการล่าสุด</h2><span>{query.data?.length ?? 0} รายการ</span></header>
     <div className="account-request-card-list">{query.data?.map(item => {
-      const canCancel = Boolean(item.canCancel) && Date.parse(item.endsAt) > Date.now() && ['PENDING_APPROVAL', 'APPROVED'].includes(item.status)
+      const canCancel = Boolean(item.canCancel) && Date.parse(item.endsAt) > Date.now() && ['PENDING_APPROVAL', 'PENDING_STARTED', 'APPROVED'].includes(item.status)
       const canReturn = Boolean(item.canReturn) && ['APPROVED', 'IN_USE'].includes(item.status)
-      const editable = ['PENDING_APPROVAL', 'APPROVED'].includes(item.status)
+      const editable = ['PENDING_APPROVAL', 'PENDING_STARTED', 'APPROVED'].includes(item.status)
         && Date.parse(item.startsAt) > Date.now()
       const rejected = item.status === 'REJECTED'
       return <EditableRequestCard key={item.id} id={item.id} type="key_request" start={item.startsAt} end={item.endsAt} editable={editable} purposeEditable={item.purposeType === 'OTHER'} articleProps={requestFocus(item.id)}

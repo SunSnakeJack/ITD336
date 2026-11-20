@@ -33,4 +33,15 @@ describe('staff usage return status', () => {
     expect(staffUsageStatus({ ...rows[1], status: 'REJECTED' }, end + 1)).toBe('REJECTED')
     expect(staffUsageStatus({ ...rows[0], status: 'APPROVED' }, end + 1)).toBe('APPROVED')
   })
+
+  it('expires pending special-room requests at the end, not the start', () => {
+    const row = { ...rows[2], status: 'PENDING_APPROVAL' }
+    const startAt = Date.parse(row.startsAt)
+    const endAt = Date.parse(row.endsAt)
+    expect(staffUsageStatus(row, startAt - 1)).toBe('PENDING_APPROVAL')
+    expect(staffUsageStatus(row, startAt)).toBe('PENDING_STARTED')
+    expect(staffUsageStatus(row, endAt - 1)).toBe('PENDING_STARTED')
+    expect(staffUsageStatus({ ...row, status: 'PENDING_STARTED' }, endAt)).toBe('EXPIRED')
+    expect(staffUsageStatus({ ...row, status: 'APPROVED' }, endAt)).toBe('APPROVED')
+  })
 })

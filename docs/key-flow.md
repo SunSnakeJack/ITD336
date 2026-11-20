@@ -1,5 +1,10 @@
 # Key flow
 
+Staff can set the public key catalog to the current layout, key tags, or
+the current layout without checkout history. The last option omits the
+checkout history query and section on both catalog tabs. Schedule availability
+and the history on each room detail page remain available.
+
 Public key request forms show the requester status, name, and email. New requests omit the student or staff identifier. The request RPCs still accept an identifier from older clients. Time pickers hide elapsed starts, disable booked half-hours, and offer continuous end times up to the next blocked slot.
 
 For S2407–S2412, `get_room_slot_permissions` is the single decision boundary used by the room dialog. During an active class occurrence, every authenticated Student may create an auto-approved class key request; Teacher is intentionally supported by the same database rule for later UI reuse. This rule does not depend on enrollment data. Without a class, the user must own an approved room booking before requesting a key. Another user's booking never grants key permission.
@@ -24,11 +29,25 @@ Migration `0028_overdue_key_cabinet_and_borrower_identity.sql` distinguishes an 
 
 Authenticated public `key_requests` mirror submission and lifecycle status changes into in-app notifications. Email outbox behavior remains separate; the in-app trigger creates only an `IN_APP` delivery and skips legacy requests without an authenticated owner.
 
-For teaching requests, the requester enters the course code independently of the lecturer. Student requests select an
-active lecturer ID from the public directory. The database resolves the
-recipient and uses the existing lecturer notification outbox event.
+For teaching requests, the requester enters the course code independently of the lecturer.
+Students select an instructor by name from a searchable list. Signed-in users
+can search active Teacher accounts and preassigned Teacher members with an eligible
+university email. The existing instructor entries support guest requests, and
+the explicit test recipient remains available. The list shows one entry per
+normalized email and returns only IDs and display names. The database resolves
+the selected ID again on submission and uses the existing lecturer notification
+outbox event.
+
+The display settings page controls the preferred instructor name language for
+the staff directory and the student instructor picker. Staff can edit both
+name variants for Teacher entries, including preassigned members. A missing
+localized name falls back to the original directory name. Search can match
+both saved variants. The preference only affects the directory and picker;
+previous requests retain their recorded details.
 Teacher requests continue to identify the requester as the instructor.
 Before a request starts, its owner can adjust the time on the original Bangkok service date. The history editor uses the room schedule without the current request's interval and the database rechecks conflicts on save. Teaching requests retain their recorded teaching purpose and lecturer details.
 ## สถานะคืนกุญแจในรายการบันทึก
 
 แดชบอร์ดเจ้าหน้าที่แสดง **เกินกำหนด** เมื่อรายการเบิกที่อนุมัติแล้วหรือกำลังใช้งานเลยเวลาสิ้นสุดและยังไม่มีเวลาคืนจริง รวมถึงรายการยืมที่ยังถือกุญแจอยู่ หากบันทึกคืนหลังเวลาสิ้นสุดจะแสดง **คืนล่าช้า** ส่วนการคืนตรงเวลาหรือก่อนกำหนดแสดง **คืนแล้ว** รายงาน PDF ใช้เกณฑ์เดียวกัน ณ เวลาที่สร้างรายงาน การคำนวณนี้ใช้สำหรับการแสดงผลและไม่เปลี่ยนสถานะในฐานข้อมูล
+
+สำหรับคำขอห้องพิเศษที่ยังรออนุมัติ ตั้งแต่เวลาเริ่มจนถึงก่อนเวลาสิ้นสุดจะแสดง **รออนุมัติ · เริ่มแล้ว** เจ้าหน้าที่ยังอนุมัติให้ใช้เวลาที่เหลือได้ โดยเก็บช่วงเวลาที่ขอไว้ในประวัติ เมื่อถึงเวลาสิ้นสุดจะแสดง **หมดอายุ** และฐานข้อมูลจะปฏิเสธการอนุมัติหรือไม่อนุมัติคำขอนั้น

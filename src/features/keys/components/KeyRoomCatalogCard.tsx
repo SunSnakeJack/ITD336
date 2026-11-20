@@ -15,10 +15,12 @@ import { KeyRoomTagCard } from './KeyRoomTagCard'
 
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
 
-export function KeyRoomCatalogCard({room,identity,keyTag=false}:{room:ScheduleRoom;identity:AuthIdentity|null;keyTag?:boolean}){
+export function KeyRoomCatalogCard({room,identity,keyTag=false,showHistory=true}:{
+  room:ScheduleRoom;identity:AuthIdentity|null;keyTag?:boolean;showHistory?:boolean
+}){
   const date=today()
   const events=useQuery(publicScheduleEventsQuery({roomId:room.id,from:date,to:date}))
-  const history=useQuery({ ...publicKeyRequestHistoryQuery(room.id), enabled: !keyTag && room.active && events.isSuccess })
+  const history=useQuery({ ...publicKeyRequestHistoryQuery(room.id), enabled: !keyTag && showHistory && room.active && events.isSuccess })
   const otherEvents=events.data?.filter(item => !item.id.startsWith('key-request:')) ?? []
   const timingPolicy=useQuery(keyRequestTimingPolicyQuery())
   const [loginOpen,setLoginOpen]=useState(false)
@@ -43,16 +45,16 @@ export function KeyRoomCatalogCard({room,identity,keyTag=false}:{room:ScheduleRo
   return <article className={`key-room-card key-room-catalog-card${room.active?'':' disabled'}`}>
     <header><div className="key-room-identity"><img src={keyRoomIcon} alt=""/><span><strong>{room.code}</strong><small className="key-room-name">{room.description||room.name}</small></span></div><span className={room.active&&hasAvailability?'key-room-badge':'key-room-badge unavailable'}>{!room.active?'• ไม่พร้อมใช้':hasAvailability?'• มีช่วงเวลาว่าง':'• ไม่มีช่วงเวลาว่าง'}</span></header>
     <div className="key-free-times"><small>{room.active?'ช่วงเวลาที่เบิกได้':'ไม่มีช่วงเวลาที่เบิกได้'}</small>{room.active&&<div>{events.isPending?<span>กำลังโหลด…</span>:events.isError?<span>โหลดตารางไม่สำเร็จ</span>:available.length?available.map((range)=><span key={range}>{range}</span>):<span>ไม่มีช่วงเวลาว่าง</span>}</div>}</div>
-    {room.active && <div className="key-card-events">
+    {room.active && (showHistory || otherEvents.length > 0) && <div className="key-card-events">
       {otherEvents.length > 0 && <section className="key-booking-day">
         <h3>ตารางใช้งานวันนี้</h3>
         {otherEvents.slice(0, 3).map(item => <p key={item.id}><span title={item.title}>{item.title}</span><time>{bangkokClock(item.startsAt)}–{bangkokClock(item.endsAt)} น.</time></p>)}
       </section>}
-      {events.isError || history.isError ? <p>โหลดรายการเบิกไม่สำเร็จ</p>
+      {showHistory && (events.isError || history.isError ? <p>โหลดรายการเบิกไม่สำเร็จ</p>
         : events.isPending || history.isPending ? <p>กำลังโหลดรายการเบิก…</p>
         : history.data.length ? <RoomUsageHistory items={history.data.map(item => ({ ...item, title: item.requesterName }))}
           label="รายการเบิกล่าสุด" heading="รายการเบิก" />
-        : <p>— ไม่มีรายการเบิก —</p>}
+        : <p>— ไม่มีรายการเบิก —</p>)}
     </div>}
     <footer><Link aria-label={`ดูรายละเอียด ${room.code}`} to={`/keys/rooms/${room.id}`}>ดูรายละเอียด <img src={externalLinkIcon} alt=""/></Link>{!canRequest?<button aria-label={`เบิกกุญแจ ${room.code}`} className="primary-action" disabled>{room.active?'ไม่มีช่วงเวลาว่าง':'เบิกกุญแจห้องนี้'}</button>:room.requiresSsoForKeyRequest&&!identity?<button aria-label={`เบิกกุญแจ ${room.code}`} className="primary-action" onClick={()=>setLoginOpen(true)}>เบิกกุญแจห้องนี้<img src={keyActionArrow} alt=""/></button>:<Link aria-label={`เบิกกุญแจ ${room.code}`} className="primary-action" to={requestPath}>เบิกกุญแจห้องนี้<img src={keyActionArrow} alt=""/></Link>}</footer>
     {loginOpen&&<GoogleSsoModal returnTo={requestPath} onClose={()=>setLoginOpen(false)}/>} 

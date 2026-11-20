@@ -29,5 +29,6 @@ describe('staff user directory helpers', () => {
   it('combines search, role, and status filters', () => {
     expect(filterUserDirectory(users, { search: 'นักศึกษา', role: 'STUDENT', status: 'SUSPENDED' })).toEqual([users[1]])
     expect(filterUserDirectory(users, { search: '', role: 'ALL', status: 'ACTIVE' })).toEqual([users[0]])
+    expect(filterUserDirectory(users, { search: '', role: 'ALL', status: 'INACTIVE' })).toEqual([users[2]])
   })
 })

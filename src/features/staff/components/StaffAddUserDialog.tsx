@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { StaffRoleOption } from '../types/staff-user.types'
+import { StaffRoleChips } from './StaffRoleChips'
 
 interface Props {
   roles: StaffRoleOption[]; pending: boolean; error?: string; onClose: () => void
@@ -26,12 +27,12 @@ export function StaffAddUserDialog({ roles, pending, error, onClose, onSave }: P
   }
   return <div className="staff-role-dialog-backdrop" role="presentation">
     <section className="staff-role-dialog staff-add-user-dialog" role="dialog" aria-modal="true" aria-labelledby="staff-add-user-title">
-      <header><div><h2 id="staff-add-user-title">เพิ่มสมาชิกใหม่</h2><p>ระบบจะส่งคำเชิญไปยังอีเมลที่ระบุ</p></div><button type="button" aria-label="ปิด" disabled={pending} onClick={onClose}>×</button></header>
+      <header><div><h2 id="staff-add-user-title">เพิ่มสมาชิกใหม่</h2><p>กำหนดบทบาทล่วงหน้าสำหรับการเข้าสู่ระบบครั้งแรก</p></div><button type="button" aria-label="ปิด" disabled={pending} onClick={onClose}>×</button></header>
       <div className="staff-add-user-fields"><label>ชื่อ<input autoFocus value={firstName} onChange={(event) => setFirstName(event.target.value)} /></label><label>นามสกุล<input value={lastName} onChange={(event) => setLastName(event.target.value)} /></label><label className="wide">อีเมล<input type="email" value={email} placeholder="example@northbkk.ac.th" onChange={(event) => setEmail(event.target.value)} /></label></div>
       <p className="staff-dialog-section-label">บทบาท (เลือกได้หลายบทบาท)</p>
-      <div className="staff-role-options">{roles.map((role) => <label key={role.code}><input type="checkbox" checked={selected.has(role.code)} onChange={() => toggle(role.code)} /><span><strong>{role.name}</strong><small>{role.code}</small></span></label>)}</div>
+      <StaffRoleChips roles={roles} selected={selected} disabled={pending} onToggle={toggle}/>
       {(validation || error) && <p className="staff-role-error" role="alert">{validation || error}</p>}
-      <footer><button type="button" disabled={pending} onClick={onClose}>ยกเลิก</button><button className="staff-button" type="button" disabled={pending} onClick={submit}>{pending ? 'กำลังส่งคำเชิญ…' : 'ส่งคำเชิญ'}</button></footer>
+      <footer><button type="button" disabled={pending} onClick={onClose}>ยกเลิก</button><button className="staff-button" type="button" disabled={pending} onClick={submit}>{pending ? 'กำลังเพิ่มผู้ใช้…' : 'เพิ่มผู้ใช้'}</button></footer>
     </section>
   </div>
 }

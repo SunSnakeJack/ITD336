@@ -1,6 +1,17 @@
 import { supabase, unwrap } from '../../lib/supabase/client'
 import type { AdminRoomDetail, AvailabilityConflict, Room, RoomEditorOptions, SaveRoomInput } from './room.types'
 export const getRooms = () => unwrap<Room[]>(supabase.from('rooms').select('*').order('name'))
+export async function getRoomEquipmentNames(roomIds: string[]): Promise<Record<string, string[]>> {
+  if (!roomIds.length) return {}
+  const { data, error } = await supabase.from('room_equipment').select('room_id, equipment(name)').in('room_id', roomIds)
+  if (error) throw new Error('ไม่สามารถโหลดข้อมูลอุปกรณ์ห้องได้')
+  const byRoom: Record<string, string[]> = {}
+  for (const row of data ?? []) {
+    if (row.equipment?.name) (byRoom[row.room_id] ??= []).push(row.equipment.name)
+  }
+  for (const names of Object.values(byRoom)) names.sort((first, second) => first.localeCompare(second, 'th'))
+  return byRoom
+}
 export const getRoomById = (id:string) => unwrap<Room>(supabase.from('rooms').select('*').eq('id',id).single())
 export const getAvailableRooms = (start:string,end:string) => unwrap<Room[]>(supabase.rpc('list_available_rooms',{p_starts_at:start,p_ends_at:end}))
 export const checkRoomAvailability = (roomId:string,start:string,end:string) => unwrap<AvailabilityConflict[]>(supabase.rpc('check_room_availability',{p_room_id:roomId,p_starts_at:start,p_ends_at:end}))

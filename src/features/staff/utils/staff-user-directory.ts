@@ -6,10 +6,12 @@ export function getStaffInitials(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase('th') || 'U'
 }
 
-export function filterUserDirectory(users: StaffUserDirectoryItem[], filters: UserDirectoryFilters) {
+export function filterUserDirectory(users: StaffUserDirectoryItem[], filters: UserDirectoryFilters,
+  alternateNames: (user: StaffUserDirectoryItem) => Array<string | null | undefined> = () => []) {
   const search = filters.search.trim().toLocaleLowerCase('th')
   return users.filter((user) => {
-    const matchesSearch = !search || `${user.fullName} ${user.email}`.toLocaleLowerCase('th').includes(search)
+    const matchesSearch = !search || [user.fullName, user.email, ...alternateNames(user)]
+      .some(value => value?.toLocaleLowerCase('th').includes(search))
     return matchesSearch
       && (filters.role === 'ALL' || user.roleCodes.includes(filters.role))
       && (filters.status === 'ALL' || (user.pendingRegistration ? 'PENDING_REGISTRATION' : user.accountStatus) === filters.status)

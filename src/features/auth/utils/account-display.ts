@@ -21,12 +21,20 @@ export function compactAccountName(fullName:string,email:string){
 export function mergeSsoProfile(current:{fullName:string;email?:string},metadata:Record<string,unknown>){
   const ssoName=[metadata.full_name,metadata.name].find((value)=>typeof value==='string'&&value.trim())
   const ssoGivenName=typeof metadata.given_name==='string'?metadata.given_name.trim():''
-  const rawAvatar=[metadata.avatar_url,metadata.picture].find((value)=>typeof value==='string'&&value.trim())
   const profileName=current.fullName.trim()
   const fallbackName=current.email?.trim()||'ผู้ใช้งาน'
   const fullName=typeof ssoName==='string'?ssoName.trim():profileName||fallbackName
   const givenName=ssoGivenName||compactAccountName(fullName,current.email??'')
-  let avatarUrl:string|undefined
-  if(typeof rawAvatar==='string')try{const url=new URL(rawAvatar);if(['https:','http:'].includes(url.protocol))avatarUrl=url.toString()}catch{avatarUrl=undefined}
-  return{fullName,givenName,avatarUrl}
+  for (const candidate of [metadata.avatar_url, metadata.picture]) {
+    if (typeof candidate !== 'string' || !candidate.trim()) continue
+    try {
+      const url = new URL(candidate.trim())
+      if (url.protocol === 'https:' || url.protocol === 'http:') {
+        return { fullName, givenName, avatarUrl: url.toString() }
+      }
+    } catch {
+      // A malformed preferred URL should not hide the provider's picture.
+    }
+  }
+  return { fullName, givenName, avatarUrl: undefined }
 }

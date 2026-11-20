@@ -31,5 +31,5 @@ export interface KeyRequestResult {
 }
 
 export interface PublicKeyRequestHistoryItem { id:string;requesterName:string;startsAt:string;endsAt:string;status:string }
-export interface KeyRequestReferenceOption { id:string;lecturerName:string }
+export interface KeyRequestReferenceOption { id:string;lecturerName:string; alternateNames?: string[] }
 export interface MyKeyRequest {id:string;requestCode:string;roomCode:string;roomName:string;roomTypeName:string;floor:string|null;startsAt:string;endsAt:string;purpose:string;purposeType:'TEACHING'|'OTHER';courseCode:string|null;lecturerName:string|null;status:string;decisionReason?:string|null;canCancel:boolean;canReturn:boolean}

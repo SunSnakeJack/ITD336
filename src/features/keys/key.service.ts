@@ -8,7 +8,18 @@ export async function getPublicKeyRequestHistory(roomId:string):Promise<PublicKe
 export async function getMyKeyRequests():Promise<MyKeyRequest[]>{const{data,error}=await supabase.rpc('get_my_key_requests_v2' as never) as unknown as{data:Array<{id:string;request_code:string;room_code:string;room_name:string;room_type_name:string;floor:string|null;starts_at:string;ends_at:string;purpose:string;purpose_type:'TEACHING'|'OTHER';course_code:string|null;lecturer_name:string|null;status:string;decision_reason:string|null;can_cancel:boolean;can_return:boolean}>|null;error:{message:string}|null};if(error)throw new Error(error.message);return(data??[]).map((row)=>({id:row.id,requestCode:row.request_code,roomCode:row.room_code,roomName:row.room_name,roomTypeName:row.room_type_name,floor:row.floor,startsAt:row.starts_at,endsAt:row.ends_at,purpose:row.purpose,purposeType:row.purpose_type,courseCode:row.course_code,lecturerName:row.lecturer_name,status:row.status,decisionReason:row.decision_reason,canCancel:row.can_cancel,canReturn:row.can_return}))}
 export async function cancelMyKeyRequest(id:string){const{data,error}=await supabase.rpc('cancel_my_key_request' as never,{p_key_request_id:id} as never) as unknown as{data:{id:string;status:string}|null;error:{message:string}|null};if(error)throw new Error(error.message);return data}
 export async function returnMyKeyRequest(id:string){const{data,error}=await supabase.rpc('return_my_key_request' as never,{p_key_request_id:id} as never) as unknown as{data:{id:string;status:string}|null;error:{message:string}|null};if(error){if(error.message.includes('KEY_REQUEST_NOT_STARTED'))throw new Error('ยังไม่ถึงเวลาเริ่มใช้งานห้อง');if(error.message.includes('KEY_REQUEST_NOT_RETURNABLE'))throw new Error('รายการนี้ไม่อยู่ในสถานะที่คืนกุญแจได้');throw new Error(error.message)}return data}
-export async function getKeyRequestReferenceOptions():Promise<KeyRequestReferenceOption[]>{const {data,error}=await supabase.rpc('get_public_key_request_lecturers' as never) as unknown as {data:Array<{id:string;lecturer_name:string}>|null;error:{message:string}|null};if(error)throw new Error(error.message);return(data??[]).map((row)=>({id:row.id,lecturerName:row.lecturer_name}))}
+export async function getKeyRequestReferenceOptions(): Promise<KeyRequestReferenceOption[]> {
+  const { data, error } = await supabase.rpc('get_public_key_request_lecturers_v2' as never) as unknown as {
+    data: Array<{ id: string; lecturer_name: string; name_th: string | null; name_en: string | null }> | null
+    error: { message: string } | null
+  }
+  if (error) throw new Error(error.message)
+  return (data ?? []).map(row => ({
+    id: row.id,
+    lecturerName: row.lecturer_name,
+    alternateNames: [row.name_th, row.name_en].filter((name): name is string => Boolean(name)),
+  }))
+}
 
 export async function createKeyRequest(input: CreateKeyRequestInput): Promise<KeyRequestResult> {
   if (input.purposeType === 'TEACHING' && input.requesterType) {
@@ -46,11 +57,15 @@ export async function createKeyRequest(input: CreateKeyRequestInput): Promise<Ke
   const message = error?.message ?? 'KEY_REQUEST_FAILED'
   throwKeyRequestError(message)
 }
-async function dispatchCreatedRequestEmail(result:KeyRequestResult):Promise<KeyRequestResult>{
-  const{error}=await supabase.functions.invoke('email-worker',{body:{entityId:result.id,dispatchToken:result.email_dispatch_token}})
-  if(error)console.error('KEY_REQUEST_EMAIL_DISPATCH_FAILED',error.message)
+async function dispatchCreatedRequestEmail(result: KeyRequestResult): Promise<KeyRequestResult> {
+  if (!import.meta.env.DEV || import.meta.env.VITE_EMAIL_TEST_DISPATCH !== 'true' || !result.email_dispatch_token) return result
+  const { error } = await supabase.functions.invoke('email-worker', {
+    body: { entityId: result.id, dispatchToken:result.email_dispatch_token },
+  })
+  if (error) console.warn('KEY_REQUEST_TEST_EMAIL_DISPATCH_FAILED', error.name)
   return result
 }
+
 function throwKeyRequestError(message:string):never{
   if(message.includes('KEY_REQUEST_PAST_SLOT_DISABLED'))throw new Error('ช่วงเวลานี้ผ่านไปแล้วและระบบยังไม่อนุญาตให้เบิกย้อนหลัง')
   if (message.includes('KEY_REQUEST_TIME_CONFLICT') || message.includes('LEGACY_KEY_REQUEST_TIME_CONFLICT')) throw new Error('ช่วงเวลานี้มีคำขอเบิกกุญแจแล้ว')

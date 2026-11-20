@@ -393,6 +393,20 @@
   min-width: 0;
 }
 
+.lecturer-combobox .app-select-options button[data-highlighted='true'] {
+  background: #eaf1ff;
+}
+
+.lecturer-combobox .app-select-options > small {
+  display: block;
+  padding: .65rem;
+}
+
+.key-purpose-select-row .lecturer-combobox .app-select-options {
+  grid-column: 2 / -1;
+  grid-row: 1 / 2;
+}
+
 .key-booking-form-page .key-purpose-select-row .app-select-field {
   align-items: center;
   display: grid;
@@ -434,6 +448,11 @@
 }
 
 @media (max-width: 340px) {
+  .key-purpose-select-row .lecturer-combobox .app-select-options {
+    grid-column: 1 / -1;
+    grid-row: 2 / 3;
+  }
+
   .key-purpose-row {
     gap: 4px;
     grid-template-columns: 1fr;

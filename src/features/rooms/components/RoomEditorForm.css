@@ -14,6 +14,26 @@
 .room-editor-image input { width: 100%; min-width: 0; }
 .room-editor-column .room-editor-equipment { grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); }
 .room-editor-column .room-editor-equipment > label:has(input:checked) { background: var(--staff-bg); }
+.room-equipment-picker { border: 0; margin: 0; min-width: 0; padding: 0; }
+.room-equipment-picker legend { color: #45516a; font-size: .78rem; font-weight: 700; margin-bottom: .5rem; padding: 0; }
+.room-equipment-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.room-editor-grid .room-equipment-chip {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  min-height: 36px;
+  max-width: 100%;
+  padding: .375rem .75rem;
+  border: 1px solid var(--staff-border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.room-equipment-chip-name { overflow-wrap: anywhere; }
+.room-equipment-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; padding: 0; }
+.room-equipment-chip-check { visibility: hidden; color: #795300; }
+.room-equipment-chip:has(input:checked) { background: #fff4cc; border-color: #b58113; }
+.room-equipment-chip:has(input:checked) .room-equipment-chip-check { visibility: visible; }
+.room-equipment-chip:has(input:focus-visible) { outline: 2px solid #245dd6; outline-offset: 2px; }
 @media (max-width: 900px) {
   .staff-page .room-editor-form { grid-template-columns: minmax(0, 1fr); }
   .room-editor-form > .room-editor-switches { justify-content: flex-start; }

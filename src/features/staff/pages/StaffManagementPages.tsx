@@ -9,7 +9,7 @@ import { ConfirmDialog } from '../../../shared/components/ConfirmDialog'
 import { StaffAddUserDialog } from '../components/StaffAddUserDialog'
 import { BackendLimitation, StaffPage, StaffQueryState, StatusBadge } from '../components/StaffPage'
 import { StaffRoleDialog } from '../components/StaffRoleDialog'
-import { inviteStaffUser, setStaffUserRoles, setStaffUserStatus } from '../staff-user.service'
+import { addStaffUser, setStaffUserRoles, setStaffUserStatus } from '../staff-user.service'
 import { staffRoleOptionsQuery, staffUserDirectoryQuery, staffUserKeys } from '../staff-user.queries'
 import type { StaffRegisteredUser } from '../types/staff-user.types'
 import { bangkokDateTime, isMeetingRoom } from '../utils/staff-analytics'
@@ -18,7 +18,7 @@ import './StaffUserManagement.css'
 export function StaffUsersPage() {
   const query=useQuery(staffUserDirectoryQuery());const roles=useQuery(staffRoleOptionsQuery());const client=useQueryClient();const[editing,setEditing]=useState<StaffRegisteredUser|null>(null);const[adding,setAdding]=useState(false);const[statusAction,setStatusAction]=useState<{user:StaffRegisteredUser;status:StaffRegisteredUser['accountStatus']}|null>(null)
   const save=useMutation({mutationFn:setStaffUserRoles,onSuccess:async()=>{await client.invalidateQueries({queryKey:staffUserKeys.directory});setEditing(null)}})
-  const invite=useMutation({mutationFn:inviteStaffUser,onSuccess:async()=>{await client.invalidateQueries({queryKey:staffUserKeys.directory});setAdding(false)}})
+  const invite=useMutation({mutationFn:addStaffUser,onSuccess:async()=>{await client.invalidateQueries({queryKey:staffUserKeys.directory});setAdding(false)}})
   const status=useMutation({mutationFn:setStaffUserStatus,onSuccess:async()=>{await client.invalidateQueries({queryKey:staffUserKeys.directory});setStatusAction(null)}})
   const PencilIcon=()=> <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z"/><path d="m13.5 7 3.5 3.5"/></svg>
   const EraserIcon=()=> <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m7 20-4-4L14 5l5 5-10 10H7Z"/><path d="m11 8 5 5"/><path d="M7 20h13"/></svg>

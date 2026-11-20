@@ -24,8 +24,22 @@ export function RoomEditorForm({formId,room,options,pending,error,onCancel,onSav
   <div className="room-editor-column"><section><h3>ข้อมูลห้อง</h3><div className="room-editor-grid"><label>รหัสห้อง *<input value={form.code} onChange={event=>field('code',event.target.value)}/></label><label>ชื่อสำหรับหน้าจัดการ *<input value={form.name} onChange={event=>field('name',event.target.value)}/></label><SelectField label="กลุ่มห้อง" value={group} placeholder="เลือกกลุ่มห้อง" options={Object.entries(roomGroupLabels).map(([value,label])=>({value:value as keyof typeof roomGroupLabels,label}))} onChange={value=>{
    setSelectedGroup(value)
    if (!currentFormat || roomFormatGroup(currentFormat.code || currentFormat.name) !== value) field('roomTypeId','')
-  }}/><SelectField key={group} label="รูปแบบห้อง *" value={form.roomTypeId} placeholder="เลือกรูปแบบห้อง" options={shownFormats.map(item=>({value:item.id,label:thaiRoomType(item.code || item.name)}))} onChange={value=>field('roomTypeId',value)}/><label>ความจุ *<input type="number" min="1" value={form.capacity} onChange={event=>field('capacity',Number(event.target.value))}/></label><label className="wide">คำอธิบายใต้ชื่อห้อง<textarea rows={3} value={form.description} onChange={event=>field('description',event.target.value)}/></label></div></section></div>
-  <div className="room-editor-column"><section><h3>อุปกรณ์เพิ่มเติม</h3><div className="room-editor-equipment">{options.equipment.length?options.equipment.map(option=><label key={option.id}><input type="checkbox" checked={form.equipment.some(item=>item.equipmentId===option.id)} onChange={event=>toggleEquipment(option.id,event.target.checked)}/>{option.name}</label>):<p>ยังไม่มีรายการอุปกรณ์ในระบบ</p>}</div></section><section><h3>รูปภาพห้อง</h3><div className="room-editor-image"><img className="room-editor-preview" src={preview||form.imageUrl||defaultRoomImage} alt="ตัวอย่างรูปภาพห้อง"/><label className="room-image-picker">เลือกรูปภาพห้อง<input aria-label="รูปภาพห้อง" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={event=>chooseImage(event.target.files?.[0]??null)}/><small>รองรับ JPG, PNG, WebP หรือ GIF ขนาดไม่เกิน 5 MB</small></label></div></section></div>
+  }}/><SelectField key={group} label="รูปแบบห้อง *" value={form.roomTypeId} placeholder="เลือกรูปแบบห้อง" options={shownFormats.map(item=>({value:item.id,label:thaiRoomType(item.code || item.name)}))} onChange={value=>field('roomTypeId',value)}/><label>ความจุ *<input type="number" min="1" value={form.capacity} onChange={event=>field('capacity',Number(event.target.value))}/></label><label className="wide">คำอธิบายใต้ชื่อห้อง<textarea rows={3} value={form.description} onChange={event=>field('description',event.target.value)}/></label>
+   <fieldset className="room-equipment-picker wide">
+    <legend>อุปกรณ์เพิ่มเติม</legend>
+    {options.equipment.length ? <div className="room-equipment-chips">
+     {options.equipment.map(option => (
+      <label className="room-equipment-chip" key={option.id}>
+       <input type="checkbox" checked={form.equipment.some(item => item.equipmentId === option.id)}
+        onChange={event => toggleEquipment(option.id, event.target.checked)} />
+       <span className="room-equipment-chip-name">{option.name}</span>
+       <span className="room-equipment-chip-check" aria-hidden="true">✓</span>
+      </label>
+     ))}
+    </div> : <p>ยังไม่มีรายการอุปกรณ์ในระบบ</p>}
+   </fieldset>
+  </div></section></div>
+  <div className="room-editor-column"><section><h3>รูปภาพห้อง</h3><div className="room-editor-image"><img className="room-editor-preview" src={preview||form.imageUrl||defaultRoomImage} alt="ตัวอย่างรูปภาพห้อง"/><label className="room-image-picker">เลือกรูปภาพห้อง<input aria-label="รูปภาพห้อง" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={event=>chooseImage(event.target.files?.[0]??null)}/><small>รองรับ JPG, PNG, WebP หรือ GIF ขนาดไม่เกิน 5 MB</small></label></div></section></div>
   {(validation||error)&&<p className="staff-role-error" role="alert">{validation||error}</p>}{!formId&&<footer><button type="button" disabled={pending} onClick={onCancel}>ยกเลิก</button><button className="staff-button" disabled={pending}>{pending?'กำลังบันทึก…':'บันทึกข้อมูลห้อง'}</button></footer>}
  </form>
 }

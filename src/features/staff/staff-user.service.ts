@@ -37,11 +37,19 @@ export async function setStaffUserRoles(input:{userId:string;roleCodes:string[]}
   return data
 }
 
-export async function inviteStaffUser(input:{email:string;fullName:string;roleCodes:string[]}){
-  const{data,error}=await supabase.functions.invoke('admin-user-management',{body:{action:'INVITE',...input}})
-  if(error)throw new Error(error.message)
-  if(data?.error)throw new Error(data.error==='FORBIDDEN'?'บัญชีนี้ไม่มีสิทธิ์เพิ่มสมาชิก':String(data.error))
-  return data as{userId:string}
+export async function addStaffUser(input: { email: string; fullName: string; roleCodes: string[] }) {
+  const { error } = await supabase.rpc('add_admin_preassigned_user' as never, {
+    p_email: input.email, p_full_name: input.fullName, p_role_codes: input.roleCodes,
+  } as never)
+  if (!error) return
+  const messages: Record<string, string> = {
+    FORBIDDEN: 'บัญชีนี้ไม่มีสิทธิ์เพิ่มผู้ใช้',
+    INVALID_USER_DETAILS: 'กรุณากรอกชื่อและอีเมลให้ถูกต้อง',
+    INVALID_ROLE: 'มีบทบาทที่ไม่สามารถกำหนดได้',
+    EMAIL_ALREADY_REGISTERED: 'อีเมลนี้มีบัญชีในระบบแล้ว',
+    EMAIL_ALREADY_PREASSIGNED: 'อีเมลนี้อยู่ในรายชื่อที่กำหนดสิทธิ์ล่วงหน้าแล้ว',
+  }
+  throw new Error(messages[error.message] ?? 'ไม่สามารถเพิ่มผู้ใช้ได้ กรุณาลองใหม่')
 }
 
 export async function setStaffUserStatus(input:{userId:string;status:StaffRegisteredUser['accountStatus']}){

@@ -27,6 +27,7 @@ export function useAuthSession(): AuthSessionState {
   useEffect(() => {
     let active = true
     let expiryTimer=0
+    let authVersion = 0
 
     const enforceSessionLimit=(session:Session|null)=>{
       window.clearTimeout(expiryTimer)
@@ -56,16 +57,17 @@ export function useAuthSession(): AuthSessionState {
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const version = ++authVersion
       enforceSessionLimit(session)
       window.setTimeout(() => {
         void resolveIdentity(session)
           .then((nextIdentity) => {
-            if (!active) return
+            if (!active || version !== authVersion) return
             setIdentity(nextIdentity)
             setError(null)
           })
           .catch(async (caught: unknown) => {
-            if (!active) return
+            if (!active || version !== authVersion) return
             setIdentity(null)
             setError(caught instanceof Error ? caught.message : 'ไม่สามารถโหลดบทบาทผู้ใช้ได้')
             await signOut()
@@ -81,7 +83,14 @@ export function useAuthSession(): AuthSessionState {
       const userId=data.session?.user.id
       if(!active||!userId)return
       identityChannel=supabase.channel(`identity:${userId}`).on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:`id=eq.${userId}`},()=>{
-        void resolveIdentity(data.session).then((nextIdentity)=>{if(active)setIdentity(nextIdentity)}).catch(()=>undefined)
+        const version = authVersion
+        void supabase.auth.getSession().then(async ({ data: current, error: sessionError }) => {
+          if (!active || sessionError || current.session?.user.id !== userId) return
+          const nextIdentity = await resolveIdentity(current.session)
+          if (active && version === authVersion) {
+            setIdentity(existing => existing?.userId === userId ? nextIdentity : existing)
+          }
+        }).catch(()=>undefined)
       }).subscribe()
     })
 

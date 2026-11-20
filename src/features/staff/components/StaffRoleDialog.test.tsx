@@ -9,9 +9,12 @@ describe('StaffRoleDialog',()=>{
   it('submits every selected role and the selected account status',()=>{
     const save=vi.fn()
     render(<StaffRoleDialog user={user} roles={roles} pending={false} onClose={vi.fn()} onSave={save}/>)
+    expect(screen.getByRole('checkbox', { name: /Student/ })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /Teacher/ })).not.toBeChecked()
     fireEvent.change(screen.getByLabelText('ชื่อ'), { target: { value: 'ชื่อใหม่' } })
     fireEvent.click(screen.getByRole('checkbox',{name:/Teacher/}))
     fireEvent.click(screen.getByRole('button', { name: 'สถานะบัญชี เปิดใช้งาน' }))
+    expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual(['เปิดใช้งาน', 'ปิดใช้งาน', 'ระงับการใช้งาน'])
     fireEvent.click(screen.getByRole('option', { name: 'ระงับการใช้งาน' }))
     fireEvent.click(screen.getByRole('button',{name:'บันทึกข้อมูล'}))
     expect(save).toHaveBeenCalledWith({

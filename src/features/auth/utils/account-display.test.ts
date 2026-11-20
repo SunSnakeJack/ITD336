@@ -27,6 +27,13 @@ describe('account display', () => {
     })
   })
 
+  it('tries the SSO picture when the preferred avatar URL is malformed', () => {
+    expect(mergeSsoProfile(
+      { fullName: 'Student' },
+      { avatar_url: 'invalid', picture: 'https://example.test/avatar.png' },
+    ).avatarUrl).toBe('https://example.test/avatar.png')
+  })
+
   it('falls back to the account email when SSO and profile names are blank', () => {
     expect(mergeSsoProfile(
       { fullName: '   ', email: 'sufeeyan.tale@northbkk.ac.th' },

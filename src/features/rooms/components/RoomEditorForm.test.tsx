@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { RoomEditorForm } from './RoomEditorForm'
 
@@ -40,7 +40,14 @@ describe('RoomEditorForm',()=>{
     expect(screen.getByRole('alert')).toHaveTextContent('กรุณากรอกข้อมูลห้องที่จำเป็นให้ครบถ้วน')
     fireEvent.change(screen.getByLabelText('รหัสห้อง *'),{target:{value:'S2501'}})
     fireEvent.change(screen.getByLabelText('ชื่อสำหรับหน้าจัดการ *'),{target:{value:'ห้องใหม่'}})
-    fireEvent.click(screen.getByRole('checkbox',{name:'ไมโครโฟน'}))
+    const equipment = screen.getByRole('group', { name: 'อุปกรณ์เพิ่มเติม' })
+    expect(equipment.closest('section')).toContainElement(screen.getByLabelText('คำอธิบายใต้ชื่อห้อง'))
+    const microphone = within(equipment).getByRole('checkbox', { name: 'ไมโครโฟน' })
+    fireEvent.click(microphone)
+    expect(microphone).toBeChecked()
+    fireEvent.click(microphone)
+    expect(microphone).not.toBeChecked()
+    fireEvent.click(microphone)
     expect(screen.queryByLabelText(/จำนวน/)).not.toBeInTheDocument()
     expect(screen.queryByPlaceholderText('หมายเหตุ')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button',{name:'บันทึกข้อมูลห้อง'}))

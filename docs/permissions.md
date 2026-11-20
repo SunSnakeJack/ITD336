@@ -2,7 +2,15 @@
 
 STUDENT and TEACHER receive no administrative permission by default. They can read active room catalogs, their own profile, bookings, key loans, incidents/compensation relevant to them, and notifications. Booking/key requests use authenticated RPCs. For an active class occurrence in S2407–S2412, either role receives class-derived key permission; Student is the current UI focus and no enrollment lookup is required.
 
-On the first sign-in with a verified email, the database consumes the matching preassigned role or grants `STUDENT` when no preassignment exists. An existing role assignment takes precedence. Later sign-ins do not restore roles removed by an administrator.
+On the first sign-in with a verified email, the database consumes the matching preassigned roles or grants `STUDENT` when no preassignment exists. An existing role assignment takes precedence. Later sign-ins do not restore roles removed by an administrator.
+
+The admin directory's **เพิ่มผู้ใช้** action creates a pending preassignment without creating an Auth account or sending an invitation. Administrators can assign multiple roles. Leaving the selection empty preassigns `STUDENT`. An existing account or preassignment for the same normalized email is rejected, and successful additions are audited.
+
+Additional settings lets administrators create, rename, and remove labels without granting permissions. Built-in roles and roles with permissions are protected, and assigned labels cannot be removed. A first sign-in with only custom labels still receives the normal Student role.
+
+The Logs page requires `AUDIT_READ` and uses server-side pages of ten events. New audit events record the actor category at write time. For older events, actor filters use the action's authorization context when known, then current roles as an explicitly marked estimate. Unclassifiable events remain visible without an actor filter. The IP column displays an address only when a trusted server-side source has recorded it.
+
+Logs search combines the actor and action filters with a case-insensitive literal search on actor name, record reference, room code, and displayed details before computing totals and pagination.
 
 Administrators can remove a pending preassignment or remove a registered user from the staff directory. For a registered user, the removal bans future sign-ins and marks the profile inactive while retaining its ID and linked history. Each removal is audited. The acting administrator cannot remove their own account.
 

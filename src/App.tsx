@@ -32,6 +32,8 @@ import { StaffLabHistoryPage, StaffMeetingHistoryPage } from "./features/staff/p
 import { StaffLabDashboardPage, StaffMeetingDashboardPage } from "./features/staff/pages/StaffDashboardPages";
 import { StaffLabReportPage, StaffMeetingReportPage } from "./features/staff/pages/StaffReportPages";
 import { StaffUsageDashboardPage } from "./features/staff/pages/StaffUsageDashboardPage";
+import { StaffAuditLogsPage } from "./features/staff/pages/StaffAuditLogsPage";
+import { StaffRoleSettingsPage } from "./features/staff/pages/StaffRoleSettingsPage";
 
 function AdminGuard({
   identity,
@@ -201,6 +203,8 @@ export function App() {
         <Route path="reports/labs" element={<StaffLabReportPage />} />
         <Route path="reports/meetings" element={<StaffMeetingReportPage />} />
         <Route path="usage-dashboard" element={<StaffUsageDashboardPage />} />
+        <Route path="logs" element={<StaffAuditLogsPage />} />
+        <Route path="additional-settings" element={<StaffRoleSettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/keys" replace />} />
     </Routes>

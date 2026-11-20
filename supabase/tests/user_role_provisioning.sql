@@ -7,6 +7,7 @@ declare
   v_student uuid := gen_random_uuid();
   v_staff uuid := gen_random_uuid();
   v_admin uuid := gen_random_uuid();
+  v_new_user uuid := gen_random_uuid();
 begin
   assert not has_table_privilege('anon', 'public.preassigned_user_roles', 'SELECT');
   assert not has_table_privilege('authenticated', 'public.preassigned_user_roles', 'SELECT');
@@ -16,6 +17,28 @@ begin
   insert into public.user_roles (user_id, role_id)
   select v_admin, id from public.roles where code = 'ADMIN';
   perform set_config('request.jwt.claim.sub', v_admin::text, true);
+
+  perform public.add_admin_preassigned_user(' Multi@Example.Test ', 'Multiple Roles', array['TEACHER','STAFF','TEACHER']);
+  assert not exists (select 1 from auth.users where lower(email) = 'multi@example.test');
+  assert exists (select 1 from public.get_admin_user_directory_v3()
+    where email = 'multi@example.test' and pending_registration and role_codes = array['STAFF','TEACHER']);
+  begin
+    perform public.add_admin_preassigned_user('multi@example.test', 'Duplicate', array['STUDENT']);
+    raise exception 'Expected duplicate preassignment to be rejected';
+  exception when unique_violation then
+    assert sqlerrm = 'EMAIL_ALREADY_PREASSIGNED';
+  end;
+  insert into auth.users (id, email, email_confirmed_at, last_sign_in_at)
+  values (v_new_user, 'multi@example.test', now(), now());
+  assert (select array_agg(r.code order by r.code) from public.user_roles ur join public.roles r on r.id = ur.role_id
+    where ur.user_id = v_new_user) = array['STAFF','TEACHER'];
+  assert not exists (select 1 from public.preassigned_user_roles where email = 'multi@example.test');
+  begin
+    perform public.add_admin_preassigned_user('multi@example.test', 'Registered', array['STUDENT']);
+    raise exception 'Expected registered email to be rejected';
+  exception when unique_violation then
+    assert sqlerrm = 'EMAIL_ALREADY_REGISTERED';
+  end;
 
   insert into public.preassigned_user_roles (email, full_name, role_code)
   values ('reserved@example.test', 'Reserved Instructor', 'TEACHER');
@@ -37,6 +60,12 @@ begin
   assert exists (select 1 from public.get_admin_user_directory_v3()
     where user_id = v_teacher and not pending_registration and role_codes = array['TEACHER']);
   perform set_config('request.jwt.claim.sub', v_teacher::text, true);
+  begin
+    perform public.add_admin_preassigned_user('forbidden@example.test', 'Forbidden', array['ADMIN']);
+    raise exception 'Expected teacher preassignment to be rejected';
+  exception when insufficient_privilege then
+    null;
+  end;
   begin
     perform public.get_admin_user_directory_v3();
     raise exception 'A teacher must not be able to read the admin directory';

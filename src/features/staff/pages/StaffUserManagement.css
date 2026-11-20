@@ -58,8 +58,8 @@
   overflow-y: auto;
   color: #202020;
 }
-.staff-user-confirm-remove { --action-color: #b42318; --action-bg: #ffd5cf; --action-button: #b42318; }
-.staff-user-confirm-activate { --action-color: #166534; --action-bg: #dcfce7; --action-button: #166534; }
+.confirm-dialog.staff-user-confirm-remove { --action-color: #b42318; --action-bg: #ffd5cf; --action-button: #b42318; }
+.confirm-dialog.staff-user-confirm-activate { --action-color: #166534; --action-bg: #dcfce7; --action-button: #166534; }
 .confirm-dialog.staff-user-confirm h2 { color: inherit; }
 .staff-user-confirm-icon {
   display: grid;
@@ -91,7 +91,40 @@
 .staff-user-removal-warning svg { width: 1rem; height: 1rem; flex: none; }
 .staff-user-confirm.confirm-dialog footer button:first-child { background: #f0f0f0; color: #292929; border-color: #d5d5d5; }
 .staff-user-confirm.confirm-dialog footer button:last-child { background: var(--action-button); border-color: var(--action-button); }
-.staff-edit-user-dialog{max-height:88vh;max-width:600px;overflow:auto}
+.staff-role-choice-chips {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .65rem;
+}
+.staff-role-choice-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  min-width: 0;
+  min-height: 3.4rem;
+  padding: .5rem .6rem;
+  border: 1px solid #dadde4;
+  border-radius: 2rem;
+  background: #fff;
+  cursor: pointer;
+}
+.staff-role-choice-chip:has(input:checked) { border-color: #ca9200; background: #fff7df; }
+.staff-role-choice-chip:has(input:focus-visible) { outline: 2px solid #3155d5; outline-offset: 2px; }
+.staff-role-choice-chip:has(input:disabled) { cursor: default; opacity: .65; }
+.staff-role-choice-chip input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.staff-role-choice-chip strong, .staff-role-choice-chip small { display: block; overflow-wrap: anywhere; }
+.staff-role-choice-chip strong { font-size: .83rem; }
+.staff-role-choice-chip small { color: var(--staff-muted); font-size: .68rem; }
+.staff-role-choice-icon, .staff-role-choice-check { display: grid; place-items: center; flex: none; border-radius: 50%; }
+.staff-role-choice-icon { width: 1.85rem; height: 1.85rem; background: #f2f3f5; color: #554b3b; }
+.staff-role-choice-icon svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.staff-role-choice-chip:has(input:checked) .staff-role-choice-icon { background: #fff0bd; color: #845800; }
+.staff-role-choice-check { visibility: hidden; width: 1.25rem; height: 1.25rem; margin-inline-start: auto; background: #926300; color: #fff; font-size: .75rem; }
+.staff-role-choice-chip:has(input:checked) .staff-role-choice-check { visibility: visible; }
+@media (max-width: 1100px) { .staff-role-choice-chips { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 430px) { .staff-role-choice-chips { grid-template-columns: minmax(0, 1fr); } }
+.staff-role-dialog.staff-edit-user-dialog{max-height:88vh;max-width:min(720px,calc(100vw - 2rem));overflow:auto}
 .staff-edit-user-fields{display:grid;gap:.65rem;grid-template-columns:1fr 1fr;margin-top:1rem}
 .staff-edit-user-fields label{color:#45516a;display:grid;font-size:.78rem;font-weight:700;gap:.3rem}
 .staff-edit-user-fields .wide{grid-column:1/-1}

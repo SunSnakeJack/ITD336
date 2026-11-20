@@ -31,6 +31,8 @@ begin
   end;
   assert public.set_key_catalog_display('key-tags') = 'key-tags';
   assert public.get_key_catalog_display() = 'key-tags';
+  assert public.set_key_catalog_display('current-no-history') = 'current-no-history';
+  assert public.get_key_catalog_display() = 'current-no-history';
   assert public.set_key_catalog_display('current') = 'current';
   assert public.get_key_catalog_display() = 'current';
   assert exists (select 1 from public.audit_logs

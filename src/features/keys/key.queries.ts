@@ -7,6 +7,6 @@ export const activeKeyLoansQuery=()=>queryOptions({queryKey:keyLoanKeys.active,q
 export const availableRoomKeysQuery=()=>queryOptions({queryKey:[...keyLoanKeys.all,'available-keys'],queryFn:getAvailableRoomKeys})
 export const keyCabinetRoomsQuery=()=>queryOptions({queryKey:[...keyLoanKeys.all,'cabinet'],queryFn:getKeyCabinetRooms})
 export const publicKeyRequestHistoryQuery=(roomId:string)=>queryOptions({queryKey:[...keyLoanKeys.all,'public-history',roomId],queryFn:()=>getPublicKeyRequestHistory(roomId),retry:1,staleTime:60_000})
-export const keyRequestReferenceOptionsQuery=()=>queryOptions({queryKey:[...keyLoanKeys.all,'request-options'],queryFn:getKeyRequestReferenceOptions,staleTime:5*60_000})
+export const keyRequestReferenceOptionsQuery=(userId?:string)=>queryOptions({queryKey:[...keyLoanKeys.all,'request-options',userId??null],queryFn:getKeyRequestReferenceOptions})
 export const keyRequestTimingPolicyQuery=()=>queryOptions({queryKey:[...keyLoanKeys.all,'timing-policy'],queryFn:getAllowPastKeyRequestSlots,staleTime:60_000})
 export const myKeyRequestsQuery=()=>queryOptions({queryKey:[...keyLoanKeys.mine,'requests'],queryFn:getMyKeyRequests})

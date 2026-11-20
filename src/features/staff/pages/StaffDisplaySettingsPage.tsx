@@ -3,9 +3,11 @@ import { useState } from 'react'
 import { keyCatalogDisplayQuery } from '../../keys/key-catalog-display.queries'
 import { setKeyCatalogDisplay, type KeyCatalogDisplay } from '../../keys/key-catalog-display.service'
 import { StaffPage, StaffQueryState } from '../components/StaffPage'
+import { StaffLecturerLanguageSettings } from '../components/StaffLecturerLanguageSettings'
 
 const options = [
   { value: 'current', label: 'แบบปัจจุบัน' },
+  { value: 'current-no-history', label: 'แบบปัจจุบัน ไม่มีรายการบันทึก' },
   { value: 'key-tags', label: 'แบบป้ายกุญแจ' },
 ] as const
 
@@ -42,5 +44,6 @@ export function StaffDisplaySettingsPage() {
         {save.isSuccess && <p role="status">บันทึกการตั้งค่าแล้ว</p>}
       </form>
     </StaffQueryState>
+    <StaffLecturerLanguageSettings />
   </StaffPage>
 }

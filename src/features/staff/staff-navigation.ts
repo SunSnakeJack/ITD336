@@ -14,6 +14,8 @@ export const staffNavigation: StaffNavigationItem[] = [
   { label: 'จัดการข้อมูลห้อง', to: '/staff/rooms', icon: 'rooms', group: 'จัดการ' },
   { label: 'การตั้งค่าสิทธิ์', to: '/staff/settings', icon: 'settings', group: 'ระบบ' },
   { label: 'การตั้งค่าการแสดงผล', to: '/staff/display-settings', icon: 'settings', group: 'ระบบ' },
+  { label: 'Logs', to: '/staff/logs', icon: 'logs', group: 'ระบบ' },
+  { label: 'การตั้งค่าเพิ่มเติม', to: '/staff/additional-settings', icon: 'settings', group: 'ระบบ' },
 ]
 
 export const staffRoutePaths = [
@@ -39,6 +41,8 @@ export const staffRoutePaths = [
   '/staff/reports/labs',
   '/staff/reports/meetings',
   '/staff/usage-dashboard',
+  '/staff/logs',
+  '/staff/additional-settings',
 ] as const
 
 export const staffPageTitles: Record<string, string> = {
@@ -56,6 +60,8 @@ export const staffPageTitles: Record<string, string> = {
   '/staff/reports/labs': 'รายงานการใช้ห้องปฏิบัติการ',
   '/staff/reports/meetings': 'รายงานการใช้ห้องประชุม',
   '/staff/usage-dashboard': 'แดชบอร์ด',
+  '/staff/logs': 'Logs',
+  '/staff/additional-settings': 'การตั้งค่าเพิ่มเติม',
 }
 
 export function getStaffPageTitle(pathname: string) {

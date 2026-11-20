@@ -69,6 +69,7 @@
 .usage-table-scroll .staff-table th,
 .usage-table-scroll .usage-no-action { text-align: center; }
 .usage-table-scroll .staff-badge-returned_late { background: #ffedd5; color: #9a3412; }
+.staff-badge-expired { background: #e5e7eb; color: #475569; }
 .usage-table-scroll tr > :first-child { width: 5%; text-align: center; }
 .usage-table-scroll tr > :nth-child(2) { width: 8%; white-space: nowrap; }
 .usage-table-scroll tr > :nth-child(3) { width: 12%; white-space: nowrap; }

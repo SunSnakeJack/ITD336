@@ -1,7 +1,12 @@
 import type{StaffUsageRow,UsageCategory}from'./staff-usage.types'
 
-export function staffUsageStatus(row: Pick<StaffUsageRow, 'source' | 'status' | 'endsAt' | 'returnedAt'>, now: number) {
+export function staffUsageStatus(row: Pick<StaffUsageRow, 'source' | 'status' | 'roomCategory' | 'startsAt' | 'endsAt' | 'returnedAt'>, now: number) {
  const {source, status, endsAt, returnedAt} = row
+ if (source === 'KEY_REQUEST' && row.roomCategory === 'SPECIAL_LAB' &&
+  (status === 'PENDING_APPROVAL' || status === 'PENDING_STARTED')) {
+  if (now >= Date.parse(endsAt)) return 'EXPIRED'
+  if (now >= Date.parse(row.startsAt)) return 'PENDING_STARTED'
+ }
  const outstanding = source === 'KEY_REQUEST'
   ? status === 'APPROVED' || status === 'IN_USE'
   : source === 'KEY_LOAN' && (status === 'CHECKED_OUT' || status === 'LATE')

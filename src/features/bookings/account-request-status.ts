@@ -26,6 +26,8 @@ const bookingStatuses: Record<BookingStatus, AccountRequestStatus> = {
 
 const keyRequestStatuses = new Map<string, AccountRequestStatus>([
   ['PENDING_APPROVAL', pending],
+  ['PENDING_STARTED', { label: 'รออนุมัติ · เริ่มแล้ว', tone: 'amber' }],
+  ['EXPIRED', { label: 'หมดอายุ', tone: 'gray' }],
   ['APPROVED', { label: 'จองสำเร็จ', tone: 'green' }],
   ['IN_USE', inUse],
   ['RETURNED', { label: 'คืนแล้ว', tone: 'green' }],
