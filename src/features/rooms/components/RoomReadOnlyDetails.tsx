@@ -7,7 +7,7 @@ export function RoomReadOnlyDetails({ room }: { room: AdminRoomDetail }) {
   const group = roomFormatGroup(room.room_type_name)
   return <div className="room-editor-form room-read-only">
     <section className="room-editor-switches">
-      <span>เปิดให้จอง: {room.booking_enabled ? 'เปิด' : 'ปิด'}</span>
+      <span>แสดงบนหน้าเว็บ: {room.visible_on_web === false ? 'ซ่อน' : 'แสดง'}</span>
       <span>สถานะห้อง: {room.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}</span>
     </section>
     <div className="room-editor-column">

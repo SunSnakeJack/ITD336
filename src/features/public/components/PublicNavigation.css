@@ -2,7 +2,7 @@
   position: relative;
   z-index: 5;
   border: 0;
-  background: #fff9e5;
+  background: var(--theme-yellow-subtle);
   margin-bottom: 14px;
 }
 
@@ -95,7 +95,7 @@
 }
 .public-bottom-nav.public-bottom-nav-combined svg { width: 17px; height: 17px; flex-basis: 17px; }
 .public-bottom-nav.public-bottom-nav-combined a[aria-current="page"] {
-  background: #fff0b6;
+  background: var(--theme-yellow-soft);
 }
 .public-bottom-nav.public-bottom-nav-combined a[aria-current="page"] svg { color: #8a5a0a; }
 
@@ -143,7 +143,7 @@
 }
 
 .public-bottom-nav a[aria-current="page"] {
-  background: #fff0b6;
+  background: var(--theme-yellow-soft);
   font-weight: 700;
 }
 .public-bottom-nav a[aria-current="page"] svg { color: #7a5100; }
@@ -184,4 +184,7 @@
     width: auto;
     max-height: min(420px, calc(100dvh - 7rem));
   }
+}
+.student-shell.public-shell {
+  background: var(--theme-surface);
 }

@@ -1,7 +1,7 @@
 import { useLayoutEffect, type RefObject } from 'react'
-import { readTabState, writeTabState } from '../../shared/components/useTabDraft'
+import { readTabState, writeTabState } from './useTabDraft'
 
-export function usePublicScrollPosition(key: string | undefined, content: RefObject<HTMLElement | null>) {
+export function useTabScrollPosition(key: string | undefined, content: RefObject<HTMLElement | null>) {
   useLayoutEffect(() => {
     if (!key) return
     const target = readTabState<number>(key)

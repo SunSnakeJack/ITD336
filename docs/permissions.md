@@ -35,3 +35,7 @@ Changing the elapsed key-request slot exception requires `SETTINGS_MANAGE`. Read
 
 The permission settings page lets a user with `SETTINGS_MANAGE` open one specified Saturday for room bookings and key requests. The exception expires when that date ends in Asia/Bangkok. The change is audited and the public policy returns only the current exception date. Existing booking limits, elapsed-slot settings, and academic schedule rules apply independently.
 The staff role picker offers Dean and Head of Department. Both inherit the priority booking permissions. Existing PRIORITY_USER assignments remain effective until an administrator selects a replacement on the account. Public account badges show คณบดี and หัวหน้าสาขา, and the request forms display both as อาจารย์.
+
+Migration 0107 provides save_permission_settings for saving role grants and existing booking settings atomically. It requires ADMIN and SETTINGS_MANAGE, protects the ADMIN role grants, and audits each role grant change. Role-based route gates and room-type-specific workflow rules remain separate from this RPC.
+
+Migration 0108 adds optional restrictions by room category for key-request sign-in, service days and hours, notice horizon, duration, and per-person daily limits (counted separately for room bookings and key requests). These restrictions apply to new or rescheduled time ranges in addition to existing workflow rules. Empty values inherit existing rules. The v2 save RPC includes these restrictions in the same transaction as role grants and shared settings.

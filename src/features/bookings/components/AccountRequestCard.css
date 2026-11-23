@@ -105,7 +105,7 @@
   min-height: 2rem;
   padding: 0;
   border: 0;
-  background: #ffea00;
+  background: var(--theme-yellow-primary);
   color: #503500;
 }
 .account-request-card.is-editing { border-block-start: .3rem solid #f5c329; }

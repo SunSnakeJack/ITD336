@@ -5,12 +5,12 @@ import defaultRoomImage from '../../../assets/default-room.jpg'
 import{roomFormatCode,roomFormatGroup,roomGroupLabels,thaiRoomType}from'../utils/room-type-label'
 import'./RoomEditorForm.css'
 interface Props{formId?:string;room?:AdminRoomDetail;options:RoomEditorOptions;pending:boolean;error?:string;onCancel:()=>void;onSave:(input:SaveRoomInput)=>void}
-const empty={code:'',name:'',roomTypeId:'',building:'',floor:'',locationDescription:'',capacity:1,description:'',bookingEnabled:true,active:true,imageUrl:'',computerType:'',displayType:'',equipment:[]}satisfies Omit<SaveRoomInput,'roomId'>
+const empty={code:'',name:'',roomTypeId:'',building:'',floor:'',locationDescription:'',capacity:1,description:'',visibleOnWeb:true,active:true,imageUrl:'',computerType:'',displayType:'',equipment:[]}satisfies Omit<SaveRoomInput,'roomId'>
 export function RoomEditorForm({formId,room,options,pending,error,onCancel,onSave}:Props){
  const selectableFormats = options.roomTypes.filter(item => roomFormatCode(item.code || item.name) !== 'COLD')
  const [selectedGroup, setSelectedGroup] = useState<keyof typeof roomGroupLabels | ''>('')
  const[form,setForm]=useState<Omit<SaveRoomInput,'roomId'>>(empty),[validation,setValidation]=useState(''),[preview,setPreview]=useState('')
- useEffect(()=>{if(room)setForm({code:room.code,name:room.name,roomTypeId:room.room_type_id,building:room.building??'',floor:room.floor??'',locationDescription:room.location_description??'',capacity:room.capacity,description:room.description??'',bookingEnabled:room.booking_enabled,active:room.active,imageUrl:room.image_url??'',computerType:room.computer_type??'',displayType:room.display_type??'',equipment:room.equipment});else setForm({...empty,roomTypeId:options.roomTypes.find(item => roomFormatCode(item.code || item.name) !== 'COLD')?.id??''})},[room,options.roomTypes])
+ useEffect(()=>{if(room)setForm({code:room.code,name:room.name,roomTypeId:room.room_type_id,building:room.building??'',floor:room.floor??'',locationDescription:room.location_description??'',capacity:room.capacity,description:room.description??'',visibleOnWeb:room.visible_on_web??true,active:room.active,imageUrl:room.image_url??'',computerType:room.computer_type??'',displayType:room.display_type??'',equipment:room.equipment});else setForm({...empty,roomTypeId:options.roomTypes.find(item => roomFormatCode(item.code || item.name) !== 'COLD')?.id??''})},[room,options.roomTypes])
  const field=<K extends keyof typeof form>(key:K,value:(typeof form)[K])=>setForm(current=>({...current,[key]:value}))
  const toggleEquipment=(equipmentId:string,checked:boolean)=>field('equipment',checked?[...form.equipment,{equipmentId,quantity:1,notes:null}]:form.equipment.filter(item=>item.equipmentId!==equipmentId))
  const chooseImage=(file:File|null)=>{if(!file){field('imageFile',null);setPreview('');return}if(!file.type.startsWith('image/')||file.size>5*1024*1024){setValidation('กรุณาเลือกไฟล์รูปภาพขนาดไม่เกิน 5 MB');return}field('imageFile',file);setPreview(URL.createObjectURL(file));setValidation('')}
@@ -20,7 +20,7 @@ export function RoomEditorForm({formId,room,options,pending,error,onCancel,onSav
  const shownFormats = selectableFormats.filter(item => !group || roomFormatGroup(item.code || item.name) === group || item.id === form.roomTypeId)
  if (currentFormat && !shownFormats.some(item => item.id === currentFormat.id)) shownFormats.push(currentFormat)
  return <form id={formId} className="room-editor-form" onSubmit={submit}>
-  <section className="room-editor-switches"><Toggle label="เปิดให้จอง" checked={form.bookingEnabled} onChange={checked=>field('bookingEnabled',checked)}/><Toggle label="เปิดใช้งานห้อง" checked={form.active} onChange={checked=>field('active',checked)}/></section>
+  <section className="room-editor-switches"><Toggle label="แสดงบนหน้าเว็บ" checked={form.visibleOnWeb} onChange={checked=>field('visibleOnWeb',checked)}/><Toggle label="เปิดใช้งานห้อง" checked={form.active} onChange={checked=>field('active',checked)}/></section>
   <div className="room-editor-column"><section><h3>ข้อมูลห้อง</h3><div className="room-editor-grid"><label>รหัสห้อง *<input autoCapitalize="none" value={form.code} onChange={event=>field('code',event.target.value)}/></label><label>ชื่อสำหรับหน้าจัดการ *<input value={form.name} onChange={event=>field('name',event.target.value)}/></label><SelectField label="กลุ่มห้อง" value={group} placeholder="เลือกกลุ่มห้อง" options={Object.entries(roomGroupLabels).map(([value,label])=>({value:value as keyof typeof roomGroupLabels,label}))} onChange={value=>{
    setSelectedGroup(value)
    if (!currentFormat || roomFormatGroup(currentFormat.code || currentFormat.name) !== value) field('roomTypeId','')

@@ -12,11 +12,19 @@ export const staffNavigation: StaffNavigationItem[] = [
   { label: 'แดชบอร์ด', to: '/staff/usage-dashboard', icon: 'dashboard', group: 'หลัก' },
   { label: 'จัดการผู้ใช้งาน', to: '/staff/users', icon: 'users', group: 'จัดการ' },
   { label: 'จัดการข้อมูลห้อง', to: '/staff/rooms', icon: 'rooms', group: 'จัดการ' },
-  { label: 'การตั้งค่าสิทธิ์', to: '/staff/settings', icon: 'settings', group: 'ระบบ' },
-  { label: 'การตั้งค่าการแสดงผล', to: '/staff/display-settings', icon: 'settings', group: 'ระบบ' },
+  { label: 'การตั้งค่าสิทธิ์', to: '/staff/settings', icon: 'permissions', group: 'ระบบ' },
+  { label: 'การตั้งค่าการแสดงผล', to: '/staff/display-settings', icon: 'monitor', group: 'ระบบ' },
+  { label: 'การตั้งค่าเพิ่มเติม', to: '/staff/additional-settings', icon: 'gear', group: 'ระบบ' },
+  { label: 'รายงานสถิติ', to: '/staff/reports', icon: 'reports', group: 'ระบบ' },
   { label: 'Logs', to: '/staff/logs', icon: 'logs', group: 'ระบบ' },
-  { label: 'การตั้งค่าเพิ่มเติม', to: '/staff/additional-settings', icon: 'settings', group: 'ระบบ' },
 ]
+
+export function getStaffNavigationItem(pathname: string) {
+  return staffNavigation.find(item => {
+    const route = item.match ?? item.to
+    return pathname === route || pathname.startsWith(`${route}/`)
+  })
+}
 
 export const staffRoutePaths = [
   '/staff',
@@ -38,6 +46,7 @@ export const staffRoutePaths = [
   '/staff/history/meetings',
   '/staff/dashboard/labs',
   '/staff/dashboard/meetings',
+  '/staff/reports',
   '/staff/reports/labs',
   '/staff/reports/meetings',
   '/staff/usage-dashboard',
@@ -57,6 +66,7 @@ export const staffPageTitles: Record<string, string> = {
   '/staff/history/meetings': 'ประวัติการใช้ห้องประชุม',
   '/staff/dashboard/labs': 'Dashboard ห้องปฏิบัติการ',
   '/staff/dashboard/meetings': 'Dashboard ห้องประชุม',
+  '/staff/reports': 'รายงานสถิติ',
   '/staff/reports/labs': 'รายงานการใช้ห้องปฏิบัติการ',
   '/staff/reports/meetings': 'รายงานการใช้ห้องประชุม',
   '/staff/usage-dashboard': 'แดชบอร์ด',

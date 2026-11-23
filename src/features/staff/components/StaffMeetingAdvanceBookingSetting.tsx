@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useStaffViewState } from '../useStaffViewState'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { meetingBookingPolicyKey } from '../../meeting-rooms/meeting-booking-policy'
 import { meetingAdvanceBookingDaysQuery } from '../staff-settings.queries'
@@ -14,7 +14,8 @@ export function StaffMeetingAdvanceBookingSetting() {
   const query = meetingAdvanceBookingDaysQuery()
   const setting = useQuery(query)
   const client = useQueryClient()
-  const [draft, setDraft] = useState<number>()
+  const [{ draft }, updateView] = useStaffViewState<{ draft?: number }>('permission-booking-days', {})
+  const setDraft = (draft: number | undefined) => updateView({ draft })
   const save = useMutation({
     mutationFn: setMeetingAdvanceBookingDays,
     onSuccess: async (days) => {

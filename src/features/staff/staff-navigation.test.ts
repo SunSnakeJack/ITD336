@@ -23,6 +23,7 @@ describe('staff navigation contract', () => {
       '/staff/history/meetings',
       '/staff/dashboard/labs',
       '/staff/dashboard/meetings',
+      '/staff/reports',
       '/staff/reports/labs',
       '/staff/reports/meetings',
       '/staff/usage-dashboard',
@@ -33,7 +34,7 @@ describe('staff navigation contract', () => {
 
   it('keeps primary navigation concise while linking every module', () => {
     expect(staffNavigation.map((item) => item.label)).toEqual([
-      'แดชบอร์ด', 'จัดการผู้ใช้งาน', 'จัดการข้อมูลห้อง', 'การตั้งค่าสิทธิ์', 'การตั้งค่าการแสดงผล', 'Logs', 'การตั้งค่าเพิ่มเติม',
+      'แดชบอร์ด', 'จัดการผู้ใช้งาน', 'จัดการข้อมูลห้อง', 'การตั้งค่าสิทธิ์', 'การตั้งค่าการแสดงผล', 'การตั้งค่าเพิ่มเติม', 'รายงานสถิติ', 'Logs',
     ])
     expect(staffNavigation.every((item) => item.to.startsWith('/staff'))).toBe(true)
   })

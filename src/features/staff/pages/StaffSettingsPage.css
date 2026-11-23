@@ -1,0 +1,79 @@
+.staff-permission-sections { display: grid; gap: 1rem; }
+.staff-settings-section {
+  border: 1px solid var(--staff-border);
+  border-radius: 14px;
+  background: var(--theme-surface);
+}
+.staff-settings-section > h3 {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  margin: 0;
+  padding: .8rem 1rem;
+  background: var(--theme-yellow-subtle);
+  border-radius: 13px 13px 0 0;
+  font-size: 1rem;
+}
+.staff-settings-section > h3 svg { color: var(--staff-blue); }
+.staff-settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .85rem;
+  padding: .85rem 1rem;
+  border-top: 1px solid var(--staff-border);
+}
+.staff-settings-row h4 { margin: 0 0 .25rem; }
+.staff-settings-row p { margin: 0; color: var(--staff-muted); }
+.staff-settings-section > .staff-permission-setting {
+  margin: 0;
+  padding: .85rem 1rem;
+  border: 0;
+  border-top: 1px solid var(--staff-border);
+  border-radius: 0;
+  box-shadow: none;
+}
+.staff-settings-matrix { padding: .75rem 1rem; }
+.staff-settings-matrix .staff-table th,
+.staff-settings-matrix .staff-table td { white-space: nowrap; }
+@media (max-width: 600px) {
+  .staff-settings-row { grid-template-columns: minmax(0, 1fr); }
+  .staff-settings-row > .staff-button { justify-self: start; }
+}
+
+.staff-settings-tabs { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--staff-border); }
+.staff-settings-tabs button { padding: .75rem 1rem; border: 0; background: transparent; }
+.staff-settings-tabs button[aria-pressed="true"] { background: var(--theme-yellow-subtle); box-shadow: inset 0 -2px var(--staff-yellow); }
+.staff-settings-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0; margin: 0; border: 0; }
+.staff-settings-fields label { display: flex; justify-content: space-between; align-items: center; gap: .75rem; padding: .85rem 1rem; border-bottom: 1px solid var(--staff-border); }
+.staff-settings-fields :is(select, input[type="date"]) { border: 1px solid var(--staff-border); border-radius: 8px; padding: .35rem .5rem; }
+.staff-settings-matrix input, .staff-settings-fields input[type="checkbox"] { accent-color: var(--staff-blue); width: 1.15rem; height: 1.15rem; }
+.staff-settings-matrix :is(th, td):not(:first-child) { text-align: center; }
+@media (max-width: 760px) { .staff-settings-fields { grid-template-columns: minmax(0, 1fr); } }
+
+.staff-category-policy-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0; margin: 0; border: 0; }
+.staff-category-policy-columns > div + div { border-inline-start: 1px solid var(--staff-border); }
+.staff-category-rule { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .55rem; padding: .75rem 1rem; border-bottom: 1px solid var(--staff-border); }
+.staff-category-rule > div { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: .4rem; }
+.staff-category-rule :is(select, input[type="number"], input[type="time"]) { max-width: 100%; border: 1px solid var(--staff-border); border-radius: 8px; padding: .35rem .5rem; }
+.staff-category-rule input[type="number"] { width: 8rem; }
+.staff-category-days { display: flex; flex-wrap: wrap; gap: .3rem; }
+.staff-category-days label { display: inline-flex; align-items: center; gap: .15rem; }
+.staff-category-days input { accent-color: var(--staff-blue); }
+.staff-category-policy-legacy { color: var(--staff-muted); font-size: .84rem; }
+.staff-category-global-heading { margin: 0; padding: .75rem 1rem; background: var(--theme-yellow-subtle); }
+@media (max-width: 760px) {
+  .staff-category-policy-columns { grid-template-columns: minmax(0, 1fr); }
+  .staff-category-policy-columns > div + div { border-inline-start: 0; }
+}
+
+.staff-category-policy-columns { grid-auto-rows: 1fr; }
+.staff-category-policy-columns .staff-category-rule:nth-child(even) { border-inline-start: 1px solid var(--staff-border); }
+.staff-category-rule .app-select-field { min-width: 7rem; }
+.staff-category-rule .app-select-field > label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.staff-category-days button { min-width: 2rem; min-height: 2rem; border-radius: 999px; background: var(--theme-surface); border: 1px solid var(--staff-border); }
+.staff-category-days button[aria-pressed="true"] { background: var(--theme-yellow-primary); color: var(--staff-ink); }
+@media (max-width: 760px) {
+  .staff-category-policy-columns { grid-auto-rows: auto; }
+  .staff-category-policy-columns .staff-category-rule:nth-child(even) { border-inline-start: 0; }
+}

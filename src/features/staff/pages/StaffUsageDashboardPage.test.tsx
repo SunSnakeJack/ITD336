@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
@@ -29,7 +30,7 @@ describe('StaffUsageDashboardPage layout', () => {
       startsAt: '2026-11-17T01:30:00Z', endsAt: '2026-11-17T02:00:00Z', returnedAt: null, status: 'PENDING',
     }])
     const client = new QueryClient()
-    render(<QueryClientProvider client={client}><StaffUsageDashboardPage /></QueryClientProvider>)
+    render(<QueryClientProvider client={client}><MemoryRouter><StaffUsageDashboardPage /></MemoryRouter></QueryClientProvider>)
     const button = await screen.findByRole('button', { name: choice })
     expect(button.closest('td')?.cellIndex).toBe(8)
     fireEvent.click(button)
@@ -46,7 +47,7 @@ describe('StaffUsageDashboardPage layout', () => {
   })
   it('exports a report with the current filters and all matching columns', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    const { container } = render(<QueryClientProvider client={client}><StaffUsageDashboardPage /></QueryClientProvider>)
+    const { container } = render(<QueryClientProvider client={client}><MemoryRouter><StaffUsageDashboardPage /></MemoryRouter></QueryClientProvider>)
     await screen.findByText('รายการบันทึก')
     fireEvent.change(screen.getByLabelText('ตั้งแต่วันที่'), { target: { value: '2026-11-13' } })
     const exportForm = container.querySelector('#usage-report-export')
@@ -61,6 +62,7 @@ describe('StaffUsageDashboardPage layout', () => {
     expect(output).toHaveTextContent('หน้าที่ 1/1')
     expect(within(output).getAllByRole('columnheader', { hidden: true })).toHaveLength(9)
     expect(output).toHaveTextContent('S2407')
+    expect(output).not.toHaveTextContent('ห้อง S2407')
     expect(output).toHaveTextContent('รออนุมัติ')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     fireEvent(window, new Event('afterprint'))
@@ -70,7 +72,7 @@ describe('StaffUsageDashboardPage layout', () => {
 
   it('places the room and user insights above the full-width record table', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    const { container } = render(<QueryClientProvider client={client}><StaffUsageDashboardPage/></QueryClientProvider>)
+    const { container } = render(<QueryClientProvider client={client}><MemoryRouter><StaffUsageDashboardPage /></MemoryRouter></QueryClientProvider>)
     await screen.findByText('รายการบันทึก')
     const body = container.querySelector('.usage-dashboard-body')
     expect(body).not.toBeNull()
@@ -91,6 +93,9 @@ describe('StaffUsageDashboardPage layout', () => {
     expect(screen.getByRole('listbox', { name: 'ตัวเลือกประเภทห้อง' }).closest('.usage-filter-control')).not.toBeNull()
     expect(container.querySelector('.usage-rooms .usage-card-header')).toHaveTextContent('รวม 1 ครั้ง')
     expect(container.querySelector('.usage-ranking .usage-card-header')).toHaveTextContent('Top 5')
+    fireEvent.change(screen.getByLabelText('ตั้งแต่วันที่'), { target: { value: '2026-11-13' } })
+    expect(screen.getByRole('link', { name: 'จำนวนครั้งการใช้งานรายห้อง' })).toHaveAttribute('href', '/staff/reports?view=rooms&from=2026-11-13')
+    expect(screen.getByRole('link', { name: 'สถิติผู้ใช้สูงสุด' })).toHaveAttribute('href', '/staff/reports?view=users&from=2026-11-13')
     expect(container.querySelector('.usage-ranking-avatar')).toHaveTextContent('ผู')
     expect(container.querySelector('.usage-records-card')).not.toBeNull()
     expect(container.querySelector('.usage-records-card .usage-table-scroll')).not.toBeNull()
@@ -115,7 +120,7 @@ describe('StaffUsageDashboardPage layout', () => {
     ])
     vi.mocked(confirmOverdueRoomKeyReturns).mockResolvedValue(2)
     const client = new QueryClient()
-    render(<QueryClientProvider client={client}><StaffUsageDashboardPage /></QueryClientProvider>)
+    render(<QueryClientProvider client={client}><MemoryRouter><StaffUsageDashboardPage /></MemoryRouter></QueryClientProvider>)
     fireEvent.click(await screen.findByRole('button', { name: 'ห้อง ทุกห้อง' }))
     fireEvent.click(screen.getByRole('option', { name: /^S2407$/ }))
     fireEvent.click(screen.getByRole('button', { name: 'สถานะห้อง ทุกสถานะ' }))

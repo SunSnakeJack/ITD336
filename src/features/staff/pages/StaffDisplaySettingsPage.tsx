@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useStaffViewState } from '../useStaffViewState'
 import { keyCatalogDisplayQuery } from '../../keys/key-catalog-display.queries'
 import { setKeyCatalogDisplay, type KeyCatalogDisplay } from '../../keys/key-catalog-display.service'
 import { StaffPage, StaffQueryState } from '../components/StaffPage'
@@ -16,7 +16,8 @@ const options = [
 export function StaffDisplaySettingsPage() {
   const query = useQuery(keyCatalogDisplayQuery())
   const client = useQueryClient()
-  const [draft, setDraft] = useState<KeyCatalogDisplay>()
+  const [{ draft }, updateView] = useStaffViewState<{ draft?: KeyCatalogDisplay }>('display-catalog', {})
+  const setDraft = (draft: KeyCatalogDisplay | undefined) => updateView({ draft })
   const selection = draft ?? query.data
   const save = useMutation({
     mutationFn: setKeyCatalogDisplay,

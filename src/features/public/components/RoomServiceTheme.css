@@ -1,13 +1,12 @@
 .room-service-theme {
-  --room-surface: #fff;
-  --room-canvas: #f8f9fc;
-  --room-yellow: #ffea00;
-  --room-yellow-soft: #fff8b8;
+  --room-surface: var(--theme-surface);
+  --room-yellow: var(--theme-yellow-primary);
+  --room-yellow-soft: var(--theme-yellow-subtle);
   --room-ink: #10005b;
 }
 
 .room-service-theme .public-main > main {
-  background: var(--room-canvas);
+  background: var(--room-surface);
 }
 
 .room-service-theme .key-detail-heading,

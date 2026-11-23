@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useStaffViewState } from '../useStaffViewState'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { navigationModes, publicNavigationQuery, saveNavigationMode, type NavigationMode } from '../../public/public-navigation.queries'
 import { StaffQueryState } from './StaffPage'
@@ -7,7 +7,8 @@ export function StaffNavigationSettings() {
   const options = publicNavigationQuery()
   const setting = useQuery(options)
   const client = useQueryClient()
-  const [draft, setDraft] = useState<NavigationMode>()
+  const [{ draft }, updateView] = useStaffViewState<{ draft?: NavigationMode }>('display-navigation', {})
+  const setDraft = (draft: NavigationMode | undefined) => updateView({ draft })
   const save = useMutation({
     mutationFn: saveNavigationMode,
     onSuccess: mode => { client.setQueryData(options.queryKey, mode); setDraft(undefined) },

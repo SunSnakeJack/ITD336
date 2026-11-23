@@ -17,7 +17,7 @@
   border: 0;
   border-radius: .65rem;
   padding: .45rem 1.25rem;
-  background: #ffea00;
+  background: var(--theme-yellow-primary);
   color: #171339;
   font-weight: 700;
 }

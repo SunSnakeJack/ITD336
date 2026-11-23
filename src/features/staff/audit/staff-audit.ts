@@ -8,6 +8,7 @@ export const auditActions = [
   { label: 'แก้ไขข้อมูลผู้ใช้', codes: ['ADMIN_USER_PROFILE_UPDATED', 'USER_ROLES_UPDATED', 'USER_ACCOUNT_STATUS_UPDATED'] },
   { label: 'จัดการผู้ใช้', codes: ['USER_INVITED', 'USER_PREASSIGNED', 'USER_PREASSIGNMENT_REMOVED', 'USER_REMOVED'] },
   { label: 'จัดการบทบาท', codes: ['ROLE_LABEL_CREATE', 'ROLE_LABEL_RENAME', 'ROLE_LABEL_DELETE'] },
+  { label: 'ลบห้อง', codes: ['ROOM_DELETED'] },
   { label: 'จองห้อง', codes: ['BOOKING_CREATED', 'MEETING_BOOKING_CREATED', 'EXTERNAL_BOOKING_CREATED'] },
   { label: 'อนุมัติรายการ', codes: ['BOOKING_APPROVED', 'KEY_REQUEST_APPROVED'] },
   { label: 'ไม่อนุมัติรายการ', codes: ['BOOKING_REJECTED', 'KEY_REQUEST_REJECTED'] },

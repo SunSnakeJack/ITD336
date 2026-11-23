@@ -6,7 +6,7 @@
 
 .key-tag-room { display: grid; min-width: 0; }
 .key-tag-hanger { position: relative; isolation: isolate; display: flex; min-height: 10.5rem; padding: 2.3rem .4rem 0 24%; }
-.key-tag-rail { position: absolute; inset: 0 0 auto; height: 1.05rem; border-radius: .3rem; background: #ffe500; }
+.key-tag-rail { position: absolute; inset: 0 0 auto; height: 1.05rem; border-radius: .3rem; background: var(--theme-yellow-primary); }
 .key-tag-icon { position: absolute; top: 0; left: 0; width: min(75%, 4.75rem); height: 8.3rem; object-fit: contain; object-position: top left; }
 .key-tag-label {
   position: relative;
@@ -17,7 +17,7 @@
   min-width: 0;
   border: 1px solid #c7b777;
   border-radius: .55rem;
-  background: #fffbef;
+  background: var(--theme-yellow-subtle);
   color: #0a0047;
   padding: .3rem .4rem .5rem;
   text-align: left;
@@ -30,7 +30,7 @@
 .key-tag-label .key-tag-available { color: #166534; }
 .key-tag-label .key-tag-unavailable { color: #b91c1c; }
 .key-tag-times { display: grid; gap: .2rem; border-top: 1px solid #e7ddb5; padding-top: .25rem; font-size: .66rem; font-variant-numeric: tabular-nums; }
-a.key-tag-label:hover { background: #fff2a2; }
+a.key-tag-label:hover { background: var(--theme-yellow-soft); }
 .key-tag-grid .key-room-empty { grid-column: 1 / -1; }
 
 @media (min-width: 340px) {

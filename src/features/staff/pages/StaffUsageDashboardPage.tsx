@@ -1,3 +1,5 @@
+import { UsageInsights } from '../reporting/UsageInsights'
+import { useStaffViewState } from '../useStaffViewState'
 import{useCallback,useEffect,useMemo,useState}from'react'
 import { useOutletContext } from 'react-router-dom'
 import { UsagePrintReport, type UsageReportSnapshot } from '../reporting/UsagePrintReport'
@@ -5,7 +7,7 @@ import{useMutation,useQuery,useQueryClient}from'@tanstack/react-query'
 import{SelectField}from'../../../shared/components/SelectField'
 import{StaffPage,StaffQueryState}from'../components/StaffPage'
 import{staffUsageQuery,staffUsageQueryKey}from'../reporting/staff-usage.queries'
-import{filterUsageRows,isOverdueKey,roomUsage,staffUsageStatus,topUsers,usageStatusLabels}from'../reporting/staff-usage.utils'
+import{applyRequestStatuses,filterUsageRows,isOverdueKey,staffUsageStatus,topUsers,usageStatusLabels}from'../reporting/staff-usage.utils'
 import type{StaffUsageRow,UsageCategory}from'../reporting/staff-usage.types'
 import{StaffKeyRequestDecisionDialog}from'../components/StaffKeyRequestDecisionDialog'
 import{DecisionButtons}from'./StaffKeyRequestsPage'
@@ -24,13 +26,14 @@ const categoryLabels:Record<UsageCategory,string>={MEETING:'ห้องปร�
 const emptyRows:StaffUsageRow[]=[]
 
 export function StaffUsageDashboardPage(){
- const issuedBy = useOutletContext<string | undefined>()
+ const issuedBy = useOutletContext<{ fullName: string } | undefined>()?.fullName
  const [report, setReport] = useState<UsageReportSnapshot | null>(null)
  const closeReport = useCallback(() => setReport(null), [])
- const client=useQueryClient(),query=useQuery(staffUsageQuery()),requests=useQuery({queryKey:staffKeyRequestQueryKey,queryFn:getStaffKeyRequests}),[category,setCategory]=useState<''|UsageCategory>(''),[roomId,setRoomId]=useState(''),[from,setFrom]=useState(''),[to,setTo]=useState(''),[pageSize,setPageSize]=useState(10),[page,setPage]=useState(1),[action,setAction]=useState<{item:StaffKeyRequest;decision:'APPROVED'|'REJECTED'}|null>(null)
+ const [{ category, roomId, from, to, pageSize, page, status }, updateView] = useStaffViewState('dashboard', { category: '' as '' | UsageCategory, roomId: '', from: '', to: '', pageSize: 10, page: 1, status: '' })
+ const client=useQueryClient(),query=useQuery(staffUsageQuery()),requests=useQuery({queryKey:staffKeyRequestQueryKey,queryFn:getStaffKeyRequests}),[action,setAction]=useState<{item:StaffKeyRequest;decision:'APPROVED'|'REJECTED'}|null>(null)
  const decide=useMutation({mutationFn:decideStaffKeyRequest,onSuccess:async()=>{await Promise.all([client.invalidateQueries({queryKey:staffKeyRequestQueryKey}),client.invalidateQueries({queryKey:staffUsageQueryKey})]);setAction(null)}})
  const rows=query.data??emptyRows,rooms=useMemo(()=>[...new Map(rows.filter(row=>!category||row.roomCategory===category).map(row=>[row.roomId,{id:row.roomId,code:row.roomCode,name:row.roomName}])).values()].sort((a,b)=>a.code.localeCompare(b.code)),[rows,category])
- const [status, setStatus] = useState('')
+
  const [returnRoom, setReturnRoom] = useState<{ id: string; code: string } | null>(null)
  const [returnMessage, setReturnMessage] = useState('')
  const [now, setNow] = useState(Date.now)
@@ -55,12 +58,8 @@ export function StaffUsageDashboardPage(){
   onError: () => client.invalidateQueries({ queryKey: staffUsageQueryKey }),
  })
  const requestById = useMemo(() => new Map(requests.data?.map(request => [request.id, request])), [requests.data])
- const effectiveRows = useMemo(() => rows.map(row => {
-  const request = requestById.get(row.transactionId)
-  return request && !row.returnedAt ? { ...row, status: request.status } : row
- }), [rows, requestById])
+ const effectiveRows = useMemo(() => applyRequestStatuses(rows, requestById), [rows, requestById])
  const filtered = useMemo(() => filterUsageRows(effectiveRows, { category, roomId, from, to, status, now }), [effectiveRows, category, roomId, from, to, status, now])
- const roomCounts = useMemo(() => roomUsage(filtered), [filtered])
  const users = useMemo(() => topUsers(filtered), [filtered])
  const openReturn = (row: StaffUsageRow) => {
   returns.reset()
@@ -68,7 +67,7 @@ export function StaffUsageDashboardPage(){
   client.removeQueries({ queryKey: [...staffUsageQueryKey, 'overdue-return-preview', row.roomId] })
   setReturnRoom({ id: row.roomId, code: row.roomCode })
  }
- const pageCount=Math.max(1,Math.ceil(filtered.length/pageSize)),safePage=Math.min(page,pageCount),visible=filtered.slice((safePage-1)*pageSize,safePage*pageSize),maxRoom=Math.max(1,...roomCounts.map(item=>item.count))
+ const pageCount=Math.max(1,Math.ceil(filtered.length/pageSize)),safePage=Math.min(page,pageCount),visible=filtered.slice((safePage-1)*pageSize,safePage*pageSize)
  const reportDate = new Intl.DateTimeFormat('th-TH', { dateStyle: 'long', timeZone: 'Asia/Bangkok' })
  const formatFilterDate = (value: string) => reportDate.format(new Date(value + 'T00:00:00+07:00'))
  const exportReport = () => {
@@ -82,7 +81,7 @@ export function StaffUsageDashboardPage(){
    rows: filtered.map((row, index) => {
     const request = requestById.get(row.transactionId)
     const status = staffUsageStatus(row, now)
-    return [String(index + 1), dateFormat.format(new Date(row.startsAt)), `${row.roomCode}\n${row.roomName}`, categoryLabels[row.roomCategory],
+    return [String(index + 1), dateFormat.format(new Date(row.startsAt)), row.roomCode, categoryLabels[row.roomCategory],
      request?.status === 'REJECTED' ? request.decisionReason || 'ไม่ระบุเหตุผล' : row.purpose, row.userName,
      timeFormat.format(new Date(row.startsAt)),
      row.returnedAt ? timeFormat.format(new Date(row.returnedAt)) : row.source === 'BOOKING' ? timeFormat.format(new Date(row.endsAt)) : 'ยังไม่คืน',
@@ -90,15 +89,15 @@ export function StaffUsageDashboardPage(){
    }),
   })
  }
- const updateFilter=(fn:()=>void)=>{fn();setPage(1)}
+
  return <StaffPage eyebrow="Usage Dashboard" title="ภาพรวมและประวัติการใช้งาน" description="สถิติและรายการจากข้อมูลการจองและการเบิกกุญแจจริง" hideHeader>
   <form id="usage-report-export" onSubmit={event => { event.preventDefault(); exportReport() }} />
   {report && <UsagePrintReport report={report} onClose={closeReport} />}
   <StaffQueryState loading={query.isPending} error={query.error} empty={!rows.length} emptyText="ยังไม่มีรายการใช้งานจริงในระบบ"><>
    <div className="staff-grid staff-grid-3"><article className="staff-card staff-stat usage-summary-card usage-summary-blue"><small>รายการตามตัวกรอง</small><strong>{filtered.length.toLocaleString('th-TH')}</strong><span>ครั้ง</span></article><article className="staff-card staff-stat usage-summary-card usage-summary-teal"><small>ห้องที่ถูกใช้งาน</small><strong>{new Set(filtered.map(row=>row.roomId)).size}</strong><span>ห้อง</span></article><article className="staff-card staff-stat usage-summary-card usage-summary-amber"><small>ผู้ใช้สูงสุด</small><strong className="usage-top-name">{users[0]?.[0]??'—'}</strong><span>{users[0]?.[1]??0} ครั้ง</span></article></div>
-   <div className="usage-dashboard-body"><aside className="usage-dashboard-insights"><section className="staff-card usage-rooms"><header className="usage-card-header"><h3>จำนวนครั้งการใช้งานรายห้อง</h3><small>รวม {filtered.length} ครั้ง</small></header>{roomCounts.length?<div>{roomCounts.map(item=><p key={item.name}><b>{item.name}</b><i><span style={{width:`${item.count/maxRoom*100}%`}}/></i><strong>{item.count}</strong></p>)}</div>:<p className="usage-muted">ไม่มีข้อมูลในช่วงที่เลือก</p>}</section><section className="staff-card usage-ranking"><header className="usage-card-header"><h3>สถิติผู้ใช้สูงสุด</h3><small>Top 5</small></header><ol>{users.map(([name,count],index)=><li key={name}><b>{index+1}</b><i className="usage-ranking-avatar" aria-hidden="true">{name.trim().slice(0,2)}</i><span>{name}</span><strong>{count} ครั้ง</strong></li>)}</ol></section></aside>
-    <div className="usage-filterbar usage-filterbar-compact usage-no-print"><div className="usage-filter-control"><SelectField<''|UsageCategory> label="ประเภทห้อง" value={category} placeholder="ทุกประเภท" options={[{value:'',label:'ทุกประเภท'},...Object.entries(categoryLabels).map(([value,label])=>({value:value as UsageCategory,label}))]} onChange={value=>updateFilter(()=>{setCategory(value);setRoomId('')})}/></div><div className="usage-filter-control"><SelectField<string> label="ห้อง" value={roomId} placeholder="ทุกห้อง" options={[{value:'',label:'ทุกห้อง'},...rooms.map(room=>({value:room.id,label:room.code}))]} onChange={value=>updateFilter(()=>setRoomId(value))}/></div><div className="usage-filter-control"><SelectField<string> label="สถานะห้อง" value={status} placeholder="ทุกสถานะ" options={[{value:'',label:'ทุกสถานะ'},...Object.entries(usageStatusLabels).map(([value,label])=>({value,label}))]} onChange={value=>updateFilter(()=>setStatus(value))}/></div><div className="staff-field usage-filter-control"><label htmlFor="usage-from">ตั้งแต่วันที่</label><input id="usage-from" type="date" value={from} onChange={event=>updateFilter(()=>setFrom(event.target.value))}/></div><div className="staff-field usage-filter-control"><label htmlFor="usage-to">ถึงวันที่</label><input id="usage-to" type="date" value={to} onChange={event=>updateFilter(()=>setTo(event.target.value))}/></div></div>
-    <section className="staff-section usage-records-panel usage-records-card"><div className="staff-section-head"><div><h3>รายการบันทึก</h3><small>หน้า {safePage} / {pageCount} · แสดง {pageSize} รายการ</small></div><div className="usage-page-size usage-no-print"><SelectField<'10'|'20'> label="แสดง" value={String(pageSize) as '10'|'20'} placeholder="จำนวนรายการ" options={[{value:'10',label:'10 รายการ'},{value:'20',label:'20 รายการ'}]} onChange={value=>{setPageSize(Number(value));setPage(1)}}/></div></div>{returnMessage && <p role="status" className="usage-return-message">{returnMessage}</p>}<UsageTable rows={visible} now={now} onReturn={openReturn} offset={(safePage-1)*pageSize} requests={requestById} onSelect={(item,decision)=>setAction({item,decision})}/><footer className="usage-records-footer usage-no-print"><span>แสดง {visible.length?(safePage-1)*pageSize+1:0}–{(safePage-1)*pageSize+visible.length} จาก {filtered.length} รายการ</span><nav className="usage-pagination" aria-label="หน้ารายการ"><button aria-label="หน้าก่อนหน้า" disabled={safePage===1} onClick={()=>setPage(value=>value-1)}>←</button>{Array.from({length:pageCount},(_,index)=>index+1).map(number=><button key={number} aria-label={`หน้า ${number}`} aria-current={number===safePage?'page':undefined} className={number===safePage?'active':''} onClick={()=>setPage(number)}>{number}</button>)}<button aria-label="หน้าถัดไป" disabled={safePage===pageCount} onClick={()=>setPage(value=>value+1)}>→</button></nav></footer></section></div>
+   <div className="usage-dashboard-body"><UsageInsights rows={filtered} filters={{ category, roomId, from, to, status }} />
+    <div className="usage-filterbar usage-filterbar-compact usage-no-print"><div className="usage-filter-control"><SelectField<''|UsageCategory> label="ประเภทห้อง" value={category} placeholder="ทุกประเภท" options={[{value:'',label:'ทุกประเภท'},...Object.entries(categoryLabels).map(([value,label])=>({value:value as UsageCategory,label}))]} onChange={category=>updateView({ category, roomId: '', page: 1 })}/></div><div className="usage-filter-control"><SelectField<string> label="ห้อง" value={roomId} placeholder="ทุกห้อง" options={[{value:'',label:'ทุกห้อง'},...rooms.map(room=>({value:room.id,label:room.code}))]} onChange={roomId=>updateView({ roomId, page: 1 })}/></div><div className="usage-filter-control"><SelectField<string> label="สถานะห้อง" value={status} placeholder="ทุกสถานะ" options={[{value:'',label:'ทุกสถานะ'},...Object.entries(usageStatusLabels).map(([value,label])=>({value,label}))]} onChange={status=>updateView({ status, page: 1 })}/></div><div className="staff-field usage-filter-control"><label htmlFor="usage-from">ตั้งแต่วันที่</label><input id="usage-from" type="date" value={from} onChange={event=>updateView({ from: event.target.value, page: 1 })}/></div><div className="staff-field usage-filter-control"><label htmlFor="usage-to">ถึงวันที่</label><input id="usage-to" type="date" value={to} onChange={event=>updateView({ to: event.target.value, page: 1 })}/></div></div>
+    <section className="staff-section usage-records-panel usage-records-card"><div className="staff-section-head"><div><h3>รายการบันทึก</h3><small>หน้า {safePage} / {pageCount} · แสดง {pageSize} รายการ</small></div><div className="usage-page-size usage-no-print"><SelectField<'10'|'20'> label="แสดง" value={String(pageSize) as '10'|'20'} placeholder="จำนวนรายการ" options={[{value:'10',label:'10 รายการ'},{value:'20',label:'20 รายการ'}]} onChange={value=>updateView({ pageSize: Number(value), page: 1 })}/></div></div>{returnMessage && <p role="status" className="usage-return-message">{returnMessage}</p>}<UsageTable rows={visible} now={now} onReturn={openReturn} offset={(safePage-1)*pageSize} requests={requestById} onSelect={(item,decision)=>setAction({item,decision})}/><footer className="usage-records-footer usage-no-print"><span>แสดง {visible.length?(safePage-1)*pageSize+1:0}–{(safePage-1)*pageSize+visible.length} จาก {filtered.length} รายการ</span><nav className="usage-pagination" aria-label="หน้ารายการ"><button aria-label="หน้าก่อนหน้า" disabled={safePage===1} onClick={()=>updateView({ page: safePage - 1 })}>←</button>{Array.from({length:pageCount},(_,index)=>index+1).map(number=><button key={number} aria-label={`หน้า ${number}`} aria-current={number===safePage?'page':undefined} className={number===safePage?'active':''} onClick={()=>updateView({ page: number })}>{number}</button>)}<button aria-label="หน้าถัดไป" disabled={safePage===pageCount} onClick={()=>updateView({ page: safePage + 1 })}>→</button></nav></footer></section></div>
   </></StaffQueryState>
   {action&&<StaffKeyRequestDecisionDialog requestCode={action.item.requestCode} roomCode={action.item.roomCode} decision={action.decision} pending={decide.isPending} error={decide.error?.message} onClose={()=>setAction(null)} onConfirm={reason=>decide.mutate({id:action.item.id,decision:action.decision,reason})}/>}
   {returnRoom && <StaffRoomReturnDialog roomCode={returnRoom.code} count={returnPreview.data} loading={returnPreview.isFetching} pending={returns.isPending}

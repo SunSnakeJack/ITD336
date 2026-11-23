@@ -14,7 +14,7 @@ import { PublicBottomNav } from './PublicBottomNav'
 import { PersonIcon } from './AccountAvatar'
 import './PublicNavigation.css'
 import { publicMenuRoot, rememberPublicMenu, rememberedPublicMenu } from '../public-navigation-memory'
-import { usePublicScrollPosition } from '../usePublicScrollPosition'
+import { useTabScrollPosition } from '../../../shared/components/useTabScrollPosition'
 
 export interface PublicLayoutContext {
   navigationMode: NavigationMode
@@ -36,7 +36,7 @@ export function PublicLayout({ identity, loading, onLogout }: { identity: AuthId
   const scope = identity?.userId ?? 'guest'
   const currentRoot = publicMenuRoot(pathname)
   const content = useRef<HTMLElement>(null)
-  usePublicScrollPosition(!loading && currentRoot ? `page-scroll:${scope}:${returnTo}` : undefined, content)
+  useTabScrollPosition(!loading && currentRoot ? `page-scroll:${scope}:${returnTo}` : undefined, content)
   useEffect(() => {
     if (!loading && currentRoot) rememberPublicMenu(scope, currentRoot, returnTo)
   }, [loading, currentRoot, scope, returnTo])

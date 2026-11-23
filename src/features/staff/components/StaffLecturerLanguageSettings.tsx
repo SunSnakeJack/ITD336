@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useStaffViewState } from '../useStaffViewState'
 import { lecturerLanguageQuery, type LecturerNameLanguage } from '../../keys/lecturer-display.queries'
 import { refreshLecturerOptions, setLecturerNameLanguage } from '../staff-lecturer-names'
 import { StaffQueryState } from './StaffPage'
@@ -7,7 +7,8 @@ import { StaffQueryState } from './StaffPage'
 export function StaffLecturerLanguageSettings() {
   const query = useQuery(lecturerLanguageQuery())
   const client = useQueryClient()
-  const [draft, setDraft] = useState<LecturerNameLanguage>()
+  const [{ draft }, updateView] = useStaffViewState<{ draft?: LecturerNameLanguage }>('display-language', {})
+  const setDraft = (draft: LecturerNameLanguage | undefined) => updateView({ draft })
   const selection = draft ?? query.data
   const save = useMutation({
     mutationFn: setLecturerNameLanguage,

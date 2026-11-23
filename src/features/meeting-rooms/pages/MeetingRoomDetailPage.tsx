@@ -21,6 +21,7 @@ import { meetingWeekStart } from '../utils/meeting-week'
 import { scheduleKeys } from '../../schedules/schedule.queries'
 import { canOverrideMeetingEvent, MEETING_TIMES } from '../utils/meeting-time-options'
 import { useTabDraft } from '../../../shared/components/useTabDraft'
+import { meetingDetailSelectionKey, type MeetingDetailSelection } from '../utils/meeting-detail-selection'
 
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date())
 const thaiDate = (date: string) => new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(`${date}T00:00:00+07:00`))
@@ -31,11 +32,11 @@ export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | n
   const room = rooms.data?.find((item) => item.id === roomId)
   const date = useMemo(today, [])
   const events = useQuery(publicScheduleEventsQuery({ roomId, from: date, to: date }))
-  const [selection, updateSelection] = useTabDraft<{ start: string | null; end: string | null; scheduleView: 'daily' | 'weekly' }>(
-    `meeting-detail:${identity?.userId ?? 'guest'}:${roomId}:${date}`,
+  const [selection, updateSelection] = useTabDraft<MeetingDetailSelection>(
+    meetingDetailSelectionKey(identity?.userId ?? 'guest', roomId, date),
     { start: null, end: null, scheduleView: 'daily' },
   )
-  const { start, end, scheduleView } = selection
+  const { end, scheduleView } = selection
   const setStart = (value: string | null) => updateSelection({ start: value })
   const setEnd = (value: string | null) => updateSelection({ end: value })
   const [loginOpen, setLoginOpen] = useState(false)
@@ -66,6 +67,7 @@ export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | n
   const now = new Date()
   const hasNotElapsed = (time: string) => !isSlotElapsedForBangkokDate(time, date, now)
   const startOptions = timeSelectOptions(MEETING_TIMES.slice(0, -1).filter(hasNotElapsed), unavailable)
+  const start = startOptions.find(option => option.value === selection.start && !option.disabled)?.value ?? null
   const endOptions = timeSelectOptions(availableEndTimes(MEETING_TIMES, start ?? '', unavailable).filter(hasNotElapsed))
   const selectedEnd = endOptions.find(option => option.value === end)?.value ?? null
   const changeStart = (time: string) => { setStart(time); setEnd(null) }

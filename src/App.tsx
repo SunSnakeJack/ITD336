@@ -25,7 +25,8 @@ import { MeetingRoomDetailPage } from "./features/meeting-rooms/pages/MeetingRoo
 import { MeetingRoomEntryPage } from "./features/meeting-rooms/pages/MeetingRoomEntryPage";
 import { MeetingRoomRequestPage } from "./features/meeting-rooms/pages/MeetingRoomRequestPage";
 import { StaffLayout } from "./features/staff/components/StaffLayout";
-import { StaffRoomDetailPage, StaffRoomFormPage, StaffSettingsPage } from "./features/staff/pages/StaffOverviewPages";
+import { StaffSettingsPage } from "./features/staff/pages/StaffSettingsPage";
+import { StaffRoomDetailPage, StaffRoomFormPage } from "./features/staff/pages/StaffOverviewPages";
 import { StaffDisplaySettingsPage } from "./features/staff/pages/StaffDisplaySettingsPage";
 import { StaffRoomsPage } from "./features/staff/pages/StaffRoomsPage";
 import { StaffKeyRequestDetailPage, StaffMeetingRoomFormPage, StaffMeetingRoomsPage, StaffUserFormPage } from "./features/staff/pages/StaffManagementPages";
@@ -33,7 +34,7 @@ import { StaffKeyRequestsPage } from "./features/staff/pages/StaffKeyRequestsPag
 import { StaffUsersPage } from "./features/staff/pages/StaffUsersPage";
 import { StaffLabHistoryPage, StaffMeetingHistoryPage } from "./features/staff/pages/StaffHistoryPages";
 import { StaffLabDashboardPage, StaffMeetingDashboardPage } from "./features/staff/pages/StaffDashboardPages";
-import { StaffLabReportPage, StaffMeetingReportPage } from "./features/staff/pages/StaffReportPages";
+import { StaffLabReportPage, StaffMeetingReportPage, StaffReportsPage } from "./features/staff/pages/StaffReportPages";
 import { StaffUsageDashboardPage } from "./features/staff/pages/StaffUsageDashboardPage";
 import { StaffAuditLogsPage } from "./features/staff/pages/StaffAuditLogsPage";
 import { StaffRoleSettingsPage } from "./features/staff/pages/StaffRoleSettingsPage";
@@ -206,6 +207,7 @@ export function App() {
         <Route path="history/meetings" element={<StaffMeetingHistoryPage />} />
         <Route path="dashboard/labs" element={<StaffLabDashboardPage />} />
         <Route path="dashboard/meetings" element={<StaffMeetingDashboardPage />} />
+        <Route path="reports" element={<StaffReportsPage />} />
         <Route path="reports/labs" element={<StaffLabReportPage />} />
         <Route path="reports/meetings" element={<StaffMeetingReportPage />} />
         <Route path="usage-dashboard" element={<StaffUsageDashboardPage />} />

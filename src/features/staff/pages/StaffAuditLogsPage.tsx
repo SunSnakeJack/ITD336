@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useStaffViewState } from '../useStaffViewState'
 import { useQuery } from '@tanstack/react-query'
 import { SelectField } from '../../../shared/components/SelectField'
 import { auditActionLabel, auditActions, formatAuditTime, staffAuditQuery, type AuditActor } from '../audit/staff-audit'
@@ -9,15 +10,14 @@ const actorOptions = [{ value: 'ADMIN', label: 'แอดมิน' }, { value: 
 const entityLabels: Record<string, string> = { key_request: 'คำขอเบิก', key_loan: 'รายการยืม', booking: 'การจอง', profile: 'ผู้ใช้', room: 'ห้อง', role: 'บทบาท' }
 
 export function StaffAuditLogsPage() {
-  const [actor, setActor] = useState<AuditActor | null>(null)
-  const [action, setAction] = useState('')
-  const [page, setPage] = useState(1)
-  const [searchText, setSearchText] = useState('')
-  const [search, setSearch] = useState('')
+  const [{ actor, action, page, searchText }, updateView] =
+    useStaffViewState('logs', { actor: null as AuditActor | null, action: '', page: 1, searchText: '' })
+  const [search, setSearch] = useState(() => searchText.trim())
+  const setPage = (page: number) => updateView({ page })
   useEffect(() => {
     const term = searchText.trim()
     if (term === search) return
-    const timer = window.setTimeout(() => { setSearch(term); setPage(1) }, 250)
+    const timer = window.setTimeout(() => setSearch(term), 250)
     return () => window.clearTimeout(timer)
   }, [searchText, search])
   const query = useQuery(staffAuditQuery(actor, action, page, search))
@@ -27,19 +27,19 @@ export function StaffAuditLogsPage() {
     <div className="staff-audit-filters">
       <div className="staff-audit-chips" role="group" aria-label="ประเภทผู้ทำรายการ">
         {actorOptions.map(option => <button key={option.value} type="button" aria-pressed={actor === option.value}
-          onClick={() => { setActor(actor === option.value ? null : option.value); setPage(1) }}>{option.label}</button>)}
+          onClick={() => updateView({ actor: actor === option.value ? null : option.value, page: 1 })}>{option.label}</button>)}
       </div>
       <SelectField label="การทำงาน" value={action} placeholder="ทุกการทำรายการ"
         options={[{ value: '', label: 'ทุกการทำรายการ' }, ...auditActions.map(item => ({ value: item.label, label: item.label }))]}
-        onChange={value => { setAction(value); setPage(1) }}/>
+        onChange={action => updateView({ action, page: 1 })}/>
       <div className="staff-audit-search">
         <label htmlFor="staff-audit-search">ค้นหา Logs</label>
         <div>
           <input id="staff-audit-search" type="search" maxLength={120} value={searchText}
             placeholder="ค้นหาชื่อ รหัสห้อง หรือรายละเอียด"
-            onChange={event => setSearchText(event.target.value)}/>
+            onChange={event => updateView({ searchText: event.target.value, page: 1 })}/>
           {searchText && <button type="button" aria-label="ล้างคำค้น" onClick={() => {
-            setSearchText(''); setSearch(''); setPage(1)
+            updateView({ searchText: '', page: 1 }); setSearch('')
           }}>×</button>}
         </div>
       </div>

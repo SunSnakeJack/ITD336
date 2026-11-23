@@ -17,8 +17,10 @@ describe('RoomEditorForm',()=>{
     expect(onSave).not.toHaveBeenCalled()
     fireEvent.change(screen.getByLabelText('รหัสห้อง *'), { target: { value: 'MEETING-ROOM' } })
     fireEvent.change(screen.getByLabelText('ชื่อสำหรับหน้าจัดการ *'), { target: { value: 'ห้องประชุมคณะ' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'แสดงบนหน้าเว็บ' }))
+    expect(screen.getByRole('checkbox', { name: 'เปิดใช้งานห้อง' })).toBeChecked()
     fireEvent.click(submit)
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ code: 'MEETING-ROOM', name: 'ห้องประชุมคณะ' }))
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ code: 'MEETING-ROOM', name: 'ห้องประชุมคณะ', active: true, visibleOnWeb: false }))
   })
   it('excludes COLD from new rooms and allows selecting a Thai format by group', () => {
     render(<RoomEditorForm options={{ ...options, roomTypes: [

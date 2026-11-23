@@ -28,15 +28,16 @@
 
 /* Staff-only gold theme. Status badges retain their semantic colors. */
 .staff-shell {
-  --staff-bg: #fffbeb;
-  --staff-border: #e8dcb5;
+  --staff-bg: var(--theme-surface);
+  --staff-border: var(--theme-border);
+  --staff-yellow: var(--theme-yellow-primary);
   --staff-blue: #785408;
   --staff-muted: #6e5c32;
   --staff-ink: #2b230f;
-  --staff-selected: #f9d96b;
+  --staff-selected: var(--theme-yellow-selected);
   color: var(--staff-ink);
 }
-.staff-shell .staff-sidebar { background: #fff1bf; color: var(--staff-ink); }
+.staff-shell .staff-sidebar { background: var(--theme-yellow-soft); color: var(--staff-ink); }
 .staff-shell .staff-brand, .staff-shell .staff-sidebar-account { border-color: var(--staff-border); }
 .staff-shell .staff-nav-label, .staff-shell .staff-brand small,
 .staff-shell .staff-sidebar-foot em { color: var(--staff-muted); }
@@ -44,19 +45,24 @@
 .staff-shell .staff-drawer-close { color: var(--staff-ink); }
 .staff-shell .staff-sidebar nav a:hover, .staff-shell .staff-sidebar nav a.active { background: var(--staff-selected); }
 .staff-shell .staff-sidebar-avatar { background: #785408; }
-.staff-shell .staff-topbar { background: var(--staff-yellow); color: var(--staff-ink); border-color: #d5a627; }
+.staff-shell .staff-topbar { background: var(--theme-yellow-subtle); color: var(--staff-ink); border-color: var(--staff-border); }
 .staff-shell .staff-topbar-title small { color: #503708; }
 .staff-shell .staff-topbar-export, .staff-shell .staff-menu-button {
   background: #fff1bf; border-color: #aa7912; color: var(--staff-ink);
 }
-.staff-shell .staff-button:not(.secondary), .staff-shell .usage-pagination button.active {
+.staff-shell .staff-topbar-add, .staff-shell .staff-button:not(.secondary), .staff-shell .usage-pagination button.active {
   background: var(--staff-yellow); border-color: #b3861b; color: var(--staff-ink);
 }
 .staff-shell .staff-topbar-export:hover, .staff-shell .staff-button:not(.secondary):hover { background: var(--staff-selected); }
-.staff-shell .staff-table th { background: #fff8de; color: #5c491f; }
+.staff-shell .staff-table th { background: var(--theme-yellow-subtle); color: #5c491f; }
 .staff-shell .usage-summary-card { border-top-color: var(--staff-yellow); }
 .staff-shell .usage-summary-card strong, .staff-shell .usage-ranking li>b { color: var(--staff-blue); }
 .staff-shell .usage-rooms i span { background: linear-gradient(90deg,#a56f0b,#e1af2b); }
+.usage-insight-card { position: relative; }
+.usage-insight-link { color: inherit; text-decoration: none; }
+.usage-insight-link::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.usage-insight-link:hover { text-decoration: underline; }
+.usage-insight-card:has(.usage-insight-link:focus-visible) { outline: 2px solid var(--staff-blue); outline-offset: 2px; }
 .staff-page:has(> #usage-report-export) { padding-block-start: 1rem; }
 .usage-dashboard-body { row-gap: .65rem; }
 .usage-filter-control :is(label, .app-select-trigger) { margin: 0; }
@@ -81,6 +87,7 @@
   white-space: nowrap;
 }
 .usage-table-scroll th:nth-child(8) { width: 10%; }
+.usage-table-scroll td:nth-child(8) { text-align: center; }
 .usage-table-scroll th:nth-child(9) { width: 18%; }
 .usage-purpose { position: relative; display: block; }
 .usage-purpose-preview { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

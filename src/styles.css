@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 :root {
+  --theme-surface: #fff;
+  --theme-border: #dfe5ef;
+  --theme-yellow-subtle: #fff8de;
+  --theme-yellow-soft: #fff1bf;
+  --theme-yellow-selected: #f9d96b;
+  --theme-yellow-primary: #f5c542;
   color: #141941;
   font-family: "Noto Sans Thai", "Leelawadee UI", system-ui, sans-serif;
   font-synthesis: none;
@@ -11,7 +17,7 @@
 
 html, body, #root { min-height: 100%; }
 
-body { margin: 0; min-width: 320px; background: #eef7ff; }
+body { margin: 0; min-width: 320px; background: var(--theme-surface); }
 
 button, input { font: inherit; }
 

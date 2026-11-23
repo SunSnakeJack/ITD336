@@ -1,17 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import type { AuthIdentity } from '../../auth/auth.types'
 import keySpaceLogo from '../../../assets/it-keyspace.ico'
 import { StaffIcon } from './StaffIcon'
-import { getStaffPageTitle, staffNavigation } from '../staff-navigation'
+import { getStaffNavigationItem, getStaffPageTitle, staffNavigation, staffRoutePaths } from '../staff-navigation'
 import { getStaffInitials } from '../utils/staff-user-directory'
+import { useTabScrollPosition } from '../../../shared/components/useTabScrollPosition'
 import '../staff.css'
+
+export type StaffOutletContext = Pick<AuthIdentity, 'userId' | 'fullName'>
 
 export function StaffLayout({ identity, onLogout }: { identity: AuthIdentity; onLogout: () => Promise<void> }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const location = useLocation()
-  const title = getStaffPageTitle(location.pathname)
+  const content = useRef<HTMLElement>(null)
+  const scrollKey = staffRoutePaths.some(path => path === location.pathname)
+    ? `staff-scroll:${identity.userId}:${location.pathname}` : undefined
+  useTabScrollPosition(scrollKey, content)
+  const currentMenu = getStaffNavigationItem(location.pathname)
+  const title = currentMenu?.to === location.pathname ? currentMenu.label : getStaffPageTitle(location.pathname)
   const dashboardActive = location.pathname === '/staff/usage-dashboard'
   const usersActive = location.pathname === '/staff/users'
   const roomsActive = location.pathname === '/staff/rooms'
@@ -26,10 +34,7 @@ export function StaffLayout({ identity, onLogout }: { identity: AuthIdentity; on
         <button className="staff-drawer-close" aria-label="ปิดเมนู" onClick={() => setDrawerOpen(false)}>×</button>
       </div>
       <nav aria-label="เมนูระบบเจ้าหน้าที่">
-        {(['หลัก', 'จัดการ', 'ระบบ'] as const).map(group => <div className="staff-nav-group" key={group}><span className="staff-nav-label">{group}</span>{staffNavigation.filter(item => item.group === group).map((item) => <NavLink key={item.label} to={item.to} end={item.to === '/staff'} className={() => {
-          const active = item.match ? location.pathname.startsWith(item.match) : item.to === '/staff' ? location.pathname === item.to : location.pathname.startsWith(item.to)
-          return active ? 'active' : ''
-        }}><span aria-hidden="true"><StaffIcon name={item.icon} /></span>{item.label}</NavLink>)}</div>)}
+        {(['หลัก', 'จัดการ', 'ระบบ'] as const).map(group => <div className="staff-nav-group" key={group}><span className="staff-nav-label">{group}</span>{staffNavigation.filter(item => item.group === group).map((item) => <NavLink key={item.label} to={item.to} className={currentMenu === item ? 'active' : ''}><span aria-hidden="true"><StaffIcon name={item.icon} /></span>{item.label}</NavLink>)}</div>)}
       </nav>
       <div className="staff-sidebar-account">
         {accountOpen && <div className="staff-sidebar-account-menu"><button type="button" aria-label="ออกจากระบบ" onClick={() => void onLogout()}>ออกจากระบบ</button></div>}
@@ -39,12 +44,12 @@ export function StaffLayout({ identity, onLogout }: { identity: AuthIdentity; on
     <div className="staff-workspace">
       <header className="staff-topbar" data-testid="staff-topbar">
         <button className="staff-menu-button" aria-label="เปิดเมนู" onClick={() => setDrawerOpen(true)}>☰</button>
-        <div className="staff-topbar-title"><small>{dashboardActive ? 'USAGE DASHBOARD' : usersActive ? 'USER MANAGEMENT' : roomsActive ? 'ภาพรวมข้อมูลห้อง' : 'ระบบเจ้าหน้าที่'}</small><h1>{dashboardActive ? 'ภาพรวมการใช้งาน' : title}</h1></div>
+        <div className="staff-topbar-title"><small>{currentMenu?.group ?? 'ระบบเจ้าหน้าที่'}</small><h1>{title}</h1></div>
         {roomsActive && <Link className="staff-topbar-export staff-topbar-add" to="/staff/rooms/new">+ เพิ่มห้องใหม่</Link>}
         {dashboardActive && <button className="staff-topbar-export staff-export-action" type="submit" form="usage-report-export"><StaffIcon name="print" /> พิมพ์ / บันทึก PDF</button>}
         {usersActive && <Link className="staff-topbar-export staff-topbar-add" to="/staff/users?dialog=add">+ เพิ่มสมาชิกใหม่</Link>}
       </header>
-      <main className="staff-main"><Outlet context={identity.fullName} /></main>
+      <main className="staff-main" ref={content}><Outlet context={{ userId: identity.userId, fullName: identity.fullName } satisfies StaffOutletContext} /></main>
     </div>
   </div>
 }

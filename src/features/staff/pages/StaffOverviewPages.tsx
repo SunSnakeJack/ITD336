@@ -1,3 +1,4 @@
+import { scheduleKeys } from '../../schedules/schedule.queries'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -10,10 +11,6 @@ import { saveAdminRoom } from '../../rooms/room.service'
 import { BackendLimitation, StaffPage, StaffQueryState, StatusBadge } from '../components/StaffPage'
 import { filterRooms, isMeetingRoom, type RoomStatusFilter } from '../utils/staff-analytics'
 import './StaffRoomManagement.css'
-import { keyRequestTimingSettingQuery } from '../staff-settings.queries'
-import { StaffPermissionSettings } from '../components/StaffPermissionSettings'
-import { StaffSaturdaySetting } from '../components/StaffSaturdaySetting'
-import { StaffMeetingAdvanceBookingSetting } from '../components/StaffMeetingAdvanceBookingSetting'
 
 export function StaffHomePage() {
   const rooms = useQuery(roomsQuery())
@@ -61,18 +58,7 @@ export function StaffRoomDetailPage() {
 }
 
 export function StaffRoomFormPage(){
-  const{roomId}=useParams();const navigate=useNavigate();const client=useQueryClient();const options=useQuery(roomEditorOptionsQuery());const room=useQuery(adminRoomDetailQuery(roomId??''));const save=useMutation({mutationFn:saveAdminRoom,onSuccess:async(id)=>{await client.invalidateQueries({queryKey:roomKeys.all});navigate(`/staff/rooms/${id}`)}})
+  const{roomId}=useParams();const navigate=useNavigate();const client=useQueryClient();const options=useQuery(roomEditorOptionsQuery());const room=useQuery(adminRoomDetailQuery(roomId??''));const save=useMutation({mutationFn:saveAdminRoom,onSuccess:async(id)=>{await Promise.all([client.invalidateQueries({queryKey:roomKeys.all}),client.invalidateQueries({queryKey:scheduleKeys.all})]);navigate(roomId ? '/staff/rooms' : `/staff/rooms/${id}`, { replace: Boolean(roomId) })}})
   const editing=Boolean(roomId);const error=options.error||(editing?room.error:null)
   return <StaffPage eyebrow="แบบฟอร์มข้อมูลห้อง" title={editing?'แก้ไขข้อมูลห้อง':'เพิ่มห้องใหม่'} description="ข้อมูลห้อง อุปกรณ์ และความพร้อมใช้งาน" actions={<><Link className="staff-button secondary" to="/staff/rooms">ยกเลิก</Link><button type="submit" form="staff-room-editor" className="staff-button" disabled={save.isPending || !options.data || (editing && !room.data)}>{save.isPending ? 'กำลังบันทึก…' : 'บันทึกข้อมูลห้อง'}</button></>}><StaffQueryState loading={options.isPending||(editing&&room.isPending)} error={error} empty={!options.data}>{options.data&&<RoomEditorForm formId="staff-room-editor" room={editing?room.data:undefined} options={options.data} pending={save.isPending} error={save.error?.message} onCancel={()=>navigate('/staff/rooms')} onSave={(input)=>save.mutate(input)}/>}</StaffQueryState></StaffPage>
-}
-
-export function StaffSettingsPage() {
-  const setting=useQuery(keyRequestTimingSettingQuery())
-  return <StaffPage eyebrow="Permission Settings" title="การตั้งค่าสิทธิ์" description="กำหนดข้อยกเว้นการใช้งานที่ควบคุมและบันทึกโดยระบบ">
-    <StaffQueryState loading={setting.isPending} error={setting.error} empty={setting.data === undefined}>
-      {setting.data !== undefined && <StaffPermissionSettings key={String(setting.data)} initialValue={setting.data} />}
-    </StaffQueryState>
-    <StaffSaturdaySetting />
-    <StaffMeetingAdvanceBookingSetting />
-  </StaffPage>
 }

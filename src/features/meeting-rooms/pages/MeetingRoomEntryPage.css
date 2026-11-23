@@ -7,6 +7,11 @@
   list-style: none;
 }
 
+.meeting-room-picker:has(> :nth-child(2):last-child) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 9.5rem));
+  justify-content: center;
+}
+
 .meeting-room-picker .meeting-room-tile {
   display: flex;
   flex-direction: column;

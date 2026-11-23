@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useStaffViewState } from '../useStaffViewState'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { StaffUserActionDialog } from '../components/StaffUserActionDialog'
@@ -25,10 +26,11 @@ export function StaffUsersPage() {
   const roles = useQuery(staffRoleOptionsQuery())
   const client = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [search, setSearch] = useState('')
-  const [role, setRole] = useState('ALL')
-  const [accountStatus, setAccountStatus] = useState('ALL')
-  const [page, setPage] = useState(1)
+  const [{ search, role, accountStatus, page: savedPage }, updateView] =
+    useStaffViewState('users', { search: '', role: 'ALL', accountStatus: 'ALL', page: 1 })
+  const setSearch = (search: string) => updateView({ search, page: 1 })
+  const setRole = (role: string) => updateView({ role, page: 1 })
+  const setAccountStatus = (accountStatus: string) => updateView({ accountStatus, page: 1 })
   const [editing, setEditing] = useState<StaffRegisteredUser | null>(null)
   const [editingLecturer, setEditingLecturer] = useState<StaffUserDirectoryItem | null>(null)
   const adding = searchParams.get('dialog') === 'add'
@@ -49,9 +51,8 @@ export function StaffUsersPage() {
     return (lecturerLanguage.data === 'en' ? names?.name_en : names?.name_th) || user.fullName
   }
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const page = Math.min(savedPage, pageCount)
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-  useEffect(() => setPage(1), [search, role, accountStatus])
-  useEffect(() => { if (page > pageCount) setPage(pageCount) }, [page, pageCount])
 
   const refresh = () => client.invalidateQueries({ queryKey: staffUserKeys.directory })
   const saveNames = useMutation({
@@ -103,7 +104,7 @@ export function StaffUsersPage() {
         onRemove={item => { remove.reset(); setRemoving(item) }}
         lecturerNamesReady={Boolean(lecturerNames.data)}
         onEditLecturerName={item => { saveNames.reset(); setEditingLecturer(item) }}/></td></tr>)}</tbody></table></div></section>}
-      <nav className="staff-pagination" aria-label="หน้ารายชื่อผู้ใช้"><span>แสดง {filtered.length ? (page - 1) * PAGE_SIZE + 1 : 0}–{Math.min(page * PAGE_SIZE, filtered.length)} จาก {filtered.length}</span><div><button type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>ก่อนหน้า</button><b>หน้า {page} / {pageCount}</b><button type="button" disabled={page === pageCount} onClick={() => setPage((value) => value + 1)}>ถัดไป</button></div></nav>
+      <nav className="staff-pagination" aria-label="หน้ารายชื่อผู้ใช้"><span>แสดง {filtered.length ? (page - 1) * PAGE_SIZE + 1 : 0}–{Math.min(page * PAGE_SIZE, filtered.length)} จาก {filtered.length}</span><div><button type="button" disabled={page === 1} onClick={() => updateView({ page: page - 1 })}>ก่อนหน้า</button><b>หน้า {page} / {pageCount}</b><button type="button" disabled={page === pageCount} onClick={() => updateView({ page: page + 1 })}>ถัดไป</button></div></nav>
     </StaffQueryState>
     {editing && <StaffRoleDialog user={editing} roles={roles.data ?? []} pending={save.isPending} error={save.error?.message} onClose={() => setEditing(null)} onSave={(input) => save.mutate(input)}/>} 
     {editingLecturer && <StaffLecturerNamesDialog email={editingLecturer.email} originalName={editingLecturer.fullName}

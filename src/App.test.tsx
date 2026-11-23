@@ -207,7 +207,7 @@ describe('Authentication entry point', () => {
       render(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={[entry]}><App /><LocationProbe full /></MemoryRouter></QueryClientProvider>)
       expect(await screen.findByText(destination)).toBeInTheDocument()
       if (destination === '/staff/usage-dashboard') {
-        expect(screen.getByRole('heading', { name: 'ภาพรวมการใช้งาน' })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: 'แดชบอร์ด' })).toBeInTheDocument()
       }
     } finally {
       if (original) tables.mockImplementation(original)
@@ -480,6 +480,8 @@ describe('Authentication entry point', () => {
   })
 
   it('uses the authenticated meeting-room booking form and review flow', async () => {
+    const detailKey = 'itkeyspace:tab:meeting-detail:staff-1:meeting-1:2026-11-09'
+    sessionStorage.setItem(detailKey, JSON.stringify({ start: '12:00', end: '14:00', scheduleView: 'weekly' }))
     vi.setSystemTime(new Date('2026-11-09T07:30:00+07:00'))
     const payload = btoa(JSON.stringify({ iat: Math.floor(Date.now() / 1000) }))
     vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({ data: { session: { access_token: `x.${payload}.x`, user: { id: 'staff-1', user_metadata: {} } } }, error: null } as never)
@@ -526,6 +528,7 @@ describe('Authentication entry point', () => {
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: null, error: { message: 'BOOKING_ROLE_REQUIRED' } } as never)
     fireEvent.click(screen.getByRole('button', { name: 'ยืนยันการจอง' }))
     expect(await screen.findByRole('dialog', { name: 'ไม่สามารถจองห้องได้' })).toHaveTextContent('บัญชีนี้ไม่มีสิทธิ์จองห้องประชุม')
+    expect(JSON.parse(sessionStorage.getItem(detailKey) ?? '{}')).toMatchObject({ start: '12:00', end: '14:00' })
     expect(supabase.rpc).toHaveBeenCalledWith('create_booking', expect.objectContaining({
       p_room_id: 'meeting-1', p_purpose: 'นัดพรีเซนต์งานนักศึกษา', p_requires_key: true,
       p_starts_at: '2026-11-09T12:30:00+07:00', p_ends_at: '2026-11-09T14:00:00+07:00',
@@ -538,6 +541,7 @@ describe('Authentication entry point', () => {
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: { id: 'booking-1', status: 'APPROVED' }, error: null } as never)
     fireEvent.click(screen.getByRole('button', { name: 'ยืนยันการจอง' }))
     expect(await screen.findByRole('heading', { name: 'บันทึกการจองห้องสำเร็จ' })).toBeInTheDocument()
+    expect(JSON.parse(sessionStorage.getItem(detailKey) ?? '{}')).toEqual({ start: null, end: null, scheduleView: 'weekly' })
     expect(screen.getByRole('list', { name: 'ขั้นตอนการจองห้องประชุม' }).querySelector('[aria-current="step"]')).toHaveTextContent(/^3$/)
   })
 

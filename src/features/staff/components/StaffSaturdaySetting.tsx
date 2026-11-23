@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useStaffViewState } from '../useStaffViewState'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { meetingBookingPolicyKey } from '../../meeting-rooms/meeting-booking-policy'
 import { bangkokDateKey, isSaturday } from '../../schedules/saturday-policy'
@@ -15,12 +15,17 @@ export function StaffSaturdaySetting() {
 
 function SaturdaySettingForm({ initialDate }: { initialDate: string | null }) {
   const today = bangkokDateKey()
-  const [enabled, setEnabled] = useState(Boolean(initialDate))
-  const [date, setDate] = useState(initialDate ?? (isSaturday(today) ? today : ''))
+  const [{ enabled: draftEnabled, date: draftDate }, updateView] =
+    useStaffViewState<{ enabled?: boolean; date?: string }>('permission-saturday', {})
+  const enabled = draftEnabled ?? Boolean(initialDate)
+  const date = draftDate ?? initialDate ?? (isSaturday(today) ? today : '')
+  const setEnabled = (enabled: boolean) => updateView({ enabled })
+  const setDate = (date: string) => updateView({ date })
   const client = useQueryClient()
   const save = useMutation({
     mutationFn: setOpenSaturday,
     onSuccess: async () => {
+      updateView({ enabled: undefined, date: undefined })
       await Promise.all([
         client.invalidateQueries({ queryKey: saturdayPolicyKey }),
         client.invalidateQueries({ queryKey: meetingBookingPolicyKey }),

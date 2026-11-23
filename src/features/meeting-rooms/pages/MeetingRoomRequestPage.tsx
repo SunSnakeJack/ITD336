@@ -19,6 +19,7 @@ import { availableEndTimes, isHalfHourOccupied, timeSelectOptions } from '../../
 import './MeetingRoomRequestPage.css'
 import { useTabDraft } from '../../../shared/components/useTabDraft'
 import { rememberPublicMenu } from '../../public/public-navigation-memory'
+import { clearMeetingDetailTimes } from '../utils/meeting-detail-selection'
 
 interface MeetingDraft {
   selectedDate: string | null
@@ -66,6 +67,7 @@ export function MeetingRoomRequestPage({ identity, authLoading }: { identity: Au
     mutationFn: () => createBooking({ roomId, startsAt: `${reviewSlot?.date}T${reviewSlot?.start}:00+07:00`, endsAt: `${reviewSlot?.date}T${reviewSlot?.end}:00+07:00`, purpose: purpose.trim(), requiresKey: true }),
     onSuccess: async () => {
       clearDraft()
+      if (reviewSlot) clearMeetingDetailTimes(scope, roomId, reviewSlot.date)
       rememberPublicMenu(scope, '/meeting-room', '/meeting-room')
       await Promise.all([
         client.invalidateQueries({ queryKey: [...scheduleKeys.all, 'public-events'] }),
