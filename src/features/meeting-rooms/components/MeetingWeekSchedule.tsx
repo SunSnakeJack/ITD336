@@ -1,11 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useRef, useState } from 'react'
 import { getMeetingWeek } from '../meeting-week.service'
 import { clockMinutes, layoutMeetingDay, meetingEventCategories, meetingWeekStart, minuteLabel, shiftDate, type MeetingWeekEvent } from '../utils/meeting-week'
 import { bangkokClock } from '../../keys/utils/key-catalog-time'
 import { scheduleKeys } from '../../schedules/schedule.queries'
 import { MeetingEventDialog } from './MeetingEventDialog'
 import './MeetingWeekSchedule.css'
+import { readTabState, useTabDraft, writeTabState } from '../../../shared/components/useTabDraft'
 
 const dateOptions = { timeZone: 'UTC' } as const
 const weekLabel = new Intl.DateTimeFormat('th-TH', { ...dateOptions, day: 'numeric', month: 'short', year: 'numeric' })
@@ -15,14 +16,21 @@ const asDate = (value: string) => new Date(`${value}T00:00:00Z`)
 export function MeetingWeekSchedule({ roomId, roomName, today, viewerId }: {
   roomId: string; roomName: string; today: string; viewerId: string | null
 }) {
-  const [offset, setOffset] = useState(0)
+  const [{ offset }, update] = useTabDraft(`meeting-week:${viewerId ?? 'guest'}:${roomId}:${meetingWeekStart(today, 0)}`, { offset: 0 })
+  const scrollKey = `meeting-week-scroll:${viewerId ?? 'guest'}:${roomId}`
   const [selectedEvent, setSelectedEvent] = useState<MeetingWeekEvent | null>(null)
+  const tableArea = useRef<HTMLDivElement>(null)
+  const [tableHeight, setTableHeight] = useState(0)
+  const changeWeek = (next: number) => {
+    setTableHeight(tableArea.current?.offsetHeight ?? 0)
+    update({ offset: next })
+  }
   const weekStart = meetingWeekStart(today, offset)
   const dates = Array.from({ length: 7 }, (_, index) => shiftDate(weekStart, index))
   const week = useQuery({
     queryKey: [...scheduleKeys.publicMeetingWeeks(), roomId, weekStart, viewerId],
     queryFn: () => getMeetingWeek(roomId, weekStart, viewerId),
-    gcTime: 0,
+    placeholderData: keepPreviousData,
   })
   const opens = week.data ? clockMinutes(week.data.opens_at) : NaN
   const closes = week.data ? clockMinutes(week.data.closes_at) : NaN
@@ -39,13 +47,17 @@ export function MeetingWeekSchedule({ roomId, roomName, today, viewerId }: {
       {(['LEADERSHIP', 'TEACHER'] as const).map(category => <li key={category} data-category={category}>{meetingEventCategories[category]}</li>)}
     </ul>
     <div className="meeting-week-navigation">
-      <button type="button" aria-label="สัปดาห์ก่อนหน้า" disabled={offset <= -1} onClick={() => setOffset(value => value - 1)}>‹</button>
+      <button type="button" aria-label="สัปดาห์ก่อนหน้า" disabled={offset <= -1} onClick={() => changeWeek(offset - 1)}>‹</button>
       <span aria-live="polite">{weekLabel.formatRange(asDate(weekStart), asDate(dates[6]))}</span>
-      <button type="button" aria-label="สัปดาห์ถัดไป" disabled={offset >= 1} onClick={() => setOffset(value => value + 1)}>›</button>
+      <button type="button" aria-label="สัปดาห์ถัดไป" disabled={offset >= 1} onClick={() => changeWeek(offset + 1)}>›</button>
     </div>
+    <div ref={tableArea} className="meeting-week-table-area" style={{ minHeight: tableHeight }}>
     {week.isPending ? <p role="status">กำลังโหลดตารางรายสัปดาห์…</p>
       : week.isError || !validHours ? <p role="alert">ไม่สามารถโหลดตารางรายสัปดาห์ได้</p>
-      : <div className="meeting-week-scroll" role="region" aria-label="ตารางห้องประชุมรายสัปดาห์ เลื่อนดูเวลาได้" tabIndex={0}>
+      : <div className="meeting-week-scroll" role="region" aria-label="ตารางห้องประชุมรายสัปดาห์ เลื่อนดูเวลาได้" tabIndex={0}
+        aria-busy={week.isPlaceholderData}
+        ref={node => { if (node) node.scrollLeft = readTabState<number>(scrollKey) ?? 0 }}
+        onScroll={event => writeTabState(scrollKey, event.currentTarget.scrollLeft)}>
         <table className="meeting-week-table" aria-label="ตารางเวลารายสัปดาห์"
           style={{ minWidth: `${5.25 + (closes - opens) / 30 * 5.75}rem` }}>
           <thead><tr><th scope="col">วัน / เวลา</th><th scope="col">
@@ -53,7 +65,7 @@ export function MeetingWeekSchedule({ roomId, roomName, today, viewerId }: {
               .map(time => <span key={time} style={{ left: position(time) }} data-edge={time === opens ? 'start' : time === closes ? 'end' : undefined}>{minuteLabel(time)}</span>)}</div>
           </th></tr></thead>
           <tbody>{dates.map(date => {
-            const entries = layoutMeetingDay(date, opens, closes, week.data.events)
+            const entries = week.isPlaceholderData ? [] : layoutMeetingDay(date, opens, closes, week.data.events)
             const lanes = Math.max(1, ...entries.map(item => item.row + 1))
             return <tr key={date}>
               <th scope="row"><time dateTime={date}>{dayLabel.format(asDate(date))}</time></th>
@@ -72,6 +84,7 @@ export function MeetingWeekSchedule({ roomId, roomName, today, viewerId }: {
           })}</tbody>
         </table>
       </div>}
+    </div>
     {selectedEvent && <MeetingEventDialog event={selectedEvent} roomName={roomName} onClose={() => setSelectedEvent(null)} />}
   </div>
 }

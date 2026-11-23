@@ -20,6 +20,22 @@ import { availableEndTimes, isHalfHourOccupied, timeSelectOptions } from '../../
 import { isSlotElapsedForBangkokDate } from '../utils/key-catalog-time'
 import { formatThaiDate } from '../utils/format-thai-date'
 import './KeyRequestFormPage.css'
+import { useTabDraft } from '../../../shared/components/useTabDraft'
+import { rememberPublicMenu } from '../../public/public-navigation-memory'
+
+interface KeyDraft {
+  replacementDate?: string
+  name?: string
+  email?: string
+  guestStatus: 'STUDENT' | 'TEACHER'
+  purposeType: 'TEACHING' | 'OTHER' | null
+  purpose: string
+  courseCode: string
+  referenceOptionId: string
+  selectedStart: string
+  selectedEnd: string
+  reviewing: boolean
+}
 
 const TIME_OPTIONS = Array.from({ length: 21 }, (_, index) => {
   const minutes = 8 * 60 + index * 30
@@ -38,26 +54,32 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
   const saturday = useQuery(saturdayPolicyQuery())
   const referenceOptions = useQuery(keyRequestReferenceOptionsQuery(identity?.userId))
   const room = rooms.data?.find((item) => item.id === roomId)
-  const date = useMemo(() => searchParams.get('date') ?? bangkokDate(), [searchParams])
-  const requesterScope = `${identity?.userId ?? 'guest'}:${roomId}`
-  const [requesterDraft, setRequesterDraft] = useState<{ scope: string; name?: string; email?: string }>()
-  const draft = requesterDraft?.scope === requesterScope ? requesterDraft : undefined
-  const setRequesterField = (field: 'name' | 'email', value: string) =>
-    setRequesterDraft(current => ({ ...(current?.scope === requesterScope ? current : { scope: requesterScope }), [field]: value }))
-  const [guestStatus, setGuestStatus] = useState<'STUDENT' | 'TEACHER'>('STUDENT')
+  const requestedDate = useMemo(() => searchParams.get('date') ?? bangkokDate(), [searchParams])
+  const scope = identity?.userId ?? 'guest'
+  const [draft, updateDraft, clearDraft] = useTabDraft<KeyDraft>(`draft:key:${scope}:${roomId}:${requestedDate}`, {
+    guestStatus: 'STUDENT', purposeType: null, purpose: '', courseCode: '', referenceOptionId: '',
+    selectedStart: searchParams.get('start') ?? '08:00', selectedEnd: searchParams.get('end') ?? '09:00', reviewing: false,
+  })
+  const date = draft.replacementDate ?? requestedDate
+  const resetToToday = () => updateDraft({ replacementDate: bangkokDate(), selectedStart: '', selectedEnd: '', reviewing: false })
+  const { guestStatus, purposeType, purpose, courseCode, referenceOptionId, selectedStart, selectedEnd, reviewing } = draft
+  const setRequesterField = (field: 'name' | 'email', value: string) => updateDraft({ [field]: value })
+  const setGuestStatus = (value: KeyDraft['guestStatus']) => updateDraft({ guestStatus: value })
+  const setPurposeType = (value: KeyDraft['purposeType']) => updateDraft({ purposeType: value })
+  const setPurpose = (value: string) => updateDraft({ purpose: value })
+  const setCourseCode = (value: string) => updateDraft({ courseCode: value })
+  const setReferenceOptionId = (value: string) => updateDraft({ referenceOptionId: value })
+  const setStartTime = (value: string) => updateDraft({ selectedStart: value, selectedEnd: '' })
+  const setEndTime = (value: string) => updateDraft({ selectedEnd: value })
+  const setReviewing = (value: boolean) => updateDraft({ reviewing: value })
   const accountStatus = getRequesterStatus(identity)
   const requesterType = accountStatus ?? guestStatus
-  const [purposeType, setPurposeType] = useState<'TEACHING' | 'OTHER' | null>(null)
-  const [purpose, setPurpose] = useState('')
-  const [courseCode, setCourseCode] = useState('')
-  const [referenceOptionId, setReferenceOptionId] = useState('')
   const events = useQuery({ ...publicScheduleEventsQuery({ roomId, from: date, to: date }), enabled: Boolean(roomId && room && (!room.requiresSsoForKeyRequest || identity)) })
-  const [selectedStart, setStartTime] = useState(searchParams.get('start') ?? '08:00')
-  const [selectedEnd, setEndTime] = useState(searchParams.get('end') ?? '09:00')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [result, setResult] = useState<KeyRequestResult | null>(null)
-  const [reviewing, setReviewing] = useState(false)
   const save = useMutation({ mutationFn: createKeyRequest, onSuccess: async (created) => {
+    clearDraft()
+    rememberPublicMenu(scope, '/keys', keyCatalogPath(room?.requiresSsoForKeyRequest))
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: scheduleKeys.all }),
       queryClient.invalidateQueries({ queryKey: keyLoanKeys.all }),
@@ -95,7 +117,21 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
     requesterType, referenceOptionId: courseRequired && requesterType === 'STUDENT' ? referenceOptionId || undefined : undefined,
   }
 
-  if (reviewing) return <KeyRequestReview roomCode={room.code} requesterName={requesterName} requesterEmail={requesterEmail} requesterStatus={ROLE_LABELS[requesterType]} date={date} startTime={startTime} endTime={endTime} purpose={effectivePurpose} courseCode={courseRequired ? courseCode.trim() : undefined} lecturerName={courseRequired && requesterType === 'STUDENT' ? selectedReference?.lecturerName : undefined} submitting={save.isPending} error={save.error?.message} onBack={() => setReviewing(false)} onConfirm={() => save.mutate(requestInput)} />
+  const confirm = async () => {
+    const latest = await events.refetch()
+    const occupied = (time: string) => isHalfHourOccupied(date, time, latest.data ?? [])
+    const valid = latest.isSuccess && !isSlotElapsedForBangkokDate(startTime, date, new Date())
+      && availableEndTimes(TIME_OPTIONS, startTime, occupied).includes(endTime)
+    if (!valid) {
+      setErrors({ time: latest.isError ? 'ไม่สามารถตรวจสอบช่วงเวลาว่างได้ กรุณาลองใหม่' : 'ช่วงเวลาที่เลือกใช้ไม่ได้แล้ว กรุณาเลือกเวลาใหม่' })
+      if (date < bangkokDate()) resetToToday()
+      else setReviewing(false)
+      return
+    }
+    save.mutate(requestInput)
+  }
+
+  if (reviewing) return <KeyRequestReview roomCode={room.code} requesterName={requesterName} requesterEmail={requesterEmail} requesterStatus={ROLE_LABELS[requesterType]} date={date} startTime={startTime} endTime={endTime} purpose={effectivePurpose} courseCode={courseRequired ? courseCode.trim() : undefined} lecturerName={courseRequired && requesterType === 'STUDENT' ? selectedReference?.lecturerName : undefined} submitting={save.isPending || events.isFetching} error={save.error?.message} onBack={() => setReviewing(false)} onConfirm={() => void confirm()} />
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -130,7 +166,8 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
       {purposeType === 'OTHER' && <div className="key-other-purpose-fields"><div className="key-other-purpose-field"><label htmlFor="other-purpose-input">ระบุวัตถุประสงค์ *</label><textarea id="other-purpose-input" aria-label="ระบุวัตถุประสงค์" required rows={2} placeholder="กรุณาระบุ เช่น ประชุมโครงงาน หรือจัดกิจกรรม" value={purpose} onChange={(event) => setPurpose(event.target.value)} />{errors.purpose && <small role="alert">{errors.purpose}</small>}</div></div>}{errors.purposeType&&<small role="alert">{errors.purposeType}</small>}</fieldset>
       <section className="key-form-section key-date-time-section" aria-labelledby="date-time-heading"><h2 className="key-section-heading" id="date-time-heading"><svg className="key-section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>เวลาที่เบิกกุญแจ</span></h2>
       <label>วันที่เบิก<input readOnly value={Number.isFinite(Date.parse(date)) ? formatThaiDate(date) : ''}/></label>
-      <div className="key-time-fields key-time-row"><SelectField label="เวลาเริ่มต้น" value={startTime} placeholder="เลือกเวลาเริ่มต้น" options={startOptions} onChange={(time) => { setStartTime(time); setEndTime('') }} placement="top"/><SelectField label="เวลาสิ้นสุด" value={endTime} placeholder="เลือกเวลาสิ้นสุด" options={endOptions} disabled={!startTime} onChange={setEndTime} placement="top"/></div></section>
+      {date < bangkokDate() && <button type="button" onClick={resetToToday}>เลือกเวลาของวันนี้</button>}
+      <div className="key-time-fields key-time-row"><SelectField label="เวลาเริ่มต้น" value={startTime} placeholder="เลือกเวลาเริ่มต้น" options={startOptions} onChange={setStartTime} placement="top"/><SelectField label="เวลาสิ้นสุด" value={endTime} placeholder="เลือกเวลาสิ้นสุด" options={endOptions} disabled={!startTime} onChange={setEndTime} placement="top"/></div></section>
       {(errors.date || errors.time || save.error) && <p className="panel-error" role="alert">{errors.date ?? errors.time ?? save.error?.message}</p>}
       {events.isPending && <p role="status">กำลังตรวจสอบช่วงเวลาว่าง…</p>}
       <div className="key-form-actions"><Link to={`/keys/rooms/${roomId}`}>ย้อนกลับ</Link><button className="primary-action" disabled={events.isPending}>ถัดไป <span aria-hidden="true">→</span></button></div>

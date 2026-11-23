@@ -8,6 +8,8 @@ import { ConfirmDialog } from '../../../shared/components/ConfirmDialog'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
 import { cancelMyKeyRequest, returnMyKeyRequest } from '../key.service'
 import { keyLoanKeys, myKeyRequestsQuery } from '../key.queries'
+import { RecentRequestsHeading } from '../../bookings/components/RecentRequestsHeading'
+import { PublicPageHeading } from '../../../shared/components/PublicPageHeading'
 
 export function AccountKeyRequestHistoryPage({ embedded = false }: { embedded?: boolean } = {}) {
   const query = useQuery({ ...myKeyRequestsQuery(), refetchInterval: 15_000 })
@@ -20,16 +22,18 @@ export function AccountKeyRequestHistoryPage({ embedded = false }: { embedded?: 
   const returnRequest = useMutation({ mutationFn: returnMyKeyRequest, onSuccess: () => { refresh(); close() } })
   if (query.isPending) return <LoadingSpinner label="กำลังโหลดประวัติ…"/>
   return <section className={embedded ? "key-history-page embedded-key-history" : "key-account-page key-history-page"}>
-    {!embedded && <h1>การจองและกุญแจของฉัน</h1>}<header><h2>รายการล่าสุด</h2><span>{query.data?.length ?? 0} รายการ</span></header>
+    {!embedded && <PublicPageHeading title="การจองและกุญแจของฉัน" />}
+    <RecentRequestsHeading count={query.data?.length ?? 0} />
     <div className="account-request-card-list">{query.data?.map(item => {
-      const canCancel = Boolean(item.canCancel) && Date.parse(item.endsAt) > Date.now() && ['PENDING_APPROVAL', 'PENDING_STARTED', 'APPROVED'].includes(item.status)
+      const now = Date.now()
+      const canCancel = Boolean(item.canCancel) && Date.parse(item.endsAt) > now && ['PENDING_APPROVAL', 'PENDING_STARTED', 'APPROVED'].includes(item.status)
       const canReturn = Boolean(item.canReturn) && ['APPROVED', 'IN_USE'].includes(item.status)
       const editable = ['PENDING_APPROVAL', 'PENDING_STARTED', 'APPROVED'].includes(item.status)
-        && Date.parse(item.startsAt) > Date.now()
+        && Date.parse(item.startsAt) > now
       const rejected = item.status === 'REJECTED'
       return <EditableRequestCard key={item.id} id={item.id} type="key_request" start={item.startsAt} end={item.endsAt} editable={editable} purposeEditable={item.purposeType === 'OTHER'} articleProps={requestFocus(item.id)}
         title={`ห้อง ${item.roomCode}`}
-        status={accountKeyRequestStatus(item.status, item.endsAt)}
+        status={accountKeyRequestStatus(item.status, item.endsAt, now, canReturn)}
         time={<AccountRequestTime start={item.startsAt} end={item.endsAt}/>}
         purposeLabel={rejected ? 'เหตุผลที่ไม่อนุมัติ' : undefined}
         purpose={rejected ? item.decisionReason || 'ไม่ระบุเหตุผล' : item.purpose}

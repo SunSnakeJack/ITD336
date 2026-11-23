@@ -32,15 +32,9 @@ export function KeyRoomCatalogCard({room,identity,keyTag=false,showHistory=true}
   const requestPath=`/keys/rooms/${room.id}/request?date=${date}&start=${requestStart}&end=${requestEnd}`
   const hasAvailability=!events.isSuccess||available.length>0
   const canRequest=room.active&&hasAvailability
-  const needsLogin=room.requiresSsoForKeyRequest&&!identity
   if (keyTag) {
     const schedule = events.isSuccess ? 'ready' : events.isError ? 'error' : 'loading'
-    return <>
-      <KeyRoomTagCard room={room} available={available} schedule={schedule}
-        requestPath={schedule === 'ready' && canRequest ? requestPath : undefined}
-        onSignIn={needsLogin ? () => setLoginOpen(true) : undefined} />
-      {loginOpen && <GoogleSsoModal returnTo={requestPath} onClose={() => setLoginOpen(false)} />}
-    </>
+    return <KeyRoomTagCard room={room} available={available} schedule={schedule} />
   }
   return <article className={`key-room-card key-room-catalog-card${room.active?'':' disabled'}`}>
     <header><div className="key-room-identity"><img src={keyRoomIcon} alt=""/><span><strong>{room.code}</strong><small className="key-room-name">{room.description||room.name}</small></span></div><span className={room.active&&hasAvailability?'key-room-badge':'key-room-badge unavailable'}>{!room.active?'• ไม่พร้อมใช้':hasAvailability?'• มีช่วงเวลาว่าง':'• ไม่มีช่วงเวลาว่าง'}</span></header>

@@ -6,6 +6,7 @@ import { KeyRoomCatalogCard } from '../components/KeyRoomCatalogCard'
 import { keyCatalogDisplayQuery } from '../key-catalog-display.queries'
 import type { AuthIdentity } from '../../auth/auth.types'
 import '../components/KeyRoomCatalog.css'
+import { PublicPageHeading } from '../../../shared/components/PublicPageHeading'
 
 export function KeyRequestRoomsPage({identity}:{identity:AuthIdentity|null}) {
   const rooms = useQuery(publicRoomsQuery())
@@ -24,10 +25,8 @@ export function KeyRequestRoomsPage({identity}:{identity:AuthIdentity|null}) {
   const visibleRooms = laboratories.filter((room) => Boolean(room.requiresSsoForKeyRequest) === special)
 
   return <section className="key-request-entry key-room-catalog-page">
-    <header className="key-room-catalog-intro">
-      <h1>เลือกกุญแจที่ต้องการเบิก</h1>
-      <p>แตะกุญแจที่ต้องการเพื่อเบิก หรือกดดูรายละเอียด</p>
-    </header>
+    <PublicPageHeading title="เลือกกุญแจที่ต้องการเบิก"
+      description={keyTag ? 'แตะป้ายกุญแจเพื่อดูห้องและเลือกเวลาเบิก' : 'เลือกห้องที่ต้องการเบิกกุญแจ'} />
     <div className="key-room-tabs" role="tablist"><button role="tab" aria-selected={!special} onClick={() => setSpecial(false)}>ห้องปฏิบัติการ</button><button role="tab" aria-selected={special} onClick={() => setSpecial(true)}>ห้องปฏิบัติการพิเศษ</button></div>
     {rooms.isPending || display.isPending ? <LoadingSpinner label="กำลังโหลดข้อมูลห้อง…" /> : rooms.error ? <div className="key-request-error" role="alert"><strong>ไม่สามารถโหลดข้อมูลห้องได้</strong><button onClick={() => void rooms.refetch()}>ลองใหม่</button></div> : <div className={keyTag ? 'key-tag-grid' : 'key-room-list'}>
       {visibleRooms.map((room) => <KeyRoomCatalogCard key={room.id} room={room} identity={identity} keyTag={keyTag} showHistory={showHistory}/>)}

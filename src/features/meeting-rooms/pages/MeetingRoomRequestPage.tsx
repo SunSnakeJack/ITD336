@@ -17,7 +17,16 @@ import { staffUsageQueryKey } from '../../staff/reporting/staff-usage.queries'
 import '../../keys/pages/KeyRequestFormPage.css'
 import { availableEndTimes, isHalfHourOccupied, timeSelectOptions } from '../../schedules/request-time-options'
 import './MeetingRoomRequestPage.css'
+import { useTabDraft } from '../../../shared/components/useTabDraft'
+import { rememberPublicMenu } from '../../public/public-navigation-memory'
 
+interface MeetingDraft {
+  selectedDate: string | null
+  selectedStart: string
+  selectedEnd: string
+  purpose: string
+  reviewSlot: { date: string; start: string; end: string } | null
+}
 
 function Row({ label, value }: { label: string; value: string }) { return <div><dt>{label}</dt><dd>{value}</dd></div> }
 function BookingErrorDialog({ message, onClose }: { message: string; onClose: () => void }) { return <div className="booking-error-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><div role="dialog" aria-modal="true" aria-label="ไม่สามารถจองห้องได้"><button type="button" aria-label="ปิด" onClick={onClose}>×</button><h2>ไม่สามารถจองห้องได้</h2><p>{message}</p><button type="button" className="primary-action" onClick={onClose}>ตกลง</button></div></div> }
@@ -29,9 +38,12 @@ export function MeetingRoomRequestPage({ identity, authLoading }: { identity: Au
   const rooms = useQuery(publicRoomsQuery())
   const room = rooms.data?.find((item) => item.id === roomId)
   const policy = useQuery({ ...meetingBookingPolicyQuery(), enabled: Boolean(identity) })
-  const [selectedDate, setDate] = useState<string | null>(params.get('date'))
-  const [selectedStart, setStartTime] = useState(params.get('start') ?? '')
-  const [selectedEnd, setEndTime] = useState(params.get('end') ?? '')
+  const scope = identity?.userId ?? 'guest'
+  const [draft, updateDraft, clearDraft] = useTabDraft<MeetingDraft>(`draft:meeting:${scope}:${roomId}`, {
+    selectedDate: params.get('date'), selectedStart: params.get('start') ?? '', selectedEnd: params.get('end') ?? '',
+    purpose: '', reviewSlot: null,
+  })
+  const { selectedDate, selectedStart, selectedEnd, purpose, reviewSlot } = draft
   const dates = policy.data?.allowed_dates ?? []
   const date = selectedDate && dates.includes(selectedDate) ? selectedDate : dates[0] ?? ''
   const schedule = useQuery({ ...publicScheduleEventsQuery({ roomId, from: date, to: date }), enabled: Boolean(date && roomId && identity) })
@@ -49,13 +61,12 @@ export function MeetingRoomRequestPage({ identity, authLoading }: { identity: Au
     ? endOptions.find((option) => option.value === selectedEnd)?.value ?? ''
     : endOptions[0]?.value ?? ''
 
-  const [purpose, setPurpose] = useState('')
-  const [reviewSlot, setReviewSlot] = useState<{ date: string; start: string; end: string } | null>(null)
-  const [formStep, setStep] = useState<1 | 2>(1)
   const [error, setError] = useState('')
   const save = useMutation({
     mutationFn: () => createBooking({ roomId, startsAt: `${reviewSlot?.date}T${reviewSlot?.start}:00+07:00`, endsAt: `${reviewSlot?.date}T${reviewSlot?.end}:00+07:00`, purpose: purpose.trim(), requiresKey: true }),
     onSuccess: async () => {
+      clearDraft()
+      rememberPublicMenu(scope, '/meeting-room', '/meeting-room')
       await Promise.all([
         client.invalidateQueries({ queryKey: [...scheduleKeys.all, 'public-events'] }),
         client.invalidateQueries({ queryKey: scheduleKeys.publicMeetingWeeks() }),
@@ -77,10 +88,24 @@ export function MeetingRoomRequestPage({ identity, authLoading }: { identity: Au
     if (!startTime || !endTime || endTime <= startTime) return 'เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น'
     return ''
   }
-  const submit = (event: FormEvent) => { event.preventDefault(); const message = validate(); setError(message); if (!message) { setReviewSlot({ date, start: startTime, end: endTime }); setStep(2) } }
-  const changeDate = (nextDate: string) => { setDate(nextDate); setStartTime(''); setEndTime('') }
-  const changeStart = (nextStart: string) => { setStartTime(nextStart); setEndTime('') }
-  const step = save.isSuccess ? 3 : formStep
+  const submit = (event: FormEvent) => { event.preventDefault(); const message = validate(); setError(message); if (!message) updateDraft({ reviewSlot: { date, start: startTime, end: endTime } }) }
+  const changeDate = (nextDate: string) => updateDraft({ selectedDate: nextDate, selectedStart: '', selectedEnd: '' })
+  const changeStart = (nextStart: string) => updateDraft({ selectedStart: nextStart, selectedEnd: '' })
+  const confirm = async () => {
+    if (!reviewSlot) return
+    const latest = await schedule.refetch()
+    const currentTime = new Date()
+    const times = policy.data ? meetingTimeOptions(reviewSlot.date, currentTime, policy.data.opens_at, policy.data.closes_at) : []
+    const blocked = (latest.data ?? []).filter(event => !canOverrideMeetingEvent(identity, event, currentTime))
+    if (!latest.isSuccess || reviewSlot.date !== date || !times.includes(reviewSlot.start)
+      || !availableEndTimes(times, reviewSlot.start, time => isHalfHourOccupied(date, time, blocked)).includes(reviewSlot.end)) {
+      setError(latest.isError ? 'ไม่สามารถตรวจสอบช่วงเวลาว่างได้ กรุณาลองใหม่' : 'ช่วงเวลาที่เลือกใช้ไม่ได้แล้ว กรุณาเลือกเวลาใหม่')
+      updateDraft({ reviewSlot: null })
+      return
+    }
+    save.mutate()
+  }
+  const step = save.isSuccess ? 3 : reviewSlot ? 2 : 1
   const stepper = <RequestStepper step={step} label="ขั้นตอนการจองห้องประชุม" />
   const pendingApproval = save.data?.status === 'PENDING'
   const requesterStatus = getRequesterStatus(identity) ?? identity.role
@@ -88,7 +113,7 @@ export function MeetingRoomRequestPage({ identity, authLoading }: { identity: Au
 
   if (step === 3) return <section className="key-request-entry key-booking-form-page"><div className={`key-request-success ${pendingApproval ? 'pending' : 'approved'}`}>{stepper}<div className="key-success-card"><RequestResultIcon pending={pendingApproval} /><h1>{pendingApproval ? 'ส่งคำขอจองห้องเรียบร้อยแล้ว' : 'บันทึกการจองห้องสำเร็จ'}</h1><p>{pendingApproval ? 'กรุณารอเจ้าหน้าที่ตรวจสอบและอนุมัติคำขอ' : 'ระบบได้รับข้อมูลการจองห้องประชุมของคุณเรียบร้อยแล้ว'}</p><h2>รายละเอียดการจอง</h2><dl><Row label="ห้องที่จอง" value={roomDisplayName}/><Row label="วันที่จอง" value={formatThaiDate(reviewSlot?.date ?? date)}/><Row label="เวลาเริ่มต้น" value={`${reviewSlot?.start ?? startTime} น.`}/><Row label="เวลาสิ้นสุด" value={`${reviewSlot?.end ?? endTime} น.`}/><Row label="วัตถุประสงค์" value={purpose}/></dl></div><Link className="primary-action" to="/meeting-room">กลับสู่หน้าหลัก</Link></div></section>
 
-  if (step === 2) return <section className="key-request-entry key-booking-form-page key-request-review"><header><h1>ตรวจสอบข้อมูล</h1><p>กรุณาตรวจสอบข้อมูลให้เรียบร้อยก่อนกดยืนยัน</p></header>{stepper}<section className="key-review-card"><h2>ข้อมูลผู้จอง</h2><dl><Row label="ชื่อ – นามสกุล" value={identity.fullName}/><Row label="อีเมล" value={identity.email}/></dl></section><section className="key-review-card"><h2>ข้อมูลการจอง</h2><dl><Row label="ห้องที่จอง" value={roomDisplayName}/><Row label="วันที่จอง" value={formatThaiDate(reviewSlot?.date ?? date)}/><Row label="เวลาเริ่มต้น" value={reviewSlot?.start ?? startTime}/><Row label="เวลาสิ้นสุด" value={reviewSlot?.end ?? endTime}/><Row label="วัตถุประสงค์" value={purpose}/></dl></section>{hasPriorityRole(identity) && <p>หากเวลาซ้อนกับรายการจองทั่วไปที่ยังไม่เริ่ม ระบบจะใช้สิทธิ์จองทับเมื่อยืนยัน</p>}<div className="key-review-actions"><button type="button" disabled={save.isPending} onClick={() => setStep(1)}>ย้อนกลับ</button><button className="primary-action review-confirm-action" type="button" disabled={save.isPending} onClick={() => save.mutate()}>{save.isPending ? 'กำลังบันทึก…' : 'ยืนยันการจอง'}</button></div>{save.error && <BookingErrorDialog message={save.error.message} onClose={() => save.reset()}/>}</section>
+  if (step === 2) return <section className="key-request-entry key-booking-form-page key-request-review"><header><h1>ตรวจสอบข้อมูล</h1><p>กรุณาตรวจสอบข้อมูลให้เรียบร้อยก่อนกดยืนยัน</p></header>{stepper}<section className="key-review-card"><h2>ข้อมูลผู้จอง</h2><dl><Row label="ชื่อ – นามสกุล" value={identity.fullName}/><Row label="อีเมล" value={identity.email}/></dl></section><section className="key-review-card"><h2>ข้อมูลการจอง</h2><dl><Row label="ห้องที่จอง" value={roomDisplayName}/><Row label="วันที่จอง" value={formatThaiDate(reviewSlot?.date ?? date)}/><Row label="เวลาเริ่มต้น" value={reviewSlot?.start ?? startTime}/><Row label="เวลาสิ้นสุด" value={reviewSlot?.end ?? endTime}/><Row label="วัตถุประสงค์" value={purpose}/></dl></section>{hasPriorityRole(identity) && <p>หากเวลาซ้อนกับรายการจองทั่วไปที่ยังไม่เริ่ม ระบบจะใช้สิทธิ์จองทับเมื่อยืนยัน</p>}<div className="key-review-actions"><button type="button" disabled={save.isPending} onClick={() => updateDraft({ reviewSlot: null })}>ย้อนกลับ</button><button className="primary-action review-confirm-action" type="button" disabled={save.isPending || schedule.isFetching} onClick={() => void confirm()}>{save.isPending ? 'กำลังบันทึก…' : 'ยืนยันการจอง'}</button></div>{save.error && <BookingErrorDialog message={save.error.message} onClose={() => save.reset()}/>}</section>
 
   return <section className="key-request-entry key-booking-form-page meeting-booking-form">
     <Link className="back-link" to={`/meeting-room/${roomId}`}>‹ กลับหน้าหลัก</Link>
@@ -96,13 +121,13 @@ export function MeetingRoomRequestPage({ identity, authLoading }: { identity: Au
     {stepper}
     <form className="key-request-form" onSubmit={submit} noValidate>
       <section className="key-form-section"><h2 className="key-section-heading">ข้อมูลผู้จอง</h2><div className="key-identity-row"><label>สถานะ<input readOnly value={requesterStatus ? ROLE_LABELS[requesterStatus] : 'ผู้ใช้งาน'}/></label><label>ชื่อ–นามสกุล<input readOnly value={identity.fullName}/></label></div><label>อีเมล<input readOnly value={identity.email}/></label></section>
-      <section className="key-form-section"><h2 className="key-section-heading">วัตถุประสงค์</h2><label>ระบุวัตถุประสงค์<textarea aria-label="ระบุวัตถุประสงค์" required rows={3} value={purpose} onChange={(event) => setPurpose(event.target.value)} placeholder="กรุณาระบุวัตถุประสงค์"/></label></section>
+      <section className="key-form-section"><h2 className="key-section-heading">วัตถุประสงค์</h2><label>ระบุวัตถุประสงค์<textarea aria-label="ระบุวัตถุประสงค์" required rows={3} value={purpose} onChange={(event) => updateDraft({ purpose: event.target.value })} placeholder="กรุณาระบุวัตถุประสงค์"/></label></section>
       <section className="key-form-section">
         <h2 className="key-section-heading">วันและเวลาที่จองห้อง</h2>
         <SelectField label="วันที่จอง" value={date} disabled={!dates.length} onChange={changeDate}
           placeholder={policy.isError ? 'ไม่สามารถโหลดวันที่เปิดจองได้' : policy.isPending ? 'กำลังโหลดวันที่เปิดจอง…' : 'ไม่มีวันที่เปิดจอง'}
           options={dates.map(day => ({ value: day, label: formatThaiDate(day) }))} />
-        <div className="key-time-fields key-time-row"><SelectField label="เวลาเริ่มต้น" value={startTime} placeholder="เลือกเวลาเริ่มต้น" options={startOptions} onChange={changeStart} placement="top"/><SelectField label="เวลาสิ้นสุด" value={endTime} placeholder="เลือกเวลาสิ้นสุด" options={endOptions} disabled={!startTime} onChange={setEndTime} placement="top"/></div>
+        <div className="key-time-fields key-time-row"><SelectField label="เวลาเริ่มต้น" value={startTime} placeholder="เลือกเวลาเริ่มต้น" options={startOptions} onChange={changeStart} placement="top"/><SelectField label="เวลาสิ้นสุด" value={endTime} placeholder="เลือกเวลาสิ้นสุด" options={endOptions} disabled={!startTime} onChange={time => updateDraft({ selectedEnd: time })} placement="top"/></div>
         {date && !startTime && <p role="status">ไม่มีช่วงเวลาเปิดจองเหลือสำหรับวันที่เลือก</p>}
       </section>
       {error && <p className="panel-error" role="alert">{error}</p>}

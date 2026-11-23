@@ -48,7 +48,7 @@ export function NotificationBell(){
         <path d="M10 4a2 2 0 0 1 4 0m-2 0a5.5 5.5 0 0 0-5.5 5.5v2c0 2.8-1.2 4.1-3 5.5h17c-1.8-1.4-3-2.7-3-5.5v-2A5.5 5.5 0 0 0 12 4z" />
         <path d="M10 19.5a2 2 0 0 0 4 0" />
       </svg>
-      {count > 0 && <span data-testid="notification-dot" />}
+      {count > 0 && <span className="notification-count" data-testid="notification-count" aria-hidden="true">{count > 99 ? '99+' : count}</span>}
     </button>
     {open && <div id={panelId} className="notification-menu" role="dialog" aria-label="การแจ้งเตือน">
       <header>

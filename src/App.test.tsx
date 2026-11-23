@@ -22,9 +22,11 @@ import { PasswordField } from './features/auth/components/PasswordField'
 import { saveRoomUsagePolicy } from './features/policies/policy.service'
 import { canCancelBooking, effectiveBookingStatus } from './features/bookings/booking-status.utils'
 import { getMyIdentity, normalizeAuthReturnTo } from './features/auth/auth.service'
+import { AccountRequestsPage } from './features/bookings/pages/AccountRequestsPage'
 import { AccountKeyRequestHistoryPage } from './features/keys/pages/AccountKeyRequestHistoryPage'
 import { meetingTimeOptions } from './features/meeting-rooms/utils/meeting-time-options'
 import { MeetingRoomDetailPage } from './features/meeting-rooms/pages/MeetingRoomDetailPage'
+import { MeetingRoomEntryPage } from './features/meeting-rooms/pages/MeetingRoomEntryPage'
 import { AccountProfilePage } from './features/public/pages/AccountProfilePage'
 
 const authStateSubscription = { unsubscribe: vi.fn() }
@@ -61,6 +63,7 @@ vi.mock('./lib/supabase/client', () => ({
 
 describe('Authentication entry point', () => {
   beforeEach(() => {
+    sessionStorage.clear()
     vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.setSystemTime(new Date('2026-11-08T19:00:00+07:00'))
     vi.clearAllMocks()
@@ -69,7 +72,85 @@ describe('Authentication entry point', () => {
 
   afterEach(() => vi.useRealTimers())
 
-  const renderPath = (path: string) => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></QueryClientProvider>)
+  const renderPath = (path: string, mode = 'top') => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    client.setQueryData(['public-navigation', 'mode'], mode)
+    return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></QueryClientProvider>)
+  }
+
+  it.each([
+    ['/account/requests', 'การจองและกุญแจของฉัน'],
+    ['/account/profile', 'โปรไฟล์ผู้ใช้'],
+  ])('shows the page heading and sign-in prompt at %s for guests', async (path, title) => {
+    renderPath(path)
+    expect(await screen.findByRole('heading', { name: title })).toBeInTheDocument()
+    expect(screen.getByText('กรุณาเข้าสู่ระบบเพื่อดูข้อมูลส่วนนี้')).toBeInTheDocument()
+    expect(supabase.auth.signInWithOAuth).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'เข้าสู่ระบบด้วยบัญชีมหาวิทยาลัย' }))
+    fireEvent.click(screen.getByRole('button', { name: /เข้าสู่ระบบด้วย Google/ }))
+    expect(supabase.auth.signInWithOAuth).toHaveBeenCalledWith(expect.objectContaining({
+      options: expect.objectContaining({ redirectTo: `${window.location.origin}/login?returnTo=${encodeURIComponent(path)}` }),
+    }))
+  })
+
+  it('opens meeting rooms from the combined navigation and highlights the booking tab', async () => {
+    vi.mocked(supabase.rpc).mockImplementation((async (name: string) => ({
+      data: name === 'get_public_room_catalog' ? [{ id: 'meeting-1', code: 'MEETING-ROOM', name: 'Meeting', active: true, usage_scope: 'MEETING' }] : [],
+      error: null,
+    })) as never)
+    renderPath('/keys', 'both')
+    fireEvent.click(screen.getByRole('link', { name: 'จองห้อง' }))
+    expect(screen.getByRole('link', { name: 'จองห้อง' })).toHaveAttribute('aria-current', 'page')
+    expect(await screen.findByRole('heading', { name: 'เลือกห้องที่ต้องการจอง' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /MEETING-ROOM.*เข้าสู่ระบบ/ })).toBeInTheDocument()
+  })
+
+  it.each(['TEACHER', 'STUDENT'] as const)('shows the room chooser action for %s', async role => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const identity = { userId: 'user-1', role, fullName: 'User', email: 'user@northbkk.ac.th' }
+    vi.mocked(supabase.rpc).mockImplementation((async (name: string) => ({
+      data: name === 'get_public_room_catalog' ? [{ id: 'meeting-1', code: 'MEETING-ROOM', active: true, usage_scope: 'MEETING' }] : [],
+      error: null,
+    })) as never)
+    render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/meeting-room']}>
+      <Routes><Route element={<PublicLayout identity={identity} loading={false} onLogout={vi.fn()} />}>
+        <Route path="/meeting-room" element={<MeetingRoomEntryPage identity={identity} authLoading={false} />} />
+      </Route></Routes>
+    </MemoryRouter></QueryClientProvider>)
+    if (role === 'TEACHER') {
+      expect(await screen.findByRole('link', { name: /MEETING-ROOM.*ดูรายละเอียด/ })).toHaveAttribute('href', '/meeting-room/meeting-1')
+    } else {
+      expect(await screen.findByText('เฉพาะอาจารย์เท่านั้น')).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: /MEETING-ROOM/ })).not.toBeInTheDocument()
+    }
+  })
+
+  it('opens a booking-linked key loan in the room booking history', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
+    client.setQueryData(['bookings', 'mine'], [])
+    client.setQueryData(['key-loans', 'mine', 'requests'], [])
+    client.setQueryData(['key-loans', 'mine', 'details'], [
+      { id: 'booking-loan', roomCode: 'MEETING-ROOM', usageSource: 'BOOKING', status: 'RETURNED' },
+      { id: 'class-loan', roomCode: 'S2408', usageSource: 'CLASS_SCHEDULE', status: 'RETURNED' },
+    ])
+    render(<QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={['/account/requests?tab=keys&item=booking-loan']}><AccountRequestsPage /></MemoryRouter>
+    </QueryClientProvider>)
+    expect(await screen.findByText('ห้อง MEETING-ROOM')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'การจองห้อง' })).toHaveAttribute('aria-selected', 'true')
+    fireEvent.click(screen.getByRole('tab', { name: 'การเบิกกุญแจ' }))
+    expect(screen.queryByText('ห้อง MEETING-ROOM')).not.toBeInTheDocument()
+    expect(screen.getByText('ห้อง S2408')).toBeInTheDocument()
+  })
+
+  it('shows the booking list heading and its count without the English eyebrow', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } })
+    client.setQueryData(['bookings', 'mine'], [])
+    render(<QueryClientProvider client={client}><MemoryRouter><AccountRequestsPage /></MemoryRouter></QueryClientProvider>)
+    expect(await screen.findByRole('heading', { name: 'รายการล่าสุด' })).toBeInTheDocument()
+    expect(screen.getByText('0 รายการ')).toBeInTheDocument()
+    expect(screen.queryByText('MY REQUESTS')).not.toBeInTheDocument()
+  })
 
   it('keeps an authenticated Google user signed in when no role is assigned', async () => {
     vi.mocked(supabase.from).mockImplementation(((table:string) => {
@@ -250,7 +331,7 @@ describe('Authentication entry point', () => {
     expect(await screen.findByRole('heading', { name: 'เลือกกุญแจที่ต้องการเบิก' })).toBeInTheDocument()
     expect(screen.getByRole('img',{name:'IT KeySpace'})).toBeInTheDocument()
     expect(document.querySelector('.public-sidebar.key-mode')).not.toBeInTheDocument()
-    expect(screen.getByText('แตะกุญแจที่ต้องการเพื่อเบิก หรือกดดูรายละเอียด')).toBeInTheDocument()
+    expect(screen.getByText('เลือกห้องที่ต้องการเบิกกุญแจ')).toBeInTheDocument()
     expect(screen.queryByText('เลือกบริการที่ต้องการ')).not.toBeInTheDocument()
   })
 
@@ -343,7 +424,7 @@ describe('Authentication entry point', () => {
       return { data: [], error: null } as never
     }) as never)
 
-    renderPath('/meeting-room/meeting-1')
+    renderPath('/meeting-room/meeting-1', 'both')
     const daily = await screen.findByRole('tab', { name: 'รายวัน' })
     expect(daily).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('tab', { name: 'จองล่วงหน้า' })).toHaveAttribute('aria-selected', 'true')
@@ -354,7 +435,10 @@ describe('Authentication entry point', () => {
     const history = await screen.findByRole('region', { name: 'รายการจองห้องประชุมย้อนหลัง' })
     expect(history.querySelectorAll('h3 time')).toHaveLength(5)
     expect(history.querySelector('h3 time')).toHaveAttribute('datetime', '2026-11-14')
-    fireEvent.keyDown(daily, { key: 'ArrowRight' })
+    fireEvent.click(screen.getByRole('link', { name: 'เบิกกุญแจ' }))
+    fireEvent.click(screen.getByRole('link', { name: 'จองห้อง' }))
+    expect(await screen.findByRole('tab', { name: 'ประวัติการจอง' })).toHaveAttribute('aria-selected', 'true')
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'รายวัน' }), { key: 'ArrowRight' })
     const weeklyTable = await screen.findByRole('table', { name: 'ตารางเวลารายสัปดาห์' })
     expect(weeklyTable.querySelector('[data-edge="start"]')).toHaveTextContent(/^08:00$/)
     expect(weeklyTable.querySelector('[data-edge="end"]')).toHaveTextContent(/^18:00$/)
@@ -381,12 +465,17 @@ describe('Authentication entry point', () => {
     const next = screen.getByRole('button', { name: 'สัปดาห์ถัดไป' })
     fireEvent.click(back)
     expect(back).toBeDisabled()
+    expect(screen.getByRole('table', { name: 'ตารางเวลารายสัปดาห์' })).toBeInTheDocument()
     await waitFor(() => expect(supabase.rpc).toHaveBeenCalledWith('get_public_meeting_room_week', { p_room_id: 'meeting-1', p_week_start: '2026-11-08' }))
     fireEvent.click(next)
     fireEvent.click(next)
     expect(next).toBeDisabled()
     await waitFor(() => expect(supabase.rpc).toHaveBeenCalledWith('get_public_meeting_room_week', { p_room_id: 'meeting-1', p_week_start: '2026-11-22' }))
-    fireEvent.click(daily)
+    fireEvent.click(screen.getByRole('link', { name: 'เบิกกุญแจ' }))
+    fireEvent.click(screen.getByRole('link', { name: 'จองห้อง' }))
+    expect(await screen.findByRole('tab', { name: 'รายสัปดาห์' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('button', { name: 'สัปดาห์ถัดไป' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('tab', { name: 'รายวัน' }))
     expect(await screen.findByRole('button', { name: /08:00.*ว่าง/ })).toBeInTheDocument()
   })
 
@@ -404,7 +493,7 @@ describe('Authentication entry point', () => {
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{
       allowed_dates: ['2026-11-09', '2026-11-10', '2026-11-11'], opens_at: '08:00:00', closes_at: '18:00:00',
     }], error: null } as never)
-    renderPath('/meeting-room/meeting-1/request?date=2026-11-09&start=12:30&end=14:00')
+    renderPath('/meeting-room/meeting-1/request?date=2026-11-09&start=12:30&end=14:00', 'both')
 
     expect(await screen.findByRole('heading', { name: 'แบบฟอร์มการจองห้องประชุม' })).toBeInTheDocument()
     expect(screen.getByLabelText('สถานะ')).toHaveAttribute('readonly')
@@ -429,6 +518,11 @@ describe('Authentication entry point', () => {
     expect(screen.getByText('นัดพรีเซนต์งานนักศึกษา')).toBeInTheDocument()
     expect(screen.getByText('ห้องประชุมคณะ IT')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'ยืนยันการจอง' })).toHaveClass('review-confirm-action')
+    fireEvent.click(screen.getByRole('link', { name: 'เบิกกุญแจ' }))
+    fireEvent.click(screen.getByRole('link', { name: 'จองห้อง' }))
+    expect(await screen.findByRole('heading', { name: 'ตรวจสอบข้อมูล' })).toBeInTheDocument()
+    expect(screen.getByText('นัดพรีเซนต์งานนักศึกษา')).toBeInTheDocument()
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [], error: null } as never)
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: null, error: { message: 'BOOKING_ROLE_REQUIRED' } } as never)
     fireEvent.click(screen.getByRole('button', { name: 'ยืนยันการจอง' }))
     expect(await screen.findByRole('dialog', { name: 'ไม่สามารถจองห้องได้' })).toHaveTextContent('บัญชีนี้ไม่มีสิทธิ์จองห้องประชุม')
@@ -440,6 +534,7 @@ describe('Authentication entry point', () => {
     fireEvent.click(screen.getByRole('button', { name: 'ย้อนกลับ' }))
     expect(screen.getByRole('list', { name: 'ขั้นตอนการจองห้องประชุม' }).querySelector('[aria-current="step"]')).toHaveTextContent(/^1$/)
     fireEvent.click(screen.getByRole('button', { name: /ถัดไป/ }))
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [], error: null } as never)
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: { id: 'booking-1', status: 'APPROVED' }, error: null } as never)
     fireEvent.click(screen.getByRole('button', { name: 'ยืนยันการจอง' }))
     expect(await screen.findByRole('heading', { name: 'บันทึกการจองห้องสำเร็จ' })).toBeInTheDocument()
@@ -488,7 +583,7 @@ describe('Authentication entry point', () => {
     const { container } = renderPath('/keys')
 
     expect(await screen.findByRole('heading', { name: 'เลือกกุญแจที่ต้องการเบิก' })).toBeInTheDocument()
-    expect(screen.getByText('แตะกุญแจที่ต้องการเพื่อเบิก หรือกดดูรายละเอียด')).toBeInTheDocument()
+    expect(screen.getByText('เลือกห้องที่ต้องการเบิกกุญแจ')).toBeInTheDocument()
     expect(container.querySelector('.key-room-catalog-page')).toBeInTheDocument()
     expect(screen.getByText('LAB-42')).toBeInTheDocument()
     expect(await screen.findByText('อ. สมชาย · NET401')).toBeInTheDocument()
@@ -711,6 +806,31 @@ describe('Authentication entry point', () => {
     expect(screen.getByRole('button', { name: 'ถัดไป' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'ย้อนกลับ' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'เข้าสู่ระบบ' })).not.toBeInTheDocument()
+  })
+
+  it('returns to the same key request and restores its draft after switching menu tabs', async () => {
+    vi.setSystemTime(new Date('2026-11-08T07:30:00+07:00'))
+    vi.mocked(supabase.rpc).mockImplementation((async (name: string) => ({
+      data: name === 'get_public_room_catalog' ? [{ id: 'draft-lab', code: 'S2407', name: 'Lab', active: true, usage_scope: 'LABORATORY' }] : [],
+      error: null,
+    })) as never)
+    renderPath('/keys/rooms/draft-lab/request', 'both')
+    await screen.findByRole('heading', { name: 'แบบฟอร์มการเบิกกุญแจ' })
+    fireEvent.change(screen.getByLabelText('ชื่อ–นามสกุล'), { target: { value: 'ผู้เบิกทดสอบ' } })
+    fireEvent.change(screen.getByLabelText('อีเมล'), { target: { value: 'student@northbkk.ac.th' } })
+    fireEvent.click(screen.getByRole('radio', { name: 'อื่นๆ' }))
+    fireEvent.change(screen.getByLabelText('ระบุวัตถุประสงค์'), { target: { value: 'ทำโครงงาน' } })
+    fireEvent.click(screen.getByRole('link', { name: 'จองห้อง' }))
+    fireEvent.click(screen.getByRole('link', { name: 'เบิกกุญแจ' }))
+    expect(await screen.findByLabelText('ระบุวัตถุประสงค์')).toHaveValue('ทำโครงงาน')
+    expect(screen.getByLabelText('ชื่อ–นามสกุล')).toHaveValue('ผู้เบิกทดสอบ')
+    fireEvent.click(screen.getByRole('button', { name: 'ถัดไป' }))
+    await screen.findByRole('heading', { name: 'ตรวจสอบข้อมูล' })
+    vi.setSystemTime(new Date('2026-11-08T08:15:00+07:00'))
+    fireEvent.click(screen.getByRole('button', { name: 'ยืนยันการเบิก' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('ช่วงเวลาที่เลือกใช้ไม่ได้แล้ว')
+    expect(screen.getByLabelText('ระบุวัตถุประสงค์')).toHaveValue('ทำโครงงาน')
+    expect(supabase.rpc).not.toHaveBeenCalledWith('create_key_request_v2', expect.anything())
   })
 
   it('starts without a purpose and hides conditional purpose fields', async () => {
@@ -1116,14 +1236,15 @@ describe('Authentication entry point', () => {
     expect(screen.getByText('นายปิติพัฒน์')).toHaveClass('key-account-name')
     expect(screen.getByText('อาจารย์')).toBeInTheDocument()
     expect(screen.getByRole('button',{name:/การแจ้งเตือน/}).querySelector('svg')).toBeInTheDocument()
-    expect(screen.getByTestId('notification-dot')).toBeInTheDocument()
+    expect(screen.getByTestId('notification-count')).toHaveTextContent(/^1$/)
     fireEvent.error(screen.getByRole('img',{name:'รูปโปรไฟล์ของ นายปิติพัฒน์ ชื่อยาวสำหรับทดสอบ'}))
     expect(screen.getByTestId('avatar-fallback')).toBeInTheDocument()
   })
 
-  it('shows a neutral fallback avatar before login', () => {
+  it('shows a sign-in button before login', () => {
     render(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={['/keys']}><Routes><Route element={<PublicLayout identity={null} loading={false} onLogout={vi.fn()} />}><Route path="keys" element={<div>หน้ากุญแจ</div>} /></Route></Routes></MemoryRouter></QueryClientProvider>)
-    expect(screen.getByTestId('guest-avatar')).toHaveClass('guest')
+    expect(screen.getByRole('button', { name: 'เข้าสู่ระบบ' })).toBeInTheDocument()
+    expect(screen.queryByTestId('guest-avatar')).not.toBeInTheDocument()
   })
 
   it('shows the SSO photo and falls back when the photo fails on the account profile', () => {
@@ -1144,13 +1265,10 @@ describe('Authentication entry point', () => {
     expect(screen.getByText('ยังไม่ได้กำหนดบทบาท')).toHaveClass('key-account-role')
   })
 
-  it('keeps the current key-request path when a guest signs in from the user menu', () => {
+  it('keeps the current key-request path when a guest signs in from the header', () => {
     const returnTo='/keys/rooms/room-1/request?date=2026-11-08&start=17:30&end=18:00'
     render(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={[returnTo]}><Routes><Route element={<PublicLayout identity={null} loading={false} onLogout={vi.fn()} />}><Route path="keys/rooms/:roomId/request" element={<div>หน้ากุญแจ</div>} /></Route></Routes></MemoryRouter></QueryClientProvider>)
-    fireEvent.click(screen.getByRole('button', { name: 'เปิดเมนูผู้ใช้' }))
-    expect(screen.getByRole('dialog', { name: 'เมนูผู้ใช้' })).toBeInTheDocument()
-    expect(screen.getByRole('link',{name:'หน้าหลัก'})).toHaveAttribute('href','/keys')
-    fireEvent.click(screen.getByRole('button', { name: 'โปรไฟล์ผู้ใช้' }))
+    fireEvent.click(screen.getByRole('button', { name: 'เข้าสู่ระบบ' }))
     expect(screen.getByRole('dialog', { name: 'กรุณาเข้าสู่ระบบ' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /เข้าสู่ระบบด้วย Google/ }))
     expect(supabase.auth.signInWithOAuth).toHaveBeenCalledWith(expect.objectContaining({options:expect.objectContaining({redirectTo:`${window.location.origin}/login?returnTo=${encodeURIComponent(returnTo)}`})}))

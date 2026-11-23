@@ -1,5 +1,6 @@
 import { bangkokDateKey } from '../saturday-policy'
 import './RoomUsageHistory.css'
+import { readTabState, writeTabState } from '../../../shared/components/useTabDraft'
 
 type RoomUsageItem = { id: string; title: string; startsAt: string; endsAt: string }
 
@@ -11,8 +12,8 @@ const timeLabel = new Intl.DateTimeFormat('en-GB', {
   hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Bangkok',
 })
 
-export function RoomUsageHistory({ items, label, heading, compact = false, order = 'latest' }: {
-  items: RoomUsageItem[]; label: string; heading: string; compact?: boolean; order?: 'latest' | 'earliest'
+export function RoomUsageHistory({ items, label, heading, compact = false, order = 'latest', scrollKey }: {
+  items: RoomUsageItem[]; label: string; heading: string; compact?: boolean; order?: 'latest' | 'earliest'; scrollKey?: string
 }) {
   const direction = order === 'earliest' ? 1 : -1
   const ordered = [...items].sort((a, b) => direction * (Date.parse(a.startsAt) - Date.parse(b.startsAt))).slice(0, 10)
@@ -24,7 +25,9 @@ export function RoomUsageHistory({ items, label, heading, compact = false, order
     byDate.set(date, group)
   }
 
-  return <div className={`key-catalog-history-scroll${compact ? ' is-compact' : ''}`} role="region" aria-label={label} tabIndex={0}>
+  return <div className={`key-catalog-history-scroll${compact ? ' is-compact' : ''}`} role="region" aria-label={label} tabIndex={0}
+    ref={node => { if (node && scrollKey) node.scrollTop = readTabState<number>(scrollKey) ?? 0 }}
+    onScroll={event => { if (scrollKey) writeTabState(scrollKey, event.currentTarget.scrollTop) }}>
     {Array.from(byDate, ([date, entries]) => (
       <section className="key-booking-day" key={date}>
         <h3>

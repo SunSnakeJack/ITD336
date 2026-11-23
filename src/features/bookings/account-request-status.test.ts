@@ -11,9 +11,12 @@ describe('account request status badges', () => {
     expect(accountBookingStatus('SUPERSEDED', end, now).tone).toBe('purple')
   })
 
-  it('uses amber for pending key requests and gray for expired approved requests', () => {
+  it('marks returnable key requests overdue at the end time', () => {
     expect(accountKeyRequestStatus('PENDING_APPROVAL', end, now).tone).toBe('amber')
-    expect(accountKeyRequestStatus('APPROVED', end, Date.parse(end))).toEqual({ label: 'สิ้นสุดแล้ว', tone: 'gray' })
+    expect(accountKeyRequestStatus('APPROVED', end, Date.parse(end), true)).toEqual({ label: 'เกินกำหนด', tone: 'red' })
+    expect(accountKeyRequestStatus('IN_USE', end, Date.parse(end), true).tone).toBe('red')
+    expect(accountKeyRequestStatus('APPROVED', end, Date.parse(end), false).tone).toBe('gray')
+    expect(accountKeyRequestStatus('RETURNED', end, Date.parse(end), false).tone).toBe('green')
     expect(accountKeyRequestStatus('REJECTED', end, now).tone).toBe('red')
   })
 

@@ -125,13 +125,6 @@
     width: 24px;
   }
 
-  .key-mobile-header .notification-bell > button > span {
-    height: 7px;
-    right: -1px;
-    top: 1px;
-    width: 7px;
-  }
-
   .key-mobile-header .key-avatar-photo,
   .key-mobile-header .key-avatar {
     background: #0a0047;

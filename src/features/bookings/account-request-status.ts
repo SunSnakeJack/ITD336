@@ -52,17 +52,19 @@ export function accountBookingStatus(status: BookingStatus, endsAt: string, now 
   return bookingStatuses[effectiveBookingStatus(status, endsAt, now)] ?? { label: status, tone: 'gray' }
 }
 
-export function accountKeyRequestStatus(status: string, endsAt: string, now = Date.now()): AccountRequestStatus {
+export function accountKeyRequestStatus(status: string, endsAt: string, now = Date.now(), canReturn = false): AccountRequestStatus {
+  if (canReturn && ['APPROVED', 'IN_USE'].includes(status) && Date.parse(endsAt) <= now) return keyLoanStatuses.LATE
   if (status === 'APPROVED' && Date.parse(endsAt) <= now) return completed
   return keyRequestStatuses.get(status) ?? { label: status, tone: 'gray' }
 }
 
 export function accountKeyLoanStatus(
-  { status, expectedReturnAt, returnedAt }: Partial<Pick<KeyLoanDetail, 'expectedReturnAt' | 'returnedAt'>> & Pick<KeyLoanDetail, 'status'>,
+  { status, expectedReturnAt, returnedAt, overdue }: Partial<Pick<KeyLoanDetail, 'expectedReturnAt' | 'returnedAt' | 'overdue'>> & Pick<KeyLoanDetail, 'status'>,
   now = Date.now(),
 ): AccountRequestStatus {
   const dueAt = expectedReturnAt ? Date.parse(expectedReturnAt) : NaN
   const remaining = dueAt - now
+  if (status === 'CHECKED_OUT' && (overdue || remaining <= 0)) return keyLoanStatuses.LATE
   if (status === 'CHECKED_OUT' && remaining > 0 && remaining <= 30 * 60_000) {
     return { label: 'ใกล้ถึงกำหนด', tone: 'orange' }
   }

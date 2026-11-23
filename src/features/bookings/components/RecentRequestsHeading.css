@@ -1,0 +1,16 @@
+.recent-requests-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.recent-requests-heading h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.recent-requests-heading span {
+  color: #64748b;
+  font-size: .75rem;
+}

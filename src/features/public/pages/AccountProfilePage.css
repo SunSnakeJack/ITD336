@@ -1,13 +1,5 @@
 .public-main > main:has(> .account-profile) { background: #fff; }
 .key-account-page.account-profile { max-width: 520px; background: #fff; color: #100b32; }
-.key-account-page.account-profile > h1 {
-  border-inline-start: .42rem solid #edb523;
-  padding-inline-start: .6rem;
-  font-size: clamp(1.55rem, 5vw, 2rem);
-  font-weight: 800;
-  line-height: 1.15;
-}
-.key-account-page.account-profile > p { margin-top: -.55rem; color: #52525b; }
 .account-profile-card {
   overflow: hidden;
   background: #fff;
@@ -90,3 +82,8 @@
   text-decoration: none;
 }
 .account-profile > .profile-history-action:focus-visible { outline: 2px solid #10005b; outline-offset: 2px; }
+.account-profile .profile-logout-action {
+  background: #b91c1c;
+  border: 0;
+  color: #fff;
+}

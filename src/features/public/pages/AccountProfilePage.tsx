@@ -1,13 +1,16 @@
-import { Link } from 'react-router-dom'
+import { Link, useOutletContext } from 'react-router-dom'
+import { NotificationBell } from '../../notifications/components/NotificationBell'
+import type { PublicLayoutContext } from '../components/PublicLayout'
 import type { AuthIdentity } from '../../auth/auth.types'
 import { ROLE_LABELS } from '../../auth/auth.types'
 import { AccountAvatar, PersonIcon } from '../components/AccountAvatar'
 import './AccountProfilePage.css'
+import { PublicPageHeading } from '../../../shared/components/PublicPageHeading'
 
 export function AccountProfilePage({ identity }: { identity: AuthIdentity }) {
+  const layout = useOutletContext<PublicLayoutContext | null>()
   return <section className="key-account-page account-profile">
-    <h1>โปรไฟล์ผู้ใช้</h1>
-    <p>ข้อมูลบัญชีมหาวิทยาลัยของคุณ</p>
+    <PublicPageHeading title="โปรไฟล์ผู้ใช้" description="ข้อมูลบัญชีมหาวิทยาลัยของคุณ" />
     <article className="account-profile-card">
       <header className="account-profile-hero">
         <div className="account-profile-avatar" data-testid="profile-person-icon">
@@ -28,6 +31,10 @@ export function AccountProfilePage({ identity }: { identity: AuthIdentity }) {
         </div>
       </dl>
     </article>
-    <Link className="profile-history-action" to="/account/requests">การจองและกุญแจของฉัน</Link>
+    {layout ? <button className="profile-history-action profile-logout-action" type="button" onClick={() => void layout.onLogout()}>ออกจากระบบ</button>
+      : <Link className="profile-history-action" to="/account/requests">การจองและกุญแจของฉัน</Link>}
+    {layout?.navigationMode === 'bottom' && <div className="profile-bottom-controls">
+      <NotificationBell />
+    </div>}
   </section>
 }

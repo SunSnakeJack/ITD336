@@ -142,7 +142,7 @@ export async function updateRoomDetails(input: { roomId: string; code: string; n
   })
   if (result.error) {
     if (result.error.message.includes('ROOM_CODE_ALREADY_EXISTS')) throw new Error('รหัสห้องนี้ถูกใช้งานแล้ว')
-    if (result.error.message.includes('INVALID_ROOM_CODE')) throw new Error('รหัสห้องใช้ได้เฉพาะ A–Z, 0–9, ขีดกลาง และขีดล่าง')
+    if (result.error.message.includes('INVALID_ROOM_CODE')) throw new Error('รหัสห้องใช้ได้เฉพาะ A–Z, a–z, 0–9, ขีดกลาง และขีดล่าง')
     if (result.error.message.includes('ROOM_NAME_REQUIRED')) throw new Error('กรุณาระบุชื่อห้อง')
     if (result.error.message.includes('INVALID_ROOM_CAPACITY')) throw new Error('ความจุห้องต้องอยู่ระหว่าง 1–1,000 คน')
     throw new Error(result.error.message)

@@ -5,6 +5,7 @@ import { setKeyCatalogDisplay, type KeyCatalogDisplay } from '../../keys/key-cat
 import { StaffPage, StaffQueryState } from '../components/StaffPage'
 import { StaffLecturerLanguageSettings } from '../components/StaffLecturerLanguageSettings'
 import { StaffScheduleDisplaySettings } from '../components/StaffScheduleDisplaySettings'
+import { StaffNavigationSettings } from '../components/StaffNavigationSettings'
 
 const options = [
   { value: 'current', label: 'แบบปัจจุบัน' },
@@ -47,5 +48,6 @@ export function StaffDisplaySettingsPage() {
     </StaffQueryState>
     <StaffLecturerLanguageSettings />
     <StaffScheduleDisplaySettings />
+    <StaffNavigationSettings />
   </StaffPage>
 }

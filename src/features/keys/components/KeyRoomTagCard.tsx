@@ -7,11 +7,9 @@ interface KeyRoomTagCardProps {
   room: ScheduleRoom
   available: string[]
   schedule: 'loading' | 'error' | 'ready'
-  requestPath?: string
-  onSignIn?: () => void
 }
 
-export function KeyRoomTagCard({ room, available, schedule, requestPath, onSignIn }: KeyRoomTagCardProps) {
+export function KeyRoomTagCard({ room, available, schedule }: KeyRoomTagCardProps) {
   const isAvailable = room.active && schedule === 'ready' && available.length > 0
   const status = !room.active ? 'ไม่พร้อมใช้'
     : schedule === 'loading' ? 'กำลังโหลด…'
@@ -26,17 +24,11 @@ export function KeyRoomTagCard({ room, available, schedule, requestPath, onSignI
       {available.map((range) => <span key={range}>{range}</span>)}
     </span>}
   </>
-  const actionLabel = `เบิกกุญแจ ${room.code}`
-
   return <article className="key-tag-room">
     <div className="key-tag-hanger">
       <span className="key-tag-rail" aria-hidden="true" />
       <img className="key-tag-icon" src={keyIcon} alt="" />
-      {requestPath ? onSignIn
-        ? <button className="key-tag-label" type="button" aria-label={actionLabel} onClick={onSignIn}>{content}</button>
-        : <Link className="key-tag-label" aria-label={actionLabel} to={requestPath}>{content}</Link>
-        : <div className="key-tag-label">{content}</div>}
+      <Link className="key-tag-label" aria-label={`ดูรายละเอียด ${room.code}`} to={`/keys/rooms/${room.id}`}>{content}</Link>
     </div>
-    <Link className="key-tag-details" aria-label={`ดูรายละเอียด ${room.code}`} to={`/keys/rooms/${room.id}`}>ดูรายละเอียด</Link>
   </article>
 }

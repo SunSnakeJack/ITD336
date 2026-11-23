@@ -3,12 +3,14 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { NotificationBell } from './NotificationBell'
-import { markNotificationRead } from '../notification.queries'
+import { markAllNotificationsRead, markNotificationRead } from '../notification.queries'
+
+const { loadUnread } = vi.hoisted(() => ({ loadUnread: vi.fn() }))
 
 vi.mock('../notification.queries',()=>({
   notificationKeys:{all:['notifications'],mine:['notifications','mine'],unread:['notifications','unread']},
-  myNotificationsQuery:()=>({queryKey:['notifications','mine'],queryFn:vi.fn()}),
-  unreadNotificationsQuery:()=>({queryKey:['notifications','unread'],queryFn:vi.fn()}),
+  myNotificationsQuery:()=>({queryKey:['notifications','mine'],queryFn:async()=>[]}),
+  unreadNotificationsQuery:()=>({queryKey:['notifications','unread'],queryFn:loadUnread}),
   markNotificationRead:vi.fn(),markAllNotificationsRead:vi.fn(),
 }))
 
@@ -30,12 +32,12 @@ describe('NotificationBell',()=>{
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     return vi.waitFor(() => expect(markNotificationRead).toHaveBeenCalledWith('notice-1', expect.anything()))
   })
-  it('keeps read history visible and shows the dot only for unread items',()=>{
+  it('keeps read history visible and hides the badge with no unread items',()=>{
     const client=new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } })
     client.setQueryData(['notifications','mine'],[{id:'read-1',user_id:'user-1',type:'KEY_RETURNED',title:'Returned',message:'คืนแล้ว',related_entity_type:null,related_entity_id:null,read_at:'2026-11-12T10:00:00Z',created_at:'2026-11-12T09:00:00Z'}])
     client.setQueryData(['notifications','unread'],[])
     render(<QueryClientProvider client={client}><MemoryRouter><NotificationBell/></MemoryRouter></QueryClientProvider>)
-    expect(screen.queryByTestId('notification-dot')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('notification-count')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button',{name:/การแจ้งเตือนที่ยังไม่อ่าน 0/}))
     expect(screen.getByText('บันทึกการคืนกุญแจแล้ว')).toBeInTheDocument()
     expect(screen.getByText('คืนแล้ว')).toBeInTheDocument()
@@ -53,10 +55,37 @@ describe('NotificationBell',()=>{
     client.setQueryData(['notifications', 'unread'], [unread])
     render(<QueryClientProvider client={client}><MemoryRouter><NotificationBell /></MemoryRouter></QueryClientProvider>)
 
+    expect(screen.getByTestId('notification-count')).toHaveTextContent(/^1$/)
     fireEvent.click(screen.getByRole('button', { name: 'การแจ้งเตือนที่ยังไม่อ่าน 1 รายการ' }))
     expect(screen.getByText('1 รายการที่ยังไม่อ่าน')).toBeInTheDocument()
     expect(screen.getByText('ใหม่').closest('a')).toHaveTextContent('คำขอใหม่')
     expect(screen.getByText('คำขอเดิม').closest('a')).not.toHaveTextContent('ใหม่')
     expect(screen.getByRole('button', { name: 'อ่านทั้งหมด' })).toBeInTheDocument()
+  })
+
+  it('caps the visible badge while keeping the actual count in its accessible label', () => {
+    const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } })
+    client.setQueryData(['notifications', 'mine'], [])
+    client.setQueryData(['notifications', 'unread'], Array.from({ length: 100 }, (_, id) => ({ id })))
+    render(<QueryClientProvider client={client}><MemoryRouter><NotificationBell /></MemoryRouter></QueryClientProvider>)
+    expect(screen.getByRole('button', { name: 'การแจ้งเตือนที่ยังไม่อ่าน 100 รายการ' })).toContainElement(screen.getByText('99+'))
+  })
+
+  it('updates the badge after reading an item and removes it after reading all', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } })
+    const first = { id: 'first', type: 'NOTICE', title: 'รายการแรก', message: 'ข้อความ', read_at: null, created_at: '2026-11-19T07:19:00Z' }
+    const second = { ...first, id: 'second', title: 'รายการที่สอง' }
+    client.setQueryData(['notifications', 'mine'], [first, second])
+    client.setQueryData(['notifications', 'unread'], [first, second])
+    loadUnread.mockResolvedValueOnce([second]).mockResolvedValueOnce([])
+    render(<QueryClientProvider client={client}><MemoryRouter><NotificationBell /></MemoryRouter></QueryClientProvider>)
+
+    fireEvent.click(screen.getByRole('button', { name: 'การแจ้งเตือนที่ยังไม่อ่าน 2 รายการ' }))
+    fireEvent.click(screen.getByRole('button', { name: /รายการแรก/ }))
+    expect(await screen.findByRole('button', { name: 'การแจ้งเตือนที่ยังไม่อ่าน 1 รายการ' })).toContainElement(screen.getByTestId('notification-count'))
+    fireEvent.click(screen.getByRole('button', { name: 'อ่านทั้งหมด' }))
+    await screen.findByRole('button', { name: 'การแจ้งเตือนที่ยังไม่อ่าน 0 รายการ' })
+    expect(markAllNotificationsRead).toHaveBeenCalled()
+    expect(screen.queryByTestId('notification-count')).not.toBeInTheDocument()
   })
 })

@@ -1,3 +1,7 @@
+.key-room-catalog-page > .public-page-heading {
+  padding: .25rem 0 0;
+}
+
 @media (max-width: 480px) {
   .student-shell.public-shell:has(.key-room-catalog-page),
   .public-main:has(.key-room-catalog-page) {
@@ -9,21 +13,8 @@
     padding: 12px 16px 40px;
   }
 
-  .key-room-catalog-page .key-room-catalog-intro {
+  .key-room-catalog-page > .public-page-heading {
     margin-bottom: 18px;
-  }
-
-  .key-room-catalog-page .key-room-catalog-intro h1 {
-    color: #0a0047;
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0 0 6px;
-  }
-
-  .key-room-catalog-page .key-room-catalog-intro p {
-    color: #737373;
-    font-size: 11px;
-    margin: 0;
   }
 
   .key-room-catalog-page .key-room-tabs {

@@ -1,19 +1,22 @@
 import { useQuery } from '@tanstack/react-query'
-import { useId, useState } from 'react'
+import { useId } from 'react'
 import { RoomUsageHistory } from '../../schedules/components/RoomUsageHistory'
 import { scheduleKeys } from '../../schedules/schedule.queries'
 import { getMeetingBookings, type MeetingBookingPeriod } from '../meeting-week.service'
 import { meetingEventCategories } from '../utils/meeting-week'
+import { useTabDraft } from '../../../shared/components/useTabDraft'
 
 const tabs = { upcoming: 'จองล่วงหน้า', history: 'ประวัติการจอง' } as const
 
 export function MeetingBookingList({ roomId, active, viewerId }: { roomId: string; active: boolean; viewerId: string | null }) {
   const id = useId()
-  const [period, setPeriod] = useState<MeetingBookingPeriod>('upcoming')
+  const [{ period }, update] = useTabDraft<{ period: MeetingBookingPeriod }>(
+    `meeting-bookings:${viewerId ?? 'guest'}:${roomId}`, { period: 'upcoming' },
+  )
+  const setPeriod = (value: MeetingBookingPeriod) => update({ period: value })
   const bookings = useQuery({
     queryKey: [...scheduleKeys.publicMeetingBookings(roomId), period, viewerId],
     queryFn: () => getMeetingBookings(roomId, period, viewerId),
-    gcTime: 0,
     enabled: active,
   })
   const upcoming = period === 'upcoming'
@@ -49,7 +52,8 @@ export function MeetingBookingList({ roomId, active, viewerId }: { roomId: strin
       {bookings.isLoading ? <p className="key-detail-empty" role="status">กำลังโหลดรายการ…</p>
         : bookings.isError ? <p className="key-detail-empty" role="alert">ไม่สามารถโหลดรายการจอง{suffix}ได้</p>
         : items.length ? <RoomUsageHistory items={items} label={`รายการจองห้องประชุม${suffix}`}
-          heading="รายการจอง" compact order={upcoming ? 'earliest' : 'latest'} />
+          heading="รายการจอง" compact order={upcoming ? 'earliest' : 'latest'}
+          scrollKey={`meeting-list:${viewerId ?? 'guest'}:${roomId}:${period}`} />
         : <p className="key-detail-empty">— ยังไม่มีรายการจอง{suffix} —</p>}
     </div>
   </article>

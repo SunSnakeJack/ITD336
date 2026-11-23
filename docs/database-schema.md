@@ -30,6 +30,8 @@ Migration `0017_external_booking_edit.sql` updates exact-time availability check
 
 Migration `0018_room_layout_key_and_code_edit.sql` separates the immutable floor-plan `layout_key` from the editable room `code`, extends the narrow public catalog with that key, and adds the permission-checked `update_room_details_v2` RPC. The RPC validates and normalizes room codes, preserves uniqueness, updates the room identity and availability fields atomically, and appends an audit event.
 
+Migration `0103_preserve_room_code_case.sql` preserves the casing of room codes entered through both room editors and removes leading and trailing spaces. A unique index on the trimmed lowercase code prevents duplicates while allowing a case-only edit on the same room. Existing room codes and floor-plan keys retain their stored values.
+
 Migration `0019_student_booking_key_workflow.sql` adds database-owned slot permissions for S2407–S2412, manual approval and pending-overlap protection for laboratory bookings, class- and booking-derived key-request RPCs, borrower damage reporting, automatic key-request creation after booking approval, and Realtime publication membership for operational tables. Class-derived permission is currently granted to every authenticated Student or Teacher during an active class occurrence; enrollment membership is intentionally not required by the confirmed rule.
 
 Migration `0020_calendar_booking_notifications_and_key_reports.sql` changes the advance limit to Bangkok calendar days, exposes only a boolean ownership marker for privacy-safe schedule coloring, adds borrower-controlled LOST/DAMAGED reporting with incident and audit records, and publishes notifications through Realtime.
@@ -79,3 +81,7 @@ Migration `0079_same_day_meeting_booking_and_staff_usage.sql` uses `room_types.u
 Migration `0059_past_key_request_setting.sql` stores the elapsed-slot exception in `system_settings`. A database trigger rejects past same-day key requests while disabled; authorized settings managers may enable the exception through an audited RPC. Schedule conflicts and service-hour constraints remain unchanged.
 
 Migration `0065_admin_user_profile_management.sql` adds an ADMIN-only directory RPC that exposes the existing split profile names and an audited profile-update RPC. Normal clients cannot use these functions to assign roles or elevate privileges; role and account-status transitions remain controlled by their existing services.
+
+### การแจ้งเตือนตามเวลาในระบบ
+
+Migration 0104 เพิ่มงาน pg_cron ทุกนาทีเพื่อบันทึกการแจ้งเตือนก่อนเริ่ม 30 นาที เมื่อถึงเวลาเริ่ม และก่อนครบกำหนดคืนกุญแจ 30 นาที สำหรับรายการที่ยังใช้งานได้ กระดิ่งอ่านจาก notifications โดยใช้รายการเดียวต่อผู้ใช้และเหตุการณ์ต่อคำขอ งานนี้แยกจากคิวอีเมล

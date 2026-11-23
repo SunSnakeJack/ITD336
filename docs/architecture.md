@@ -53,3 +53,6 @@ Notifications are stored with IN_APP and EMAIL delivery queue rows. No provider 
 - Confirmed V2 booking limits are configuration-backed; the calendar-day versus exact-duration meaning of three days remains explicitly pending.
 - Critical booking/key transitions are RPC-only. Staff has read-only operational permissions; Admin holds management permissions.
 - See `requirements-v2-schema.md` for the incremental target schema and unresolved decisions.
+Public navigation is a global display setting stored in the `PUBLIC_NAVIGATION_MODE` booking rule. The public layout defaults to the top bar and account drawer; admins with settings permission can select the bottom bar or both bars. The profile provides notifications and sign-out when only the bottom bar is shown.
+
+Public menu destinations and unfinished key and meeting-room forms are stored in browser session storage. Menu destinations are scoped to the requester, and form drafts are also scoped to the room. Successful submission clears the draft for that request, and sign-out clears this tab's navigation and draft data. Both forms refresh room availability before confirmation and the database remains the authority for accepting requests.

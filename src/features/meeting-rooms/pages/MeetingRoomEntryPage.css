@@ -1,0 +1,36 @@
+.meeting-room-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5rem), 9.5rem));
+  gap: .75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meeting-room-picker .meeting-room-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: .65rem;
+  border: 1px solid #e5d690;
+  border-radius: .75rem;
+  background: #fffdf3;
+  color: #171339;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.meeting-room-picker .meeting-room-tile.is-unavailable {
+  border-color: #cbd5e1;
+  background: #e9edf3;
+  color: #475569;
+}
+
+.meeting-room-tile svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.meeting-room-tile span { font-size: .8rem; }
+.meeting-room-tile.is-unavailable span { white-space: nowrap; }

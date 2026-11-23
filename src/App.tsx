@@ -10,6 +10,8 @@ import { normalizeAuthReturnTo } from "./features/auth/auth.service";
 import { useAuthSession } from "./features/auth/hooks/useAuthSession";
 import type { AuthIdentity } from "./features/auth/auth.types";
 import { PublicLayout } from "./features/public/components/PublicLayout";
+import { PublicDashboardPage } from "./features/public/pages/PublicDashboardPage";
+import { AccountSignInPrompt } from "./features/public/components/AccountSignInPrompt";
 import { AccountRequestsPage } from "./features/bookings/pages/AccountRequestsPage";
 import { LoadingSpinner } from "./shared/components/LoadingSpinner";
 import { useRealtimeInvalidation } from "./shared/hooks/useRealtimeInvalidation";
@@ -19,7 +21,8 @@ import { KeyRequestRoomDetailPage } from "./features/keys/pages/KeyRequestRoomDe
 import { AccountProfilePage } from "./features/public/pages/AccountProfilePage";
 import { AccountHistoryRedirect } from "./features/bookings/pages/AccountHistoryRedirect";
 import { KeyRequestActionPage } from "./features/keys/pages/KeyRequestActionPage";
-import { MeetingRoomDetailPage, MeetingRoomEntryPage } from "./features/meeting-rooms/pages/MeetingRoomDetailPage";
+import { MeetingRoomDetailPage } from "./features/meeting-rooms/pages/MeetingRoomDetailPage";
+import { MeetingRoomEntryPage } from "./features/meeting-rooms/pages/MeetingRoomEntryPage";
 import { MeetingRoomRequestPage } from "./features/meeting-rooms/pages/MeetingRoomRequestPage";
 import { StaffLayout } from "./features/staff/components/StaffLayout";
 import { StaffRoomDetailPage, StaffRoomFormPage, StaffSettingsPage } from "./features/staff/pages/StaffOverviewPages";
@@ -61,20 +64,20 @@ function AccountGuard({
   identity,
   loading,
   children,
+  profile = false,
 }: {
   identity: AuthIdentity | null;
   loading: boolean;
   children: ReactNode;
+  profile?: boolean;
 }) {
-  const location = useLocation()
   if (loading)
     return (
       <main className="session-loading">
         <LoadingSpinner label="กำลังตรวจสอบบัญชี…" />
       </main>
     );
-  const returnTo = normalizeAuthReturnTo(location.pathname + location.search)
-  return identity ? children : <Navigate to={returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : '/login'} replace />;
+  return identity ? children : <AccountSignInPrompt profile={profile} />;
 }
 
 function LoginRoute({
@@ -126,8 +129,9 @@ export function App() {
         }
       >
         <Route index element={<Navigate to="/keys" replace />} />
+        <Route path="dashboard" element={<PublicDashboardPage />} />
         <Route path="keys" element={<KeyRequestRoomsPage identity={identity} />} />
-        <Route path="meeting-room" element={<MeetingRoomEntryPage />} />
+        <Route path="meeting-room" element={<MeetingRoomEntryPage identity={identity} authLoading={loading} />} />
         <Route path="meeting-room/:roomId" element={<MeetingRoomDetailPage identity={identity} />} />
         <Route path="meeting-room/:roomId/request" element={<MeetingRoomRequestPage identity={identity} authLoading={loading} />} />
         <Route path="key-request-action" element={<KeyRequestActionPage />} />
@@ -142,7 +146,7 @@ export function App() {
           }
         />
         <Route path="account" element={<Navigate to="/account/profile" replace />} />
-        <Route path="account/profile" element={<AccountGuard identity={identity} loading={loading}>{identity&&<AccountProfilePage identity={identity}/>}</AccountGuard>} />
+        <Route path="account/profile" element={<AccountGuard profile identity={identity} loading={loading}>{identity&&<AccountProfilePage identity={identity}/>}</AccountGuard>} />
         <Route
           path="account/requests"
           element={

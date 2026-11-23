@@ -10,7 +10,6 @@
   background: var(--room-canvas);
 }
 
-.room-service-theme .key-room-catalog-intro,
 .room-service-theme .key-detail-heading,
 .room-service-theme .key-booking-form-page > header {
   background: linear-gradient(var(--room-yellow-soft), var(--room-surface));
@@ -19,7 +18,6 @@
   padding: .85rem 1rem;
 }
 
-.room-service-theme .key-room-catalog-page .key-room-catalog-intro h1,
 .room-service-theme .key-detail-heading h1,
 .room-service-theme .key-booking-form-page > header h1 {
   color: var(--room-ink);

@@ -4,7 +4,7 @@
   gap: .65rem .625rem;
 }
 
-.key-tag-room { display: grid; grid-template-rows: 1fr auto; gap: .8rem; min-width: 0; }
+.key-tag-room { display: grid; min-width: 0; }
 .key-tag-hanger { position: relative; isolation: isolate; display: flex; min-height: 10.5rem; padding: 2.3rem .4rem 0 24%; }
 .key-tag-rail { position: absolute; inset: 0 0 auto; height: 1.05rem; border-radius: .3rem; background: #ffe500; }
 .key-tag-icon { position: absolute; top: 0; left: 0; width: min(75%, 4.75rem); height: 8.3rem; object-fit: contain; object-position: top left; }
@@ -30,8 +30,7 @@
 .key-tag-label .key-tag-available { color: #166534; }
 .key-tag-label .key-tag-unavailable { color: #b91c1c; }
 .key-tag-times { display: grid; gap: .2rem; border-top: 1px solid #e7ddb5; padding-top: .25rem; font-size: .66rem; font-variant-numeric: tabular-nums; }
-.key-tag-details { display: grid; place-items: center; min-height: 1.65rem; padding: .15rem; border: 1px solid #e1cd67; border-radius: .3rem; background: #fff; color: #0a0047; font-size: .75rem; text-align: center; text-decoration: none; }
-.key-tag-details:hover, a.key-tag-label:hover, button.key-tag-label:hover { background: #fff2a2; }
+a.key-tag-label:hover { background: #fff2a2; }
 .key-tag-grid .key-room-empty { grid-column: 1 / -1; }
 
 @media (min-width: 340px) {

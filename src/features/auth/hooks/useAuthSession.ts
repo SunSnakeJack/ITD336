@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { supabase } from '../../../lib/supabase/client'
 import { getMyIdentity, signOut } from '../auth.service'
+import { clearTabState } from '../../../shared/components/useTabDraft'
 import type { AuthIdentity } from '../auth.types'
 import { mergeSsoProfile, SESSION_MAX_AGE_MS, sessionStartedAt } from '../utils/account-display'
 
@@ -106,6 +107,7 @@ export function useAuthSession(): AuthSessionState {
     Object.keys(window.localStorage).filter((key)=>key.startsWith('itd336-session-start:')).forEach((key)=>window.localStorage.removeItem(key))
     const { error: logoutError } = await signOut()
     if (logoutError) throw new Error(logoutError.message)
+    clearTabState()
     setIdentity(null)
   }, [])
 

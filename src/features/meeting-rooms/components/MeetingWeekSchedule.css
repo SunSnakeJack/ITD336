@@ -138,3 +138,4 @@
   cursor: pointer;
 }
 .meeting-event-close:hover { background: #edf0f5; }
+.meeting-week-table-area { overflow-anchor: none; }
