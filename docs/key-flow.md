@@ -1,6 +1,6 @@
 # Key flow
 
-Account history shows booking cards in the booking tab. Key loans, including loans created from a booking, appear in the key tab alongside direct key requests. Key-loan notifications open the loan in that tab.
+Account history shows laboratory key loans alongside direct key requests in the key tab. Meeting-room key notifications open the original booking card, which displays the room booking status. The loan report exposes room scope and booking ID under the existing invoker permissions.
 
 Staff can set the public key catalog to the current layout, key tags, or
 the current layout without checkout history. The last option omits the
@@ -19,7 +19,9 @@ The room detail page remembers its selected range in the current browser tab. St
 
 The key form and review show the same primary account role as the site header. Lecturer selection and the submitted requester type continue to use the student or teacher classification.
 
-The key catalog, room schedule, and form use the room category's Bangkok opening and closing times. The default window is 08:00–18:00. Closing time is an end-only option. The database enforces the same window on new requests and time changes, and the form checks for policy changes before confirmation.
+The key catalog, room schedule, and form use the room category's Bangkok opening and closing times. The default window is 08:00–18:00. The last full-slot boundary is an end-only option. The database enforces the same window on new requests and time changes, and the form checks for policy changes before confirmation.
+
+Each room category sets its slot length in minutes, defaulting to 30. Slots are anchored to opening time. Requests can span one or more consecutive full slots. A leftover partial slot at closing is unavailable, and existing requests retain their recorded times and continue to block overlaps.
 
 For S2407–S2412, `get_room_slot_permissions` is the single decision boundary used by the room dialog. During an active class occurrence, every authenticated Student may create an auto-approved class key request; Teacher is intentionally supported by the same database rule for later UI reuse. This rule does not depend on enrollment data. Without a class, the user must own an approved room booking before requesting a key. Another user's booking never grants key permission.
 

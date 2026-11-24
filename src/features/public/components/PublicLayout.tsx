@@ -15,8 +15,10 @@ import { PersonIcon } from './AccountAvatar'
 import './PublicNavigation.css'
 import { publicMenuRoot, rememberPublicMenu, rememberedPublicMenu } from '../public-navigation-memory'
 import { useTabScrollPosition } from '../../../shared/components/useTabScrollPosition'
+import { hasViewerPermission, useViewerPermissions } from '../../auth/viewer-permissions.queries'
 
 export interface PublicLayoutContext {
+  staffAccess?: boolean
   navigationMode: NavigationMode
   navigationLoading: boolean
   openSignIn: () => void
@@ -44,7 +46,9 @@ export function PublicLayout({ identity, loading, onLogout }: { identity: AuthId
   const logout = async () => { await onLogout(); setMenuOpen(false) }
   const keyHeaderHome = meetingRoomMode ? '/meeting-room' : '/keys'
   const hasBottomNav = navigationMode !== 'top'
-  const context: PublicLayoutContext = { navigationMode, navigationLoading: navigation.isPending, openSignIn: () => setLoginOpen(true), onLogout: logout }
+  const access = useViewerPermissions(identity)
+  const staffAccess = Boolean(identity && hasViewerPermission(access.data, 'STAFF_ACCESS'))
+  const context: PublicLayoutContext = { staffAccess, navigationMode, navigationLoading: navigation.isPending, openSignIn: () => setLoginOpen(true), onLogout: logout }
   return <div className={`student-shell public-shell key-mode${roomServiceMode ? ' room-service-theme' : ''}${hasBottomNav ? ' has-bottom-nav' : ''}${navigationMode === 'both' ? ' public-navigation-combined' : ''}`}>
     <div className="public-main">
       {navigationMode !== 'bottom' && <header className="key-mobile-header public-wave-header">
@@ -68,7 +72,7 @@ export function PublicLayout({ identity, loading, onLogout }: { identity: AuthId
       <main ref={content}><Outlet context={context} /></main>
     </div>
     {hasBottomNav && <PublicBottomNav pathname={pathname} combined={navigationMode === 'both'} destination={destination} />}
-    {navigationMode === 'top' && menuOpen && <UserMenuDrawer identity={identity} destination={destination} onClose={()=>setMenuOpen(false)} onProfile={()=>{setMenuOpen(false);setLoginOpen(true)}} onLogout={logout}/>}
+    {navigationMode === 'top' && menuOpen && <UserMenuDrawer identity={identity} staffAccess={staffAccess} destination={destination} onClose={()=>setMenuOpen(false)} onProfile={()=>{setMenuOpen(false);setLoginOpen(true)}} onLogout={logout}/>}
     {loginOpen&&<GoogleSsoModal returnTo={returnTo} onClose={()=>setLoginOpen(false)}/>}
   </div>
 }

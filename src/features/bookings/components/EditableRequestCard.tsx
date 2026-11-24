@@ -7,7 +7,7 @@ import { keyLoanKeys } from '../../keys/key.queries'
 import { bangkokClock } from '../../keys/utils/key-catalog-time'
 import { meetingTimeOptions } from '../../meeting-rooms/utils/meeting-time-options'
 import { scheduleKeys } from '../../schedules/schedule.queries'
-import { availableEndTimes, isHalfHourOccupied, timeSelectOptions } from '../../schedules/request-time-options'
+import { availableEndTimes, timeSelectOptions, isRoomSlotOccupied } from '../../schedules/request-time-options'
 import { bookingKeys } from '../booking.queries'
 import { AccountRequestAction, AccountRequestCard } from './AccountRequestCard'
 import type { ComponentProps } from 'react'
@@ -16,6 +16,7 @@ type EditTimes = {
   date: string
   opensAt: string
   closesAt: string
+  slotMinutes?: number
   intervals: { startsAt: string; endsAt: string }[]
 }
 
@@ -45,17 +46,18 @@ export function EditableRequestCard({ id, type, start, end, purpose, editable, p
     retry: false,
   })
   const context = availability.data
-  const times = context ? meetingTimeOptions(context.date, new Date(), context.opensAt, context.closesAt) : []
-  const unavailable = (time: string) => Boolean(context && isHalfHourOccupied(context.date, time, context.intervals))
+  const times = context ? meetingTimeOptions(context.date, new Date(), context.opensAt, context.closesAt, context.slotMinutes) : []
+  const unavailable = (time: string) => Boolean(context && isRoomSlotOccupied(context.date, time, times, context.intervals))
   const starts = timeSelectOptions(times.slice(0, -1), unavailable)
   const selectedStart = starts.find(option => option.value === draft?.start && !option.disabled)?.value ?? ''
   const ends = timeSelectOptions(availableEndTimes(times, selectedStart, unavailable))
   const selectedEnd = ends.find(option => option.value === draft?.end)?.value ?? ''
+  const keepOriginalTimes = draft?.start === bangkokClock(start) && draft?.end === bangkokClock(end)
+  const canSavePurposeOnly = keepOriginalTimes && purposeEditable && draft?.purpose.trim() !== purpose.trim()
   const save = useMutation({
-    mutationFn: async ({ date, start, end, purpose }: { date: string; start: string; end: string; purpose: string }) => {
+    mutationFn: async ({ startsAt, endsAt, purpose }: { startsAt: string; endsAt: string; purpose: string }) => {
       const { error } = await supabase.rpc('reschedule_own_request' as never, {
-        p_id: id, p_type: type, p_start: date + 'T' + start + ':00+07:00',
-        p_end: date + 'T' + end + ':00+07:00', p_purpose: purpose,
+        p_id: id, p_type: type, p_start: startsAt, p_end: endsAt, p_purpose: purpose,
       } as never)
       if (error) throw new Error(error.message)
     },
@@ -86,15 +88,20 @@ export function EditableRequestCard({ id, type, start, end, purpose, editable, p
         disabled={!ends.length || save.isPending} onChange={end => setDraft({ ...draft, end })}/>
       {availability.isPending && <small role="status">กำลังโหลดช่วงเวลา…</small>}
       {availability.isError && <small role="alert">โหลดช่วงเวลาไม่สำเร็จ</small>}
+      {context && keepOriginalTimes && !selectedEnd && <small>เวลาเดิม {draft.start}–{draft.end} น. หากเปลี่ยนเวลา กรุณาเลือกช่วงใหม่</small>}
     </div> : card.time}
     purpose={editing && draft && purposeEditable ? <textarea rows={2} aria-label="วัตถุประสงค์"
       disabled={save.isPending} value={draft.purpose} onChange={event => setDraft({ ...draft, purpose: event.target.value })}/> : purpose}
     actions={editing && draft ? <>
       <AccountRequestAction variant="neutral" disabled={save.isPending} onClick={() => setDraft(null)}>ยกเลิกการแก้ไข</AccountRequestAction>
       <AccountRequestAction variant="return"
-        disabled={!context || !selectedStart || !selectedEnd || (purposeEditable && !draft.purpose.trim()) || save.isPending}
+        disabled={!context || ((!selectedStart || !selectedEnd) && !canSavePurposeOnly) || (purposeEditable && !draft.purpose.trim()) || save.isPending}
         onClick={() => {
-          if (context) save.mutate({ date: context.date, start: selectedStart, end: selectedEnd, purpose: draft.purpose.trim() })
+          if (context) save.mutate({
+            startsAt: keepOriginalTimes ? start : `${context.date}T${selectedStart}:00+07:00`,
+            endsAt: keepOriginalTimes ? end : `${context.date}T${selectedEnd}:00+07:00`,
+            purpose: draft.purpose.trim(),
+          })
         }}>บันทึก</AccountRequestAction>
       {save.isError && <small role="alert">{save.error.message.includes('BOOKING_HAS_KEY_LOAN')
         ? 'ไม่สามารถเปลี่ยนเวลาของรายการที่มีการเบิกกุญแจแล้ว'

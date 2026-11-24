@@ -1,3 +1,4 @@
+import type { RoomSlotPolicy } from './request-time-options'
 export type ScheduleEventType = 'CLASS' | 'BOOKING' | 'BLOCK'
 
 export interface ScheduleEvent {
@@ -51,7 +52,7 @@ export interface ScheduleRoom {
   usageScope?: 'LABORATORY' | 'MEETING' | 'OTHER'
   requiresSsoForKeyRequest?: boolean
   requiresLoginForKeyRequest?: boolean
-  keyOperatingHours?: { opensAt: string; closesAt: string }
+  operatingHours?: RoomSlotPolicy
 }
 
 export interface ScheduleFilters {

@@ -31,6 +31,7 @@ export function AccountProfilePage({ identity }: { identity: AuthIdentity }) {
         </div>
       </dl>
     </article>
+    {layout?.staffAccess && <Link className="profile-history-action" to="/staff">เข้าสู่ระบบแอดมิน</Link>}
     {layout ? <button className="profile-history-action profile-logout-action" type="button" onClick={() => void layout.onLogout()}>ออกจากระบบ</button>
       : <Link className="profile-history-action" to="/account/requests">การจองและกุญแจของฉัน</Link>}
     {layout?.navigationMode === 'bottom' && <div className="profile-bottom-controls">

@@ -26,6 +26,20 @@ export function getStaffNavigationItem(pathname: string) {
   })
 }
 
+const staffRoutePermissions: Record<string, readonly string[]> = {
+  'usage-dashboard': ['REPORT_READ', 'ROOM_MANAGE'], dashboard: ['REPORT_READ', 'ROOM_MANAGE'],
+  reports: ['REPORT_READ'], history: ['REPORT_READ'], logs: ['AUDIT_READ'], users: ['USER_MANAGE'],
+  rooms: ['ROOM_MANAGE'], 'meeting-rooms': ['ROOM_MANAGE'], 'key-requests': ['KEY_MANAGE', 'BOOKING_APPROVE'],
+  settings: ['SETTINGS_MANAGE'], 'display-settings': ['SETTINGS_MANAGE'], 'additional-settings': ['SETTINGS_MANAGE'],
+}
+
+export function canOpenStaffRoute(pathname: string, permissions: readonly string[], admin: boolean) {
+  const section = pathname.split('/')[2]
+  if (!section) return true
+  if (section === 'settings' && !admin) return false
+  return staffRoutePermissions[section]?.some(code => permissions.includes(code)) === true
+}
+
 export const staffRoutePaths = [
   '/staff',
   '/staff/rooms',

@@ -1,9 +1,12 @@
+import { roomSlotTimes } from '../../schedules/request-time-options'
 import { useState } from 'react'
 import { keyServiceDaysQueryKey } from '../../keys/key-service-days.queries'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase/client'
-import { ROLE_LABELS, type RoleCode } from '../../auth/auth.types'
+import { guestGeneralKey, viewerPermissionsKey } from '../../auth/viewer-permissions.queries'
+import { StaffServicePermissionMatrix } from '../components/StaffServicePermissionMatrix'
+import { defaultServiceGrant, serviceRoles, servicePermissionRows } from '../staff-service-permissions'
 import { meetingBookingPolicyKey } from '../../meeting-rooms/meeting-booking-policy'
 import { bangkokDateKey, isSaturday } from '../../schedules/saturday-policy'
 import { saturdayPolicyQuery } from '../../schedules/saturday-policy.queries'
@@ -16,13 +19,6 @@ import { StaffRoomCategoryFields } from '../components/StaffRoomCategoryFields'
 import { useStaffViewState } from '../useStaffViewState'
 import './StaffSettingsPage.css'
 
-const roles = ['STUDENT', 'TEACHER', 'DEAN', 'DEPARTMENT_HEAD', 'STAFF', 'ADMIN'] as const satisfies readonly RoleCode[]
-const permissions = [
-  ['ROOM_MANAGE', 'จัดการห้อง'], ['BOOKING_APPROVE', 'อนุมัติการจอง'],
-  ['BOOKING_OVERRIDE', 'จองทับตามสิทธิ์'], ['KEY_MANAGE', 'จัดการกุญแจ'],
-  ['USER_MANAGE', 'จัดการผู้ใช้'], ['SETTINGS_MANAGE', 'จัดการการตั้งค่า'],
-  ['REPORT_READ', 'ดูรายงาน'], ['AUDIT_READ', 'ดู Logs'],
-] as const
 const categories = { LAB: 'ห้องปฎิบัติการ', SPECIAL: 'ห้องปฏิบัติการพิเศษ', MEETING: 'ห้องประชุม' } as const
 const roleCatalogKey = ['staff', 'role-permission-catalog'] as const
 const categoryPoliciesKey = ['staff', 'settings', 'room-category-restrictions'] as const
@@ -38,11 +34,16 @@ export function StaffSettingsPage() {
     queryKey: roleCatalogKey,
     queryFn: async () => {
       const { data, error } = await supabase.from('roles')
-        .select('code, role_permissions(permissions(code))').in('code', roles)
+        .select('code, role_permissions(permissions(code))').in('code', serviceRoles)
       if (error) throw new Error('ไม่สามารถโหลดตารางสิทธิ์ได้', { cause: error })
       return data ?? []
     },
   })
+  const guestGeneral = useQuery({ queryKey: guestGeneralKey, queryFn: async () => {
+    const { data, error } = await supabase.rpc('get_guest_general_key_enabled' as never)
+    if (error || typeof data !== 'boolean') throw new Error('ไม่สามารถโหลดสิทธิ์ผู้เยี่ยมชมได้')
+    return data as boolean
+  } })
   const timing = useQuery(keyRequestTimingSettingQuery())
   const advance = useQuery(meetingAdvanceBookingDaysQuery())
   const saturday = useQuery(saturdayPolicyQuery())
@@ -56,18 +57,15 @@ export function StaffSettingsPage() {
     role.code, new Set(role.role_permissions.map(grant => grant.permissions?.code)),
   ]))
   const pendingChanges: PermissionChanges = {}
-  if (changes.roleGrants?.length) pendingChanges.roleGrants = changes.roleGrants
+  if (changes.guestGeneralKey !== undefined && changes.guestGeneralKey !== guestGeneral.data) pendingChanges.guestGeneralKey = changes.guestGeneralKey
+  const visibleGrants = changes.roleGrants?.filter(change => servicePermissionRows.some(([permission]) => permission === change.permission))
+  if (visibleGrants?.length) pendingChanges.roleGrants = visibleGrants
   if (changes.roomPolicies && Object.keys(changes.roomPolicies).length) pendingChanges.roomPolicies = changes.roomPolicies
   if (changes.meetingAdvanceDays !== undefined && changes.meetingAdvanceDays !== advance.data) pendingChanges.meetingAdvanceDays = changes.meetingAdvanceDays
   if (changes.allowElapsed !== undefined && changes.allowElapsed !== timing.data) pendingChanges.allowElapsed = changes.allowElapsed
   if ((saturdayEnabled !== undefined || changes.openSaturday !== undefined) && (enabled ? date : null) !== saturday.data) pendingChanges.openSaturday = enabled ? date : null
   const invalidRoomPolicy = Object.values(pendingChanges.roomPolicies ?? {}).some(policy =>
-    !((policy.opensAt ?? '08:00') < (policy.closesAt ?? '18:00')) ||
-    policy.closesAt === '' ||
-    policy.opensAt === '' ||
-    (policy.minMinutes ?? 30) < 1 ||
-    (policy.minMinutes ?? 30) > (policy.maxMinutes ?? 600) ||
-    (policy.maxMinutes ?? 600) > 1440
+    roomSlotTimes({ opensAt: policy.opensAt ?? '08:00', closesAt: policy.closesAt ?? '18:00', slotMinutes: policy.slotMinutes }).length === 0,
   )
   const save = useMutation({
     mutationFn: savePermissionSettings,
@@ -76,7 +74,7 @@ export function StaffSettingsPage() {
       await Promise.all([roleCatalogKey, categoryPoliciesKey, keyRequestTimingSettingQuery().queryKey,
         meetingAdvanceBookingDaysQuery().queryKey, saturdayPolicyQuery().queryKey,
         meetingBookingPolicyKey, keyLoanKeys.all, keyServiceDaysQueryKey, roomRejectionReasonQueryKey,
-        scheduleKeys.publicRooms()].map(queryKey => client.invalidateQueries({ queryKey })))
+        scheduleKeys.publicRooms(), guestGeneralKey, viewerPermissionsKey].map(queryKey => client.invalidateQueries({ queryKey })))
     },
   })
   const patch = (values: PermissionChanges) => {
@@ -88,14 +86,22 @@ export function StaffSettingsPage() {
     if (enabled !== Boolean(roleGrants.get(role)?.has(permission))) edits.push({ role, permission, enabled })
     patch({ roleGrants: edits })
   }
-  const loading = catalog.isPending || timing.isPending || advance.isPending || saturday.isPending || categoryPolicies.isPending
-  const error = catalog.error || timing.error || advance.error || saturday.error || categoryPolicies.error
+  const resetPermissions = () => patch({
+    guestGeneralKey: true,
+    roleGrants: serviceRoles.filter(role => role !== 'ADMIN' && roleGrants.has(role))
+      .flatMap(role => servicePermissionRows.flatMap(([permission]) => {
+        const enabled = defaultServiceGrant(role, permission)
+        return enabled === Boolean(roleGrants.get(role)?.has(permission)) ? [] : [{ role, permission, enabled }]
+      })),
+  })
+  const loading = guestGeneral.isPending || catalog.isPending || timing.isPending || advance.isPending || saturday.isPending || categoryPolicies.isPending
+  const error = guestGeneral.error || catalog.error || timing.error || advance.error || saturday.error || categoryPolicies.error
   const dirty = Object.keys(pendingChanges).length > 0
 
   return <StaffPage eyebrow="" title="การตั้งค่าสิทธิ์" description="กำหนดสิทธิ์ตามบทบาทและเงื่อนไขการใช้งานห้อง"
     actions={<button className="staff-button" type="button" disabled={loading || Boolean(error) || invalidSaturday || invalidRoomPolicy || !dirty || save.isPending}
       onClick={() => save.mutate(pendingChanges)}>{save.isPending ? 'กำลังบันทึก…' : 'บันทึกทั้งหมด'}</button>}>
-    {invalidRoomPolicy && <p className="panel-error" role="alert">กรุณาระบุเวลาเปิดก่อนเวลาปิด และระยะเวลาขั้นต่ำตั้งแต่ 1 นาทีโดยไม่เกินระยะเวลาสูงสุด</p>}
+    {invalidRoomPolicy && <p className="panel-error" role="alert">กรุณาระบุเวลาเปิดก่อนเวลาปิด และกำหนดระยะเวลาต่อช่วงที่พอดีกับเวลาให้บริการ</p>}
     {save.error && <p className="panel-error" role="alert">{save.error.message}</p>}
     {save.isSuccess && <p role="status">บันทึกการตั้งค่าแล้ว</p>}
     <StaffQueryState loading={loading} error={error}>
@@ -108,17 +114,11 @@ export function StaffSettingsPage() {
               {matrixOpen ? 'ซ่อนตาราง' : 'ดูตาราง'}
             </button>
           </div>
-          {matrixOpen && <div className="staff-settings-matrix"><div className="staff-table-wrap"><table className="staff-table">
-            <thead><tr><th scope="col">สิทธิ์</th>{roles.map(role => <th scope="col" key={role}>{ROLE_LABELS[role]}</th>)}</tr></thead>
-            <tbody>{permissions.map(([code, label]) => <tr key={code}><th scope="row">{label}</th>{roles.map(role => {
-              const draft = changes.roleGrants?.find(change => change.role === role && change.permission === code)
-              return <td key={role}><input type="checkbox" aria-label={`${ROLE_LABELS[role]} · ${label}`}
-                title={role === 'ADMIN' ? 'สงวนสิทธิ์ผู้ดูแลระบบ' : undefined}
-                disabled={role === 'ADMIN' || !roleGrants.has(role) || save.isPending}
-                checked={draft?.enabled ?? Boolean(roleGrants.get(role)?.has(code))}
-                onChange={event => toggleGrant(role, code, event.target.checked)} /></td>
-            })}</tr>)}</tbody>
-          </table></div></div>}
+          {matrixOpen && <StaffServicePermissionMatrix roles={new Set(roleGrants.keys())}
+            checked={(role, code) => changes.roleGrants?.find(change => change.role === role && change.permission === code)?.enabled
+              ?? Boolean(roleGrants.get(role)?.has(code))}
+            guestEnabled={changes.guestGeneralKey ?? guestGeneral.data ?? false} disabled={save.isPending}
+            toggle={toggleGrant} toggleGuest={guestGeneralKey => patch({ guestGeneralKey })} reset={resetPermissions} />}
         </section>
         <section className="staff-settings-section">
           <h3>ตั้งค่าสิทธิ์ตามประเภทห้อง</h3>

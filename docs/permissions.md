@@ -44,6 +44,10 @@ Migration 0110 exposes the IDs of visible catalog rooms closed today in Asia/Ban
 
 Migration 0111 lets room categories override approval mode and records the deadline basis on each new pending request. Pending requests use the start or end of their requested interval, and a database trigger rejects approval at or after the deadline.
 
+Migration 0115 replaces category minimum and maximum request durations with **ระยะเวลาต่อช่วง (นาที)**. The default is 30 minutes. New key requests and meeting bookings must span full slots measured from the configured opening time. Existing request times are preserved.
+
+Migration 0116 adds the service permission matrix for general and special key requests, meeting bookings, booking overrides, and staff workspace access. Signed-in accounts inherit the union of their active roles' grants. Guests may request general laboratory keys by default, subject to the room's sign-in policy. Students may request special laboratory keys after signing in. The staff workspace entry permission leaves granular management permissions in force.
+
 ### เหตุผลเมื่อไม่อนุมัติ
 
 ตั้งแยกตามประเภทห้อง ค่าเริ่มต้นบังคับระบุเหตุผลตามพฤติกรรมเดิม เมื่อปิด ผู้อนุมัติสามารถเว้นเหตุผลได้ ทั้งคำขอจองห้องและคำขอเบิกกุญแจ ฐานข้อมูลตรวจค่าที่บันทึกไว้ขณะดำเนินการ และบันทึกเหตุผลเฉพาะเมื่อมีข้อความ

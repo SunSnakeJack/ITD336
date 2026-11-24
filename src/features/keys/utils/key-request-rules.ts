@@ -1,12 +1,12 @@
+import { DEFAULT_ROOM_SLOT_POLICY, type RoomSlotPolicy } from '../../schedules/request-time-options'
 import { bangkokDateKey, isSaturdayClosed } from '../../schedules/saturday-policy'
-import { DEFAULT_KEY_HOURS } from './key-catalog-time'
 
 export interface KeyRequestRuleInput {
   email: string
   startsAt: string
   endsAt: string
   openSaturday?: string | null
-  hours?: typeof DEFAULT_KEY_HOURS
+  hours?: RoomSlotPolicy
 }
 
 export interface KeyRequestRuleErrors {
@@ -48,7 +48,7 @@ export function validateKeyRequest(input: KeyRequestRuleInput) {
     }
   }
 
-  const { opensAt, closesAt } = input.hours ?? DEFAULT_KEY_HOURS
+  const { opensAt, closesAt } = input.hours ?? DEFAULT_ROOM_SLOT_POLICY
   if (`${start.hour}:${start.minute}` < opensAt || `${end.hour}:${end.minute}` > closesAt) {
     errors.time = `กรุณาเลือกเวลาระหว่าง ${opensAt}–${closesAt} น.`
   }

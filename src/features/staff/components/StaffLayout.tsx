@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import type { AuthIdentity } from '../../auth/auth.types'
+import { ROLE_LABELS, type AuthIdentity } from '../../auth/auth.types'
 import keySpaceLogo from '../../../assets/it-keyspace.ico'
 import { StaffIcon } from './StaffIcon'
 import { getStaffNavigationItem, getStaffPageTitle, staffNavigation, staffRoutePaths } from '../staff-navigation'
@@ -10,7 +10,9 @@ import '../staff.css'
 
 export type StaffOutletContext = Pick<AuthIdentity, 'userId' | 'fullName'>
 
-export function StaffLayout({ identity, onLogout }: { identity: AuthIdentity; onLogout: () => Promise<void> }) {
+export function StaffLayout({ identity, onLogout, canOpen = () => true }: {
+  identity: AuthIdentity; onLogout: () => Promise<void>; canOpen?: (path: string) => boolean
+}) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const location = useLocation()
@@ -34,11 +36,11 @@ export function StaffLayout({ identity, onLogout }: { identity: AuthIdentity; on
         <button className="staff-drawer-close" aria-label="ปิดเมนู" onClick={() => setDrawerOpen(false)}>×</button>
       </div>
       <nav aria-label="เมนูระบบเจ้าหน้าที่">
-        {(['หลัก', 'จัดการ', 'ระบบ'] as const).map(group => <div className="staff-nav-group" key={group}><span className="staff-nav-label">{group}</span>{staffNavigation.filter(item => item.group === group).map((item) => <NavLink key={item.label} to={item.to} className={currentMenu === item ? 'active' : ''}><span aria-hidden="true"><StaffIcon name={item.icon} /></span>{item.label}</NavLink>)}</div>)}
+        {(['หลัก', 'จัดการ', 'ระบบ'] as const).map(group => <div className="staff-nav-group" key={group}><span className="staff-nav-label">{group}</span>{staffNavigation.filter(item => item.group === group && canOpen(item.to)).map((item) => <NavLink key={item.label} to={item.to} className={currentMenu === item ? 'active' : ''}><span aria-hidden="true"><StaffIcon name={item.icon} /></span>{item.label}</NavLink>)}</div>)}
       </nav>
       <div className="staff-sidebar-account">
         {accountOpen && <div className="staff-sidebar-account-menu"><button type="button" aria-label="ออกจากระบบ" onClick={() => void onLogout()}>ออกจากระบบ</button></div>}
-        <button className="staff-sidebar-foot" type="button" aria-label="เปิดเมนูบัญชี" aria-expanded={accountOpen} onClick={() => setAccountOpen(value => !value)}><span className="staff-sidebar-avatar" aria-hidden="true">{getStaffInitials(identity.fullName)}</span><span className="staff-sidebar-identity"><strong>{identity.fullName}</strong><em>ผู้ดูแลระบบ</em></span></button>
+        <button className="staff-sidebar-foot" type="button" aria-label="เปิดเมนูบัญชี" aria-expanded={accountOpen} onClick={() => setAccountOpen(value => !value)}><span className="staff-sidebar-avatar" aria-hidden="true">{getStaffInitials(identity.fullName)}</span><span className="staff-sidebar-identity"><strong>{identity.fullName}</strong><em>{identity.role ? ROLE_LABELS[identity.role] : 'บัญชีมหาวิทยาลัย'}</em></span></button>
       </div>
     </aside>
     <div className="staff-workspace">

@@ -1,3 +1,4 @@
+import { hasViewerPermission, keyRequestPermission, useViewerPermissions } from '../../auth/viewer-permissions.queries'
 import { keyCatalogPath } from '../utils/key-catalog-path'
 import { RequestStepper } from '../../../shared/components/RequestStepper'
 import { saturdayPolicyQuery } from '../../schedules/saturday-policy.queries'
@@ -16,8 +17,7 @@ import { KeyRequestReview } from '../components/KeyRequestReview'
 import { KeyRequestSuccess } from '../components/KeyRequestSuccess'
 import { LecturerCombobox } from '../components/LecturerCombobox'
 import { SelectField } from '../../../shared/components/SelectField'
-import { availableEndTimes, timeSelectOptions } from '../../schedules/request-time-options'
-import { DEFAULT_KEY_HOURS, isKeySlotElapsed, keySlotTimes, keySlotOccupied } from '../utils/key-catalog-time'
+import { availableEndTimes, timeSelectOptions, DEFAULT_ROOM_SLOT_POLICY, isRoomSlotElapsed, roomSlotTimes, isRoomSlotOccupied } from '../../schedules/request-time-options'
 import { formatThaiDate } from '../utils/format-thai-date'
 import './KeyRequestFormPage.css'
 import { useTabDraft } from '../../../shared/components/useTabDraft'
@@ -50,6 +50,8 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
   const saturday = useQuery(saturdayPolicyQuery())
   const referenceOptions = useQuery(keyRequestReferenceOptionsQuery(identity?.userId))
   const room = rooms.data?.find((item) => item.id === roomId)
+  const access = useViewerPermissions(identity)
+  const permitted = hasViewerPermission(access.data, keyRequestPermission(room?.requiresSsoForKeyRequest))
   const requestedDate = useMemo(() => searchParams.get('date') ?? bangkokDate(), [searchParams])
   const scope = identity?.userId ?? 'guest'
   const [draft, updateDraft, clearDraft] = useTabDraft<KeyDraft>(`draft:key:${scope}:${roomId}:${requestedDate}`, {
@@ -78,7 +80,7 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
   const accountStatus = getRequesterStatus(identity)
   const requesterType = accountStatus ?? guestStatus
   const displayRole = identity?.role ?? requesterType
-  const events = useQuery({ ...publicScheduleEventsQuery({ roomId, from: date, to: date }), enabled: Boolean(roomId && room && (!room.requiresLoginForKeyRequest || identity)) })
+  const events = useQuery({ ...publicScheduleEventsQuery({ roomId, from: date, to: date }), enabled: Boolean(roomId && room && permitted && (!room.requiresLoginForKeyRequest || identity)) })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [result, setResult] = useState<KeyRequestResult | null>(null)
   const save = useMutation({ mutationFn: createKeyRequest, onError: (error) => {
@@ -101,7 +103,10 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
   if (rooms.isPending) return <LoadingSpinner label="กำลังโหลดข้อมูลห้อง…" />
   if (rooms.isError) return <section className="key-request-entry" role="alert">ไม่สามารถโหลดข้อมูลห้องได้ <button type="button" onClick={() => void rooms.refetch()}>ลองใหม่</button></section>
   if (!room || room.usageScope && room.usageScope !== 'LABORATORY') return <Navigate to="/keys" replace />
-  if (room.requiresLoginForKeyRequest && !identity) return <section className="key-request-entry key-auth-required"><h1>ห้องนี้ต้องเข้าสู่ระบบ</h1><p>กรุณายืนยันตัวตนด้วยบัญชีมหาวิทยาลัยก่อนส่งคำขอ</p><Link className="primary-action" to={`/login?returnTo=${encodeURIComponent(`/keys/rooms/${roomId}/request${searchParams.size ? `?${searchParams.toString()}` : ''}`)}`}>เข้าสู่ระบบมหาวิทยาลัย</Link><Link to={`/keys/rooms/${roomId}`}>กลับไปดูรายละเอียดห้อง</Link></section>
+  if (access.isPending) return <LoadingSpinner label="กำลังตรวจสอบสิทธิ์…" />
+  if (access.isError) return <p role="alert">ไม่สามารถตรวจสอบสิทธิ์เบิกกุญแจได้ <button onClick={() => void access.refetch()}>ลองใหม่</button></p>
+  if (!identity && (room.requiresLoginForKeyRequest || !permitted)) return <section className="key-request-entry key-auth-required"><h1>ห้องนี้ต้องเข้าสู่ระบบ</h1><p>กรุณายืนยันตัวตนด้วยบัญชีมหาวิทยาลัยก่อนส่งคำขอ</p><Link className="primary-action" to={`/login?returnTo=${encodeURIComponent(`/keys/rooms/${roomId}/request${searchParams.size ? `?${searchParams.toString()}` : ''}`)}`}>เข้าสู่ระบบมหาวิทยาลัย</Link><Link to={`/keys/rooms/${roomId}`}>กลับไปดูรายละเอียดห้อง</Link></section>
+  if (!permitted) return <p role="alert">บัญชีนี้ไม่มีสิทธิ์เบิกกุญแจห้องนี้</p>
   const requesterName = (room.requiresSsoForKeyRequest ? undefined : draft?.name) ?? identity?.fullName ?? ''
   const requesterEmail = (room.requiresSsoForKeyRequest ? undefined : draft?.email) ?? identity?.email ?? ''
   const effectivePurpose = purposeType === 'TEACHING' ? 'เปิดห้องเพื่อการเรียนการสอน' : purpose
@@ -109,19 +114,19 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
   const courseRequired = purposeType === 'TEACHING'
 
   const now = new Date()
-  const hours = room.keyOperatingHours ?? DEFAULT_KEY_HOURS
-  const slots = keySlotTimes(hours)
+  const hours = room.operatingHours ?? DEFAULT_ROOM_SLOT_POLICY
+  const slots = roomSlotTimes(hours)
   const startOptions = timeSelectOptions(
-    slots.slice(0, -1).filter(time => !isKeySlotElapsed(date, time, slots, now)),
-    (time) => keySlotOccupied(date, time, slots, events.data ?? []),
+    slots.slice(0, -1).filter(time => !isRoomSlotElapsed(date, time, slots, now)),
+    (time) => isRoomSlotOccupied(date, time, slots, events.data ?? []),
   )
   const startTime = reviewing || result ? selectedStart
     : startOptions.find((option) => option.value === selectedStart && !option.disabled)?.value ?? ''
   const endOptions = timeSelectOptions(availableEndTimes(slots, startTime, (time) =>
-    keySlotOccupied(date, time, slots, events.data ?? []),
+    isRoomSlotOccupied(date, time, slots, events.data ?? []),
   ))
   const endTime = reviewing || result || endOptions.some((option) => option.value === selectedEnd) ? selectedEnd : ''
-  const customHours = hours.opensAt !== DEFAULT_KEY_HOURS.opensAt || hours.closesAt !== DEFAULT_KEY_HOURS.closesAt
+  const customHours = hours.opensAt !== DEFAULT_ROOM_SLOT_POLICY.opensAt || hours.closesAt !== DEFAULT_ROOM_SLOT_POLICY.closesAt || (hours.slotMinutes ?? DEFAULT_ROOM_SLOT_POLICY.slotMinutes) !== DEFAULT_ROOM_SLOT_POLICY.slotMinutes
   const selectionUnavailable = Boolean((draft.appliedSelection || customHours) && events.isSuccess && (
     (selectedStart && !startTime) || (selectedEnd && !endTime)
   ))
@@ -137,10 +142,10 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
   const confirm = async () => {
     const [latest, latestRooms] = await Promise.all([events.refetch(), rooms.refetch()])
     const latestRoom = latestRooms.data?.find(item => item.id === roomId)
-    const latestSlots = keySlotTimes(latestRoom?.keyOperatingHours)
-    const occupied = (time: string) => keySlotOccupied(date, time, latestSlots, latest.data ?? [])
+    const latestSlots = roomSlotTimes(latestRoom?.operatingHours)
+    const occupied = (time: string) => isRoomSlotOccupied(date, time, latestSlots, latest.data ?? [])
     const valid = latest.isSuccess && latestRooms.isSuccess && latestRoom?.active
-      && !isKeySlotElapsed(date, startTime, latestSlots, new Date())
+      && !isRoomSlotElapsed(date, startTime, latestSlots, new Date())
       && availableEndTimes(latestSlots, startTime, occupied).includes(endTime)
     if (!valid) {
       setErrors({ time: latest.isError || latestRooms.isError ? 'ไม่สามารถตรวจสอบช่วงเวลาว่างได้ กรุณาลองใหม่' : 'ช่วงเวลาที่เลือกใช้ไม่ได้แล้ว กรุณาเลือกเวลาใหม่' })

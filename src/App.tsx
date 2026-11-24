@@ -9,6 +9,8 @@ import { LoginForm } from "./features/auth/components/LoginForm";
 import { normalizeAuthReturnTo } from "./features/auth/auth.service";
 import { useAuthSession } from "./features/auth/hooks/useAuthSession";
 import type { AuthIdentity } from "./features/auth/auth.types";
+import { hasViewerPermission, useViewerPermissions } from "./features/auth/viewer-permissions.queries";
+import { canOpenStaffRoute, staffNavigation } from "./features/staff/staff-navigation";
 import { PublicLayout } from "./features/public/components/PublicLayout";
 import { PublicDashboardPage } from "./features/public/pages/PublicDashboardPage";
 import { AccountSignInPrompt } from "./features/public/components/AccountSignInPrompt";
@@ -42,23 +44,27 @@ import { StaffRoleSettingsPage } from "./features/staff/pages/StaffRoleSettingsP
 function AdminGuard({
   identity,
   loading,
-  children,
+  onLogout,
 }: {
   identity: AuthIdentity | null;
   loading: boolean;
-  children: ReactNode;
+  onLogout: () => Promise<void>;
 }) {
-  if (loading)
+  const location = useLocation();
+  const access = useViewerPermissions(identity);
+  if (loading || (identity && access.isPending))
     return (
       <main className="session-loading">
         <LoadingSpinner label="กำลังตรวจสอบสิทธิ์…" />
       </main>
     );
-  return identity?.role === "ADMIN" ? (
-    children
-  ) : (
-    <Navigate to="/login" replace />
-  );
+  if (!identity) return <Navigate to="/login" replace />;
+  if (!hasViewerPermission(access.data, "STAFF_ACCESS")) return <Navigate to="/keys" replace />;
+  const canOpen = (path: string) => canOpenStaffRoute(path, access.data ?? [], identity.role === "ADMIN" || identity.roles?.includes("ADMIN") === true);
+  const first = staffNavigation.find(item => canOpen(item.to));
+  if (location.pathname.replace(/\/$/, "") === "/staff" && first) return <Navigate to={first.to} replace />;
+  if (!canOpen(location.pathname)) return <Navigate to="/staff" replace />;
+  return <StaffLayout identity={identity} onLogout={onLogout} canOpen={canOpen} />;
 }
 
 function AccountGuard({
@@ -93,7 +99,8 @@ function LoginRoute({
   const location = useLocation();
   const requested = new URLSearchParams(location.search).get("returnTo");
   const returnTo = normalizeAuthReturnTo(requested);
-  if (loading)
+  const access = useViewerPermissions(identity);
+  if (loading || (identity && access.isPending))
     return (
       <main className="session-loading">
         <LoadingSpinner label="กำลังตรวจสอบบัญชี…" />
@@ -101,7 +108,7 @@ function LoginRoute({
     );
   if (identity)
     return (
-      <Navigate to={returnTo ?? (identity.role === "ADMIN" ? "/staff" : "/keys")} replace />
+      <Navigate to={returnTo ?? (hasViewerPermission(access.data, "STAFF_ACCESS") ? "/staff" : "/keys")} replace />
     );
   return (
     <>
@@ -183,12 +190,10 @@ export function App() {
       <Route
         path="staff"
         element={
-          <AdminGuard identity={identity} loading={loading}>
-            <StaffLayout identity={identity as AuthIdentity} onLogout={logout} />
-          </AdminGuard>
+          <AdminGuard identity={identity} loading={loading} onLogout={logout} />
         }
       >
-        <Route index element={<Navigate to="usage-dashboard" replace />} />
+        <Route index element={<p>บัญชีนี้ยังไม่มีสิทธิ์ใช้งานเมนูเจ้าหน้าที่</p>} />
         <Route path="rooms" element={<StaffRoomsPage />} />
         <Route path="rooms/new" element={<StaffRoomFormPage />} />
         <Route path="rooms/:roomId/edit" element={<StaffRoomFormPage />} />

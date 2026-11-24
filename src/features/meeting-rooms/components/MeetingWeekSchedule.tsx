@@ -1,3 +1,4 @@
+import { DEFAULT_SLOT_MINUTES, roomSlotTimes } from '../../schedules/request-time-options'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { getMeetingWeek } from '../meeting-week.service'
@@ -13,8 +14,8 @@ const weekLabel = new Intl.DateTimeFormat('th-TH', { ...dateOptions, day: 'numer
 const dayLabel = new Intl.DateTimeFormat('th-TH', { ...dateOptions, weekday: 'short', day: 'numeric', month: 'short' })
 const asDate = (value: string) => new Date(`${value}T00:00:00Z`)
 
-export function MeetingWeekSchedule({ roomId, roomName, today, viewerId }: {
-  roomId: string; roomName: string; today: string; viewerId: string | null
+export function MeetingWeekSchedule({ roomId, roomName, today, viewerId, slotMinutes = DEFAULT_SLOT_MINUTES }: {
+  roomId: string; roomName: string; today: string; viewerId: string | null; slotMinutes?: number
 }) {
   const [{ offset }, update] = useTabDraft(`meeting-week:${viewerId ?? 'guest'}:${roomId}:${meetingWeekStart(today, 0)}`, { offset: 0 })
   const scrollKey = `meeting-week-scroll:${viewerId ?? 'guest'}:${roomId}`
@@ -36,8 +37,7 @@ export function MeetingWeekSchedule({ roomId, roomName, today, viewerId }: {
   const closes = week.data ? clockMinutes(week.data.closes_at) : NaN
   const validHours = opens >= 0 && closes <= 24 * 60 && closes > opens
   const ticks = validHours ? [
-    opens,
-    ...Array.from({ length: 48 }, (_, index) => (index + 1) * 30).filter(time => time > opens && time < closes),
+    ...roomSlotTimes({ opensAt: minuteLabel(opens), closesAt: minuteLabel(closes), slotMinutes }).map(clockMinutes).filter(time => time < closes),
     closes,
   ] : []
   const position = (time: number) => `${(time - opens) / (closes - opens) * 100}%`
@@ -59,7 +59,7 @@ export function MeetingWeekSchedule({ roomId, roomName, today, viewerId }: {
         ref={node => { if (node) node.scrollLeft = readTabState<number>(scrollKey) ?? 0 }}
         onScroll={event => writeTabState(scrollKey, event.currentTarget.scrollLeft)}>
         <table className="meeting-week-table" aria-label="ตารางเวลารายสัปดาห์"
-          style={{ minWidth: `${5.25 + (closes - opens) / 30 * 5.75}rem` }}>
+          style={{ minWidth: `${5.25 + (closes - opens) / slotMinutes * 5.75}rem` }}>
           <thead><tr><th scope="col">วัน / เวลา</th><th scope="col">
             <div className="meeting-week-hours">{ticks.filter(time => time % 60 === 0 || time === opens || time === closes)
               .map(time => <span key={time} style={{ left: position(time) }} data-edge={time === opens ? 'start' : time === closes ? 'end' : undefined}>{minuteLabel(time)}</span>)}</div>

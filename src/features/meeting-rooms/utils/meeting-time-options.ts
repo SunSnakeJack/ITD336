@@ -1,25 +1,15 @@
-import { hasPriorityRole, type AuthIdentity } from '../../auth/auth.types'
+import { roomSlotTimes } from '../../schedules/request-time-options'
 
-export const MEETING_TIMES = Array.from(
-  { length: 21 },
-  (_, index) => `${String(8 + Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`,
-)
-
-export function meetingTimeOptions(date: string, now: Date = new Date(), opensAt = '08:00', closesAt = '18:00') {
-  const minutes = (value: string) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5))
-  const start = Math.ceil(minutes(opensAt) / 30) * 30
-  const end = Math.floor(minutes(closesAt) / 30) * 30
-  return Array.from({ length: Math.max(0, (end - start) / 30 + 1) }, (_, index) => {
-    const value = start + index * 30
-    return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
-  }).filter(time => new Date(`${date}T${time}:00+07:00`) > now)
+export function meetingTimeOptions(date: string, now: Date = new Date(), opensAt = '08:00', closesAt = '18:00', slotMinutes?: number) {
+  return roomSlotTimes({ opensAt: opensAt.slice(0, 5), closesAt: closesAt.slice(0, 5), slotMinutes })
+    .filter(time => new Date(`${date}T${time}:00+07:00`) > now)
 }
 
-export function canOverrideMeetingEvent(identity: AuthIdentity | null, event: {
+export function canOverrideMeetingEvent(canOverride: boolean, event: {
   eventType: string
   status?: string | null
   startsAt: string
 }, now: Date) {
-  return hasPriorityRole(identity) && event.eventType === 'BOOKING'
+  return canOverride && event.eventType === 'BOOKING'
     && event.status === 'APPROVED' && new Date(event.startsAt) > now
 }

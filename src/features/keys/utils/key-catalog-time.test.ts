@@ -1,7 +1,18 @@
+import { roomSlotTimes } from '../../schedules/request-time-options'
 import { describe, expect, it } from 'vitest'
 import { bangkokClock, bangkokDateKey, freeRangesForBangkokDay, isSlotElapsedForBangkokDate } from './key-catalog-time'
 
 describe('key catalog Bangkok time', () => {
+  it('anchors twenty-minute slots to opening time and omits a partial final slot', () => {
+    expect(roomSlotTimes({ opensAt: '08:05', closesAt: '09:15', slotMinutes: 20 })).toEqual(['08:05', '08:25', '08:45', '09:05'])
+  })
+
+  it('shows only full free slots around a booking on the old grid', () => {
+    const date = '2026-11-08'
+    expect(freeRangesForBangkokDay([{ startsAt: `${date}T08:30:00+07:00`, endsAt: `${date}T08:50:00+07:00` }],
+      date, new Date(`${date}T07:00:00+07:00`), false, { opensAt: '08:00', closesAt: '09:30', slotMinutes: 20 }))
+      .toEqual(['08:00–08:20 น.', '09:00–09:20 น.'])
+  })
   it('formats UTC timestamps in Asia/Bangkok', () => {
     expect(bangkokDateKey('2026-11-08T02:00:00.000Z')).toBe('2026-11-08')
     expect(bangkokClock('2026-11-08T02:00:00.000Z')).toBe('09:00')

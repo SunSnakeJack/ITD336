@@ -1,3 +1,4 @@
+import { DEFAULT_SLOT_MINUTES } from '../../schedules/request-time-options'
 import type { ReactNode } from 'react'
 import { SelectField } from '../../../shared/components/SelectField'
 import type { RoomCategoryPolicy, RoomPolicyCategory } from '../staff-settings.service'
@@ -19,8 +20,6 @@ export function StaffRoomCategoryFields({ policy, category, advanceDays, onChang
   const days = policy.days ?? defaultDays
   const opens = policy.opensAt ?? '08:00'
   const closes = policy.closesAt ?? '18:00'
-  const min = policy.minMinutes ?? 30
-  const max = policy.maxMinutes ?? 600
 
   return <fieldset className="staff-category-policy-columns" disabled={disabled}>
     <Row title={loginLabel}>
@@ -55,11 +54,12 @@ export function StaffRoomCategoryFields({ policy, category, advanceDays, onChang
         {approvalMode === 'AUTO' && <small>ใช้เมื่อรอผู้ดูแลระบบอนุมัติ</small>}
       </div>
     </Row>
-    <Row title="ระยะเวลาขั้นต่ำ–สูงสุด">
-      <DurationPicker label="ระยะเวลาขั้นต่ำ" value={min}
-        onChange={minMinutes => onChange({ ...policy, minMinutes, maxMinutes: max })} />
-      <DurationPicker label="ระยะเวลาสูงสุด" value={max}
-        onChange={maxMinutes => onChange({ ...policy, minMinutes: min, maxMinutes })} />
+    <Row title="ระยะเวลาต่อช่วง (นาที)">
+      <input aria-label="ระยะเวลาต่อช่วง (นาที)" type="number" min={1} max={1440}
+        value={policy.slotMinutes ?? DEFAULT_SLOT_MINUTES} onChange={event => {
+          const slotMinutes = event.target.valueAsNumber
+          onChange({ ...policy, slotMinutes: Number.isNaN(slotMinutes) ? undefined : slotMinutes })
+        }} />
     </Row>
     <Row title="ระบุเหตุผลเมื่อไม่อนุมัติ">
       <label className="staff-setting-switch"><input type="checkbox" role="switch" aria-label="ระบุเหตุผลเมื่อไม่อนุมัติ"
@@ -74,26 +74,4 @@ export function StaffRoomCategoryFields({ policy, category, advanceDays, onChang
         }} />
     </Row>
   </fieldset>
-}
-
-function DurationPicker({ label, value, onChange }: {
-  label: string; value: number; onChange: (minutes: number) => void
-}) {
-  const hours = Math.floor(value / 60)
-  const minutes = value % 60
-
-  return <div className="staff-duration-picker" role="group" aria-label={label}>
-    <span>{label}</span>
-    <label><input type="number" min={0} max={24} step={1} aria-label={label + ' (ชั่วโมง)'} value={hours}
-      onChange={event => {
-        const next = event.target.valueAsNumber
-        if (Number.isInteger(next) && next >= 0 && next <= 24) onChange(next * 60 + (next === 24 ? 0 : minutes))
-      }} /> ชม.</label>
-    <label><input type="number" min={0} max={59} step={1} aria-label={label + ' (นาที)'} value={minutes}
-      disabled={hours === 24}
-      onChange={event => {
-        const next = event.target.valueAsNumber
-        if (Number.isInteger(next) && next >= 0 && next <= 59) onChange(hours * 60 + next)
-      }} /> นาที</label>
-  </div>
 }

@@ -21,6 +21,7 @@ export async function createBooking(input: CreateBookingInput) {
     if (message.includes('ROOM_UNAVAILABLE') || message.includes('BOOKING_NOT_OVERRIDEABLE')) throw new Error('ช่วงเวลานี้มีการใช้งานห้องแล้ว')
     if (message.includes('ADVANCE_BOOKING_LIMIT_EXCEEDED')) throw new Error('วันที่เลือกอยู่นอกช่วงที่เปิดจอง')
     if (message.includes('OUTSIDE_OPERATING_HOURS')) throw new Error('ช่วงเวลานี้อยู่นอกเวลาที่เปิดให้ใช้งานห้อง')
+    if (message.includes('INVALID_ROOM_SLOT_RANGE')) throw new Error('ช่วงเวลาที่เลือกไม่ตรงกับช่วงที่เปิดจอง กรุณาเลือกเวลาใหม่')
     if (message.includes('ROOM_BOOKING_DISABLED')) throw new Error('ห้องนี้ปิดรับการจองชั่วคราว')
     if (message.includes('INVALID_TIME_RANGE')) throw new Error('กรุณาเลือกช่วงเวลาในอนาคตให้ถูกต้อง')
     if (message.includes('BOOKING_ROLE_REQUIRED')) throw new Error('บัญชีนี้ไม่มีสิทธิ์จองห้องประชุม')

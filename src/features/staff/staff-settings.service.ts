@@ -24,6 +24,7 @@ export async function setKeyRequestTimingSetting(enabled:boolean){const{data,err
 export type PermissionChanges = {
   roomPolicies?: Partial<Record<RoomPolicyCategory, RoomCategoryPolicy>>
   roleGrants?: { role: string; permission: string; enabled: boolean }[]
+  guestGeneralKey?: boolean
   meetingAdvanceDays?: number
   allowElapsed?: boolean
   openSaturday?: string | null
@@ -43,8 +44,7 @@ export type RoomCategoryPolicy = {
   days?: number[]
   opensAt?: string
   closesAt?: string
-  minMinutes?: number
-  maxMinutes?: number
+  slotMinutes?: number
   dailyLimit?: number
   advanceDays?: number
 }

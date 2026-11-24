@@ -2,6 +2,7 @@ import { AccountRequestAction, AccountRequestCard, AccountRequestTime } from '..
 import { EditableRequestCard } from '../components/EditableRequestCard'
 import { AccountKeyRequestHistoryPage } from '../../keys/pages/AccountKeyRequestHistoryPage'
 import { useSearchParams } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useRequestFocus } from '../../../shared/components/useRequestFocus'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
@@ -27,12 +28,25 @@ export function AccountRequestsPage(){
  const setTab = (next: 'bookings' | 'keys') => setParams(next === 'keys' ? { tab: 'keys' } : {})
  const client = useQueryClient()
  const bookings = useQuery(myBookingsQuery())
- const keys = useQuery({ ...myKeyLoanDetailsQuery(), enabled: tab === 'keys' })
+ const keys = useQuery(myKeyLoanDetailsQuery())
+ const keyHistory = keys.isSuccess ? keys.data.filter(loan => loan.usageScope !== 'MEETING') : []
+ const meetingLoans = keys.data?.filter(loan => loan.usageScope === 'MEETING') ?? []
+ const linkedBooking = meetingLoans.find(loan => loan.id === params.get('item'))?.bookingId
+ useEffect(() => {
+   if (!linkedBooking || !bookings.data?.some(booking => booking.id === linkedBooking)) return
+   const next = new URLSearchParams(params)
+   next.delete('tab')
+   next.set('item', linkedBooking)
+   setParams(next, { replace: true, preventScrollReset: true })
+ }, [bookings.data, linkedBooking, params, setParams])
  const requestFocus = useRequestFocus(tab === 'bookings' ? bookings.isSuccess : keys.isSuccess)
  const refresh=()=>Promise.all([client.invalidateQueries({queryKey:bookingKeys.mine}),client.invalidateQueries({queryKey:keyLoanKeys.mine})]);
  const cancel=useMutation({mutationFn:(id:string)=>cancelBooking(id,'ผู้ใช้ยกเลิกการจอง'),onSuccess:refresh});
  const status=useMutation({mutationFn:({id,action,description}:{id:string;action:'CHECKED_OUT'|'RETURNED'|'LOST'|'DAMAGED';description?:string})=>reportKeyStatus(id,action,description),onSuccess:refresh});
  const reportIssue=(id:string,action:'LOST'|'DAMAGED')=>{const description=window.prompt(action==='LOST'?'ระบุรายละเอียดการสูญหาย':'ระบุรายละเอียดความชำรุด');if(description?.trim())status.mutate({id,action,description})};
+ const keyActions = (loan: KeyLoanDetail) => <KeyActions loan={loan} pending={status.isPending}
+   onStatus={action => status.mutate({ id: loan.id, action })}
+   onIssue={action => reportIssue(loan.id, action)} />
  return <section className="content-page account-requests"><PublicPageHeading title="การจองและกุญแจของฉัน" description="ติดตามรายการจองห้องและสถานะการเบิกกุญแจ" />
  <div className="inner-tabs" role="tablist"><button className={tab==='bookings'?'active':''} role="tab" aria-selected={tab==='bookings'} onClick={()=>setTab('bookings')}>การจองห้อง</button><button className={tab==='keys'?'active':''} role="tab" aria-selected={tab==='keys'} onClick={()=>setTab('keys')}>การเบิกกุญแจ</button></div>
  {tab === 'bookings' && (bookings.isPending ? <LoadingSpinner label="กำลังโหลดการจอง…"/> : bookings.error
@@ -57,17 +71,15 @@ export function AccountRequestsPage(){
            }}>ยกเลิก</AccountRequestAction>}/>
      }) : <div className="empty-panel">ยังไม่มีรายการจอง</div>}
    </div>)}
- {tab === 'keys' && <AccountKeyRequestHistoryPage embedded loanCount={keys.data?.length ?? 0} />}
+ {tab === 'keys' && <AccountKeyRequestHistoryPage embedded loanCount={keyHistory.length} />}
  {tab === 'keys' && (keys.isPending ? <LoadingSpinner label="กำลังโหลดข้อมูลกุญแจ…"/> : keys.error
    ? <p className="panel-error">{keys.error.message}</p> : <div className="account-request-card-list">
-     {keys.data?.map(loan => <AccountRequestCard key={loan.id} articleProps={requestFocus(loan.id)}
+     {keyHistory.map(loan => <AccountRequestCard key={loan.id} articleProps={requestFocus(loan.id)}
        title={`ห้อง ${loan.roomCode}`} status={accountKeyLoanStatus(loan)}
        time={loan.expectedReturnAt ? `กำหนดคืน ${dateTime.format(new Date(loan.expectedReturnAt))}` : '—'}
        purposeLabel="ที่มาของสิทธิ์"
        purpose={loan.usageSource === 'BOOKING' ? 'สิทธิ์จากการจองห้อง' : loan.usageSource === 'CLASS_SCHEDULE' ? 'สิทธิ์จากตารางเรียน' : 'เบิกกุญแจโดยตรง'}
-       actions={<KeyActions loan={loan} pending={status.isPending}
-         onStatus={action => status.mutate({ id: loan.id, action })}
-         onIssue={action => reportIssue(loan.id, action)}/>}/>)}
+       actions={keyActions(loan)}/>)}
    </div>)}
  {(cancel.error||status.error)&&<p className="panel-error">{(cancel.error||status.error)?.message}</p>}</section>
 }

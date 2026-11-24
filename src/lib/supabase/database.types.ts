@@ -3364,6 +3364,7 @@ export type Database = {
       key_loan_report_v: {
         Row: {
           available_from: string | null
+          booking_id: string | null
           borrower_id: string | null
           checked_out_at: string | null
           expected_return_at: string | null
@@ -3375,10 +3376,46 @@ export type Database = {
           room_code: string | null
           room_id: string | null
           status: Database["public"]["Enums"]["key_loan_status"] | null
+          usage_scope: string | null
           usage_source: Database["public"]["Enums"]["key_usage_source"] | null
           user_reported_return_at: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "key_loans_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_details_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_report_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "staff_pending_bookings_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_loans_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "user_booking_history_v"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "key_loans_borrower_id_fkey"
             columns: ["borrower_id"]
@@ -4270,6 +4307,7 @@ export type Database = {
           starts_at: string
         }[]
       }
+      get_guest_general_key_enabled: { Args: never; Returns: boolean }
       get_key_catalog_display: { Args: never; Returns: string }
       get_key_request_allow_past_slots: { Args: never; Returns: boolean }
       get_key_request_email_context: {
@@ -4461,6 +4499,15 @@ export type Database = {
           title: string
         }[]
       }
+      get_public_room_slot_policies: {
+        Args: never
+        Returns: {
+          closes_at: string
+          opens_at: string
+          room_id: string
+          slot_minutes: number
+        }[]
+      }
       get_public_rooms_closed_today: { Args: never; Returns: string[] }
       get_room_category_restrictions: { Args: never; Returns: Json }
       get_room_rejection_reason_required: {
@@ -4548,8 +4595,19 @@ export type Database = {
         }[]
       }
       get_usage_permission_policy: { Args: never; Returns: Json }
+      get_viewer_permissions: { Args: never; Returns: string[] }
       has_permission: { Args: { p_permission: string }; Returns: boolean }
       has_role: { Args: { p_role: string }; Returns: boolean }
+      is_room_slot_range: {
+        Args: {
+          p_closes: string
+          p_end: string
+          p_minutes: number
+          p_opens: string
+          p_start: string
+        }
+        Returns: boolean
+      }
       issue_gmail_key_action_token: {
         Args: {
           p_action: string
@@ -4733,6 +4791,10 @@ export type Database = {
       room_approval_setting: {
         Args: { p_key: string; p_room_id: string }
         Returns: string
+      }
+      room_category_slot_minutes: {
+        Args: { p_category: string }
+        Returns: number
       }
       room_policy_category: { Args: { p_room_id: string }; Returns: string }
       room_requires_rejection_reason: {

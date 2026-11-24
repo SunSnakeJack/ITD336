@@ -3,7 +3,7 @@ import { RequestResultIcon } from '../../../shared/components/RequestResultIcon'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FormEvent, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
-import { getRequesterStatus, hasPriorityRole, ROLE_LABELS, type AuthIdentity } from '../../auth/auth.types'
+import { getRequesterStatus, ROLE_LABELS, type AuthIdentity } from '../../auth/auth.types'
 import { createBooking } from '../../bookings/booking.service'
 import { bookingKeys } from '../../bookings/booking.queries'
 import { publicRoomsQuery, publicScheduleEventsQuery, scheduleKeys } from '../../schedules/schedule.queries'
@@ -15,7 +15,8 @@ import { canOverrideMeetingEvent, meetingTimeOptions } from '../utils/meeting-ti
 import { meetingRoomDisplayName } from '../utils/meeting-room-display'
 import { staffUsageQueryKey } from '../../staff/reporting/staff-usage.queries'
 import '../../keys/pages/KeyRequestFormPage.css'
-import { availableEndTimes, isHalfHourOccupied, timeSelectOptions } from '../../schedules/request-time-options'
+import { hasViewerPermission, useViewerPermissions } from '../../auth/viewer-permissions.queries'
+import { availableEndTimes, timeSelectOptions, isRoomSlotOccupied } from '../../schedules/request-time-options'
 import './MeetingRoomRequestPage.css'
 import { useTabDraft } from '../../../shared/components/useTabDraft'
 import { rememberPublicMenu } from '../../public/public-navigation-memory'
@@ -37,6 +38,9 @@ export function MeetingRoomRequestPage({ identity, authLoading }: { identity: Au
   const [params] = useSearchParams()
   const client = useQueryClient()
   const rooms = useQuery(publicRoomsQuery())
+  const access = useViewerPermissions(identity)
+  const canBook = hasViewerPermission(access.data, 'MEETING_BOOK')
+  const canOverride = canBook && hasViewerPermission(access.data, 'BOOKING_OVERRIDE')
   const room = rooms.data?.find((item) => item.id === roomId)
   const policy = useQuery({ ...meetingBookingPolicyQuery(), enabled: Boolean(identity) })
   const scope = identity?.userId ?? 'guest'
@@ -50,9 +54,10 @@ export function MeetingRoomRequestPage({ identity, authLoading }: { identity: Au
   const schedule = useQuery({ ...publicScheduleEventsQuery({ roomId, from: date, to: date }), enabled: Boolean(date && roomId && identity) })
   const now = new Date()
   const availableTimes = policy.data && date
-    ? meetingTimeOptions(date, now, policy.data.opens_at, policy.data.closes_at) : []
-  const blockingEvents = (schedule.data ?? []).filter((event) => !canOverrideMeetingEvent(identity, event, now))
-  const unavailable = (time: string) => isHalfHourOccupied(date, time, blockingEvents)
+    ? meetingTimeOptions(date, now, room?.operatingHours?.opensAt ?? policy.data.opens_at,
+      room?.operatingHours?.closesAt ?? policy.data.closes_at, room?.operatingHours?.slotMinutes) : []
+  const blockingEvents = (schedule.data ?? []).filter((event) => !canOverrideMeetingEvent(canOverride, event, now))
+  const unavailable = (time: string) => isRoomSlotOccupied(date, time, availableTimes, blockingEvents)
   const startOptions = timeSelectOptions(availableTimes.slice(0, -1), unavailable)
   const startTime = selectedStart
     ? startOptions.find((option) => option.value === selectedStart && !option.disabled)?.value ?? ''
@@ -83,6 +88,9 @@ export function MeetingRoomRequestPage({ identity, authLoading }: { identity: Au
   if (!identity) return <Navigate to={`/login?returnTo=${encodeURIComponent(`/meeting-room/${roomId}/request?${params.toString()}`)}`} replace />
   if (!room || room.usageScope !== 'MEETING') return <Navigate to="/meeting-room" replace />
 
+  if (access.isPending) return <LoadingSpinner label="กำลังตรวจสอบสิทธิ์…" />
+  if (!canBook) return <p role="alert">บัญชีนี้ไม่มีสิทธิ์จองห้องประชุม</p>
+
   const validate = () => {
     if (!purpose.trim()) return 'กรุณาระบุวัตถุประสงค์'
     if (!date) return 'กรุณาเลือกวันที่จอง'
@@ -95,12 +103,15 @@ export function MeetingRoomRequestPage({ identity, authLoading }: { identity: Au
   const changeStart = (nextStart: string) => updateDraft({ selectedStart: nextStart, selectedEnd: '' })
   const confirm = async () => {
     if (!reviewSlot) return
-    const latest = await schedule.refetch()
+    const [latest, latestRooms, latestPolicy] = await Promise.all([schedule.refetch(), rooms.refetch(), policy.refetch()])
     const currentTime = new Date()
-    const times = policy.data ? meetingTimeOptions(reviewSlot.date, currentTime, policy.data.opens_at, policy.data.closes_at) : []
-    const blocked = (latest.data ?? []).filter(event => !canOverrideMeetingEvent(identity, event, currentTime))
-    if (!latest.isSuccess || reviewSlot.date !== date || !times.includes(reviewSlot.start)
-      || !availableEndTimes(times, reviewSlot.start, time => isHalfHourOccupied(date, time, blocked)).includes(reviewSlot.end)) {
+    const latestRoom = latestRooms.data?.find(item => item.id === roomId)
+    const hours = latestRoom?.operatingHours
+    const times = latestPolicy.data ? meetingTimeOptions(reviewSlot.date, currentTime,
+      hours?.opensAt ?? latestPolicy.data.opens_at, hours?.closesAt ?? latestPolicy.data.closes_at, hours?.slotMinutes) : []
+    const blocked = (latest.data ?? []).filter(event => !canOverrideMeetingEvent(canOverride, event, currentTime))
+    if (!latest.isSuccess || !latestRooms.isSuccess || !latestRoom?.active || !latestPolicy.isSuccess || !latestPolicy.data.allowed_dates.includes(reviewSlot.date) || reviewSlot.date !== date || !times.includes(reviewSlot.start)
+      || !availableEndTimes(times, reviewSlot.start, time => isRoomSlotOccupied(date, time, times, blocked)).includes(reviewSlot.end)) {
       setError(latest.isError ? 'ไม่สามารถตรวจสอบช่วงเวลาว่างได้ กรุณาลองใหม่' : 'ช่วงเวลาที่เลือกใช้ไม่ได้แล้ว กรุณาเลือกเวลาใหม่')
       updateDraft({ reviewSlot: null })
       return
@@ -115,7 +126,7 @@ export function MeetingRoomRequestPage({ identity, authLoading }: { identity: Au
 
   if (step === 3) return <section className="key-request-entry key-booking-form-page"><div className={`key-request-success ${pendingApproval ? 'pending' : 'approved'}`}>{stepper}<div className="key-success-card"><RequestResultIcon pending={pendingApproval} /><h1>{pendingApproval ? 'ส่งคำขอจองห้องเรียบร้อยแล้ว' : 'บันทึกการจองห้องสำเร็จ'}</h1><p>{pendingApproval ? 'กรุณารอเจ้าหน้าที่ตรวจสอบและอนุมัติคำขอ' : 'ระบบได้รับข้อมูลการจองห้องประชุมของคุณเรียบร้อยแล้ว'}</p><h2>รายละเอียดการจอง</h2><dl><Row label="ห้องที่จอง" value={roomDisplayName}/><Row label="วันที่จอง" value={formatThaiDate(reviewSlot?.date ?? date)}/><Row label="เวลาเริ่มต้น" value={`${reviewSlot?.start ?? startTime} น.`}/><Row label="เวลาสิ้นสุด" value={`${reviewSlot?.end ?? endTime} น.`}/><Row label="วัตถุประสงค์" value={purpose}/></dl></div><Link className="primary-action" to="/meeting-room">กลับสู่หน้าหลัก</Link></div></section>
 
-  if (step === 2) return <section className="key-request-entry key-booking-form-page key-request-review"><header><h1>ตรวจสอบข้อมูล</h1><p>กรุณาตรวจสอบข้อมูลให้เรียบร้อยก่อนกดยืนยัน</p></header>{stepper}<section className="key-review-card"><h2>ข้อมูลผู้จอง</h2><dl><Row label="ชื่อ – นามสกุล" value={identity.fullName}/><Row label="อีเมล" value={identity.email}/></dl></section><section className="key-review-card"><h2>ข้อมูลการจอง</h2><dl><Row label="ห้องที่จอง" value={roomDisplayName}/><Row label="วันที่จอง" value={formatThaiDate(reviewSlot?.date ?? date)}/><Row label="เวลาเริ่มต้น" value={reviewSlot?.start ?? startTime}/><Row label="เวลาสิ้นสุด" value={reviewSlot?.end ?? endTime}/><Row label="วัตถุประสงค์" value={purpose}/></dl></section>{hasPriorityRole(identity) && <p>หากเวลาซ้อนกับรายการจองทั่วไปที่ยังไม่เริ่ม ระบบจะใช้สิทธิ์จองทับเมื่อยืนยัน</p>}<div className="key-review-actions"><button type="button" disabled={save.isPending} onClick={() => updateDraft({ reviewSlot: null })}>ย้อนกลับ</button><button className="primary-action review-confirm-action" type="button" disabled={save.isPending || schedule.isFetching} onClick={() => void confirm()}>{save.isPending ? 'กำลังบันทึก…' : 'ยืนยันการจอง'}</button></div>{save.error && <BookingErrorDialog message={save.error.message} onClose={() => save.reset()}/>}</section>
+  if (step === 2) return <section className="key-request-entry key-booking-form-page key-request-review"><header><h1>ตรวจสอบข้อมูล</h1><p>กรุณาตรวจสอบข้อมูลให้เรียบร้อยก่อนกดยืนยัน</p></header>{stepper}<section className="key-review-card"><h2>ข้อมูลผู้จอง</h2><dl><Row label="ชื่อ – นามสกุล" value={identity.fullName}/><Row label="อีเมล" value={identity.email}/></dl></section><section className="key-review-card"><h2>ข้อมูลการจอง</h2><dl><Row label="ห้องที่จอง" value={roomDisplayName}/><Row label="วันที่จอง" value={formatThaiDate(reviewSlot?.date ?? date)}/><Row label="เวลาเริ่มต้น" value={reviewSlot?.start ?? startTime}/><Row label="เวลาสิ้นสุด" value={reviewSlot?.end ?? endTime}/><Row label="วัตถุประสงค์" value={purpose}/></dl></section>{canOverride && <p>หากเวลาซ้อนกับรายการจองทั่วไปที่ยังไม่เริ่ม ระบบจะใช้สิทธิ์จองทับเมื่อยืนยัน</p>}<div className="key-review-actions"><button type="button" disabled={save.isPending} onClick={() => updateDraft({ reviewSlot: null })}>ย้อนกลับ</button><button className="primary-action review-confirm-action" type="button" disabled={save.isPending || schedule.isFetching || rooms.isFetching || policy.isFetching} onClick={() => void confirm()}>{save.isPending ? 'กำลังบันทึก…' : 'ยืนยันการจอง'}</button></div>{save.error && <BookingErrorDialog message={save.error.message} onClose={() => save.reset()}/>}</section>
 
   return <section className="key-request-entry key-booking-form-page meeting-booking-form">
     <Link className="back-link" to={`/meeting-room/${roomId}`}>‹ กลับหน้าหลัก</Link>

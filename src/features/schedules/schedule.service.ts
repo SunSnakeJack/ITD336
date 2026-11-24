@@ -47,17 +47,18 @@ export async function getPublicScheduleRooms(): Promise<ScheduleRoom[]> {
   const result = await callRpc<UnknownRow[]>('get_public_room_catalog', {})
   if (result.error) throw new Error(result.error.message)
   const rooms = (result.data ?? []).map(mapPublicRoom)
-  if (!rooms.some(room => room.usageScope === 'LABORATORY')) return rooms
+  if (!rooms.some(room => room.usageScope === 'LABORATORY' || room.usageScope === 'MEETING')) return rooms
 
   const [login, hours] = await Promise.all([
-    callRpc<string[]>('get_public_key_login_required_rooms', {}),
-    callRpc<{ room_id: string; opens_at: string; closes_at: string }[]>('get_public_key_operating_hours', {}),
+    rooms.some(room => room.usageScope === 'LABORATORY')
+      ? callRpc<string[]>('get_public_key_login_required_rooms', {}) : { data: [], error: null },
+    callRpc<{ room_id: string; opens_at: string; closes_at: string; slot_minutes?: number }[]>('get_public_room_slot_policies', {}),
   ])
   if (login.error) throw new Error(login.error.message)
   if (hours.error) throw new Error(hours.error.message)
   const loginRequired = new Set(login.data ?? [])
-  const hoursByRoom = new Map((hours.data ?? []).map(row => [row.room_id, { opensAt: row.opens_at.slice(0, 5), closesAt: row.closes_at.slice(0, 5) }]))
-  return rooms.map(room => ({ ...room, requiresLoginForKeyRequest: Boolean(room.requiresSsoForKeyRequest || loginRequired.has(room.id)), keyOperatingHours: hoursByRoom.get(room.id) }))
+  const hoursByRoom = new Map((hours.data ?? []).map(row => [row.room_id, { opensAt: row.opens_at.slice(0, 5), closesAt: row.closes_at.slice(0, 5), slotMinutes: row.slot_minutes }]))
+  return rooms.map(room => ({ ...room, requiresLoginForKeyRequest: Boolean(room.requiresSsoForKeyRequest || loginRequired.has(room.id)), operatingHours: hoursByRoom.get(room.id) }))
 }
 
 export async function getAcademicSchedules(): Promise<AcademicSchedule[]> {

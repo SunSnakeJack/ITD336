@@ -67,14 +67,16 @@ async function dispatchCreatedRequestEmail(result: KeyRequestResult): Promise<Ke
 }
 
 export class KeyRequestOperatingHoursError extends Error {
-  constructor() { super('ช่วงเวลาที่เลือกอยู่นอกเวลาให้บริการของห้อง กรุณาเลือกเวลาใหม่') }
+  constructor(message = 'ช่วงเวลาที่เลือกอยู่นอกเวลาให้บริการของห้อง กรุณาเลือกเวลาใหม่') { super(message) }
 }
 
 function throwKeyRequestError(message:string):never{
   if(message.includes('KEY_REQUEST_PAST_SLOT_DISABLED'))throw new Error('ช่วงเวลานี้ผ่านไปแล้วและระบบยังไม่อนุญาตให้เบิกย้อนหลัง')
   if (message.includes('KEY_REQUEST_TIME_CONFLICT') || message.includes('LEGACY_KEY_REQUEST_TIME_CONFLICT')) throw new Error('ช่วงเวลานี้มีคำขอเบิกกุญแจแล้ว')
   if (message.includes('AUTHENTICATION_REQUIRED')) throw new Error('ห้องนี้ต้องเข้าสู่ระบบมหาวิทยาลัยก่อนส่งคำขอ')
+  if (message.includes('KEY_REQUEST_PERMISSION_REQUIRED')) throw new Error('บัญชีนี้ไม่มีสิทธิ์เบิกกุญแจห้องนี้')
   if (message.includes('UNIVERSITY_EMAIL_REQUIRED')) throw new Error('กรุณาใช้อีเมลมหาวิทยาลัย @northbkk.ac.th')
+  if (message.includes('INVALID_ROOM_SLOT_RANGE')) throw new KeyRequestOperatingHoursError('ช่วงเวลาที่เลือกไม่ตรงกับช่วงที่เปิดให้เบิก กรุณาเลือกเวลาใหม่')
   if (message.includes('OUTSIDE_SERVICE_HOURS') || message.includes('OUTSIDE_OPERATING_HOURS')) {
     throw new KeyRequestOperatingHoursError()
   }
@@ -94,8 +96,8 @@ export const approveKeyRequest=(loanId:string,notes?:string)=>unwrap<RpcResult>(
 export const checkoutKey=(loanId:string,keyId:string,expectedReturnAt:string)=>unwrap<RpcResult>(supabase.rpc('checkout_key',{p_key_loan_id:loanId,p_key_id:keyId,p_expected_return_at:expectedReturnAt}))
 export const returnKey=(loanId:string,condition:'NORMAL'|'DAMAGED'|'LOST'='NORMAL',notes?:string)=>unwrap<RpcResult>(supabase.rpc('return_key',{p_key_loan_id:loanId,p_condition:condition,p_notes:notes}))
 export async function getMyKeyLoanDetails(): Promise<KeyLoanDetail[]> {
-  const rows=await unwrap<Array<{id:string|null;room_id:string|null;room_code:string|null;key_code:string|null;usage_source:KeyUsageSource|null;status:KeyLoanStatus|null;checked_out_at:string|null;expected_return_at:string|null;available_from:string|null;user_reported_return_at:string|null;returned_at:string|null;overdue:boolean|null}>>(supabase.from('key_loan_report_v').select('*').order('expected_return_at',{ascending:false}))
-  return rows.filter((row)=>row.id&&row.room_id&&row.status&&row.usage_source).map((row)=>({id:row.id as string,roomId:row.room_id as string,roomCode:row.room_code??'—',keyCode:row.key_code,usageSource:row.usage_source as KeyUsageSource,status:row.status as KeyLoanStatus,checkedOutAt:row.checked_out_at,expectedReturnAt:row.expected_return_at,availableFrom:row.available_from,reportedReturnAt:row.user_reported_return_at,returnedAt:row.returned_at,overdue:Boolean(row.overdue)}))
+  const rows=await unwrap<Array<{id:string|null;room_id:string|null;room_code:string|null;booking_id:string|null;usage_scope:string|null;key_code:string|null;usage_source:KeyUsageSource|null;status:KeyLoanStatus|null;checked_out_at:string|null;expected_return_at:string|null;available_from:string|null;user_reported_return_at:string|null;returned_at:string|null;overdue:boolean|null}>>(supabase.from('key_loan_report_v').select('*').order('expected_return_at',{ascending:false}))
+  return rows.filter((row)=>row.id&&row.room_id&&row.status&&row.usage_source).map((row)=>({id:row.id as string,roomId:row.room_id as string,roomCode:row.room_code??'—',bookingId:row.booking_id,usageScope:row.usage_scope,keyCode:row.key_code,usageSource:row.usage_source as KeyUsageSource,status:row.status as KeyLoanStatus,checkedOutAt:row.checked_out_at,expectedReturnAt:row.expected_return_at,availableFrom:row.available_from,reportedReturnAt:row.user_reported_return_at,returnedAt:row.returned_at,overdue:Boolean(row.overdue)}))
 }
 export const confirmKeyReturn=(loanId:string,notes?:string)=>unwrap<RpcResult>(supabase.rpc('confirm_key_return',{p_key_loan_id:loanId,p_notes:notes,p_reported_return_at:new Date().toISOString()}))
 export const reportKeyDamage=(loanId:string,description:string)=>unwrap<RpcResult>(supabase.rpc('report_key_damage' as never,{p_key_loan_id:loanId,p_description:description} as never))
