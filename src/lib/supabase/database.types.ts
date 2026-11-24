@@ -4928,6 +4928,14 @@ export type Database = {
         Args: { p_expected_count: number; p_room_id: string }
         Returns: number
       }
+      update_admin_preassigned_user: {
+        Args: {
+          p_full_name: string
+          p_preassignment_id: string
+          p_role_codes: string[]
+        }
+        Returns: undefined
+      }
       update_admin_user_profile: {
         Args: { p_first_name: string; p_last_name: string; p_user_id: string }
         Returns: undefined

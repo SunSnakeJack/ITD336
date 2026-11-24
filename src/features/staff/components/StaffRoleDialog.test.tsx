@@ -6,6 +6,21 @@ const user={id:'user-1',firstName:'ผู้ใช้',lastName:'ทดสอบ
 const roles=[{code:'STUDENT',name:'Student'},{code:'TEACHER',name:'Teacher'}]
 
 describe('StaffRoleDialog',()=>{
+  it('edits pending names and roles while keeping email read-only and status unset', () => {
+    const save = vi.fn()
+    render(<StaffRoleDialog user={{ ...user, pendingRegistration: true, accountStatus: null }}
+      roles={roles} pending={false} onClose={vi.fn()} onSave={save}/>)
+    expect(screen.getByLabelText('อีเมล')).toHaveAttribute('readonly')
+    expect(screen.queryByRole('button', { name: /สถานะบัญชี/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('checkbox', { name: /Student/ }))
+    expect(screen.getByRole('button', { name: 'บันทึกข้อมูล' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('checkbox', { name: /Teacher/ }))
+    fireEvent.change(screen.getByLabelText('ชื่อ'), { target: { value: 'ชื่อใหม่' } })
+    fireEvent.click(screen.getByRole('button', { name: 'บันทึกข้อมูล' }))
+    expect(save).toHaveBeenCalledWith({
+      firstName: 'ชื่อใหม่', lastName: 'ทดสอบ', roleCodes: ['TEACHER'], accountStatus: null,
+    })
+  })
   it('submits every selected role and the selected account status',()=>{
     const save=vi.fn()
     render(<StaffRoleDialog user={user} roles={roles} pending={false} onClose={vi.fn()} onSave={save}/>)

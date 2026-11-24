@@ -12,7 +12,7 @@ import { StaffLecturerNamesDialog } from '../components/StaffLecturerNamesDialog
 import { lecturerLanguageQuery } from '../../keys/lecturer-display.queries'
 import { adminLecturerNamesQuery, refreshLecturerOptions, saveLecturerNames, type LecturerNames } from '../staff-lecturer-names'
 import { staffRoleOptionsQuery, staffUserDirectoryQuery, staffUserKeys } from '../staff-user.queries'
-import { addStaffUser, removeStaffUser, setStaffUserRoles, setStaffUserStatus, updateStaffUserProfile } from '../staff-user.service'
+import { addStaffUser, removeStaffUser, setStaffUserRoles, setStaffUserStatus, updateStaffPreassignedUser, updateStaffUserProfile } from '../staff-user.service'
 import type { StaffRegisteredUser, StaffUserDirectoryItem } from '../types/staff-user.types'
 import { filterUserDirectory, getStaffInitials, userDirectoryStats } from '../utils/staff-user-directory'
 import './StaffUserManagement.css'
@@ -31,7 +31,7 @@ export function StaffUsersPage() {
   const setSearch = (search: string) => updateView({ search, page: 1 })
   const setRole = (role: string) => updateView({ role, page: 1 })
   const setAccountStatus = (accountStatus: string) => updateView({ accountStatus, page: 1 })
-  const [editing, setEditing] = useState<StaffRegisteredUser | null>(null)
+  const [editing, setEditing] = useState<StaffUserDirectoryItem | null>(null)
   const [editingLecturer, setEditingLecturer] = useState<StaffUserDirectoryItem | null>(null)
   const adding = searchParams.get('dialog') === 'add'
   const [statusAction, setStatusAction] = useState<{ user: StaffRegisteredUser; status: StaffRegisteredUser['accountStatus'] } | null>(null)
@@ -67,11 +67,19 @@ export function StaffUsersPage() {
     },
   })
   const save = useMutation({
-    mutationFn: async (input: { firstName:string;lastName:string;roleCodes: string[]; accountStatus: StaffRegisteredUser['accountStatus'] }) => {
+    mutationFn: async (input: { firstName:string;lastName:string;roleCodes: string[]; accountStatus: StaffUserDirectoryItem['accountStatus'] }) => {
       if (!editing) return
+      if (editing.pendingRegistration) {
+        await updateStaffPreassignedUser({
+          id: editing.id,
+          fullName: [input.firstName, input.lastName].filter(Boolean).join(' '),
+          roleCodes: input.roleCodes,
+        })
+        return
+      }
       if(input.firstName!==editing.firstName||input.lastName!==editing.lastName)await updateStaffUserProfile({userId:editing.id,firstName:input.firstName,lastName:input.lastName})
       await setStaffUserRoles({ userId: editing.id, roleCodes: input.roleCodes })
-      if (input.accountStatus !== editing.accountStatus) await setStaffUserStatus({ userId: editing.id, status: input.accountStatus })
+      if (input.accountStatus && input.accountStatus !== editing.accountStatus) await setStaffUserStatus({ userId: editing.id, status: input.accountStatus })
     },
     onSuccess: async () => { await refresh(); setStatusNotice('บันทึกข้อมูลผู้ใช้เรียบร้อยแล้ว'); setEditing(null) },
   })

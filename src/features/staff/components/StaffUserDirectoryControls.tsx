@@ -33,7 +33,7 @@ export function StaffDirectoryStatus({ user }: { user: StaffUserDirectoryItem })
 
 export function StaffDirectoryActions({ user, onEdit, onStatus, onRemove, onEditLecturerName, lecturerNamesReady = false }: {
   user: StaffUserDirectoryItem
-  onEdit: (user: StaffRegisteredUser) => void
+  onEdit: (user: StaffUserDirectoryItem) => void
   onStatus: (user: StaffRegisteredUser, status: 'ACTIVE' | 'SUSPENDED') => void
   onRemove: (user: StaffUserDirectoryItem) => void
   onEditLecturerName: (user: StaffUserDirectoryItem) => void
@@ -51,10 +51,10 @@ export function StaffDirectoryActions({ user, onEdit, onStatus, onRemove, onEdit
   const canEditLecturerName = user.roleCodes.includes('TEACHER')
 
   return <div className="staff-user-actions">
-    {!user.pendingRegistration && <button type="button" className="staff-user-edit"
+    <button type="button" className="staff-user-edit"
       aria-label={`แก้ไขข้อมูล ${name}`} onClick={() => onEdit(user)}>
       <StaffUserIcon name="edit"/>แก้ไข
-    </button>}
+    </button>
     <button type="button" className="staff-user-more" aria-label={`จัดการบัญชี ${name}`} popoverTarget={id}
       onClick={event => {
         const bounds = event.currentTarget.getBoundingClientRect()

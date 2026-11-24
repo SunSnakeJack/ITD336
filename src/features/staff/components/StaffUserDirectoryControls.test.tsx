@@ -30,14 +30,16 @@ describe('staff directory controls', () => {
     },
   )
 
-  it('offers only removal for a non-teacher account that has not signed in', () => {
+  it('offers editing and removal for a non-teacher account that has not signed in', () => {
     const user: StaffUserDirectoryItem = { ...active, roleCodes: ['STUDENT'], accountStatus: null, pendingRegistration: true }
+    const onEdit = vi.fn()
     const { container } = render(<>
       <StaffDirectoryStatus user={user}/>
-      <StaffDirectoryActions user={user} onEdit={vi.fn()} onStatus={vi.fn()} onRemove={vi.fn()} onEditLecturerName={vi.fn()}/>
+      <StaffDirectoryActions user={user} onEdit={onEdit} onStatus={vi.fn()} onRemove={vi.fn()} onEditLecturerName={vi.fn()}/>
     </>)
     expect(screen.getByText('ยังไม่เข้าสู่ระบบ')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /แก้ไขข้อมูล/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /แก้ไขข้อมูล/ }))
+    expect(onEdit).toHaveBeenCalledWith(user)
     const actions = container.querySelectorAll('[popover="auto"] button')
     expect(actions).toHaveLength(1)
     expect(actions[0]).toHaveTextContent('ลบผู้ใช้')

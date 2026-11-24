@@ -6,6 +6,8 @@ On the first sign-in with a verified email, the database consumes the matching p
 
 The admin directory's **เพิ่มผู้ใช้** action creates a pending preassignment without creating an Auth account or sending an invitation. Administrators can assign multiple roles. Leaving the selection empty preassigns `STUDENT`. An existing account or preassignment for the same normalized email is rejected, and successful additions are audited.
 
+Administrators can edit a pending user's directory name and assigned roles. The email remains the identifier used at first sign-in, and the edit requires at least one role. The database saves the edit and audit entry in one transaction. If first sign-in consumes the assignment before the edit takes the email lock, the editor asks the administrator to reload the directory.
+
 Additional settings lets administrators create, rename, and remove labels without granting permissions. Built-in roles and roles with permissions are protected, and assigned labels cannot be removed. A first sign-in with only custom labels still receives the normal Student role.
 
 The Logs page requires `AUDIT_READ` and uses server-side pages of ten events. New audit events record the actor category at write time. For older events, actor filters use the action's authorization context when known, then current roles as an explicitly marked estimate. Unclassifiable events remain visible without an actor filter. The IP column displays an address only when a trusted server-side source has recorded it.

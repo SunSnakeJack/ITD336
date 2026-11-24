@@ -52,6 +52,20 @@ export async function addStaffUser(input: { email: string; fullName: string; rol
   throw new Error(messages[error.message] ?? 'ไม่สามารถเพิ่มผู้ใช้ได้ กรุณาลองใหม่')
 }
 
+export async function updateStaffPreassignedUser(input: { id: string; fullName: string; roleCodes: string[] }) {
+  const { error } = await supabase.rpc('update_admin_preassigned_user', {
+    p_preassignment_id: input.id, p_full_name: input.fullName, p_role_codes: input.roleCodes,
+  })
+  if (!error) return
+  const messages: Record<string, string> = {
+    FORBIDDEN: 'บัญชีนี้ไม่มีสิทธิ์แก้ไขข้อมูลผู้ใช้',
+    INVALID_USER_DETAILS: 'กรุณากรอกชื่อผู้ใช้',
+    INVALID_ROLE: 'กรุณาเลือกบทบาทที่กำหนดได้อย่างน้อยหนึ่งบทบาท',
+    PREASSIGNMENT_NOT_FOUND: 'รายการนี้อาจเข้าสู่ระบบแล้วหรือถูกลบ กรุณาโหลดรายชื่อใหม่',
+  }
+  throw new Error(messages[error.message] ?? 'ไม่สามารถบันทึกข้อมูลผู้ใช้ได้ กรุณาลองใหม่')
+}
+
 export async function setStaffUserStatus(input:{userId:string;status:StaffRegisteredUser['accountStatus']}){
   const{data,error}=await supabase.functions.invoke('admin-user-management',{body:{action:'SET_STATUS',...input}})
   if(error)throw new Error(await getStaffUserStatusErrorMessage(error))
