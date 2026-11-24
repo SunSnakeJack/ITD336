@@ -8,15 +8,13 @@ import { StaffRoleLabelEditor } from '../components/StaffRoleLabelEditor'
 import { staffUserKeys } from '../staff-user.queries'
 import './StaffRoleSettingsPage.css'
 
-const filters = { all: 'ทั้งหมด', system: 'บทบาทระบบ', custom: 'ป้ายกำกับ' } as const
-const pageSize = 5
+const pageSize = 10
 
 export function StaffRoleSettingsPage() {
   const client = useQueryClient()
   const roles = useQuery({ queryKey: roleCatalogKey, queryFn: getRoleCatalog })
   const [showRoles, setShowRoles] = useState(true)
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<keyof typeof filters>('all')
   const [page, setPage] = useState(1)
   const [draft, setDraft] = useState<RoleOperation | null>(null)
   const save = useMutation({ mutationFn: saveRoleLabel, onSuccess: async () => {
@@ -29,7 +27,6 @@ export function StaffRoleSettingsPage() {
   }
   const term = search.trim().toLocaleLowerCase()
   const matching = (roles.data ?? []).filter(role =>
-    (filter === 'all' || role.locked === (filter === 'system')) &&
     [role.name, role.name_th, role.code].some(value => value?.toLocaleLowerCase().includes(term)),
   )
   const pageCount = Math.max(1, Math.ceil(matching.length / pageSize))
@@ -47,10 +44,6 @@ export function StaffRoleSettingsPage() {
       <div className="staff-role-toolbar">
         <input type="search" aria-label="ค้นหาบทบาท" placeholder="ค้นหาบทบาท" value={search}
           onChange={event => { setSearch(event.target.value); setPage(1) }} />
-        <div role="group" aria-label="ประเภทบทบาท">
-          {(['all', 'system', 'custom'] as const).map(value => <button key={value} type="button"
-            aria-pressed={filter === value} onClick={() => { setFilter(value); setPage(1) }}>{filters[value]}</button>)}
-        </div>
         <button className="staff-button" type="button" onClick={() => open('CREATE')}>+ เพิ่มบทบาท</button>
       </div>
       <StaffQueryState loading={roles.isPending} error={roles.error} empty={!matching.length} emptyText="ไม่พบบทบาทที่ตรงกับการค้นหา">

@@ -6,10 +6,10 @@ import { StaffRoleSettingsPage } from './StaffRoleSettingsPage'
 
 vi.mock('../../../lib/supabase/client', () => ({ supabase: { rpc: vi.fn() } }))
 
-it('paginates and filters the compact list and edits both display names without changing the system role code', async () => {
+it('edits both display names without changing the system role code', async () => {
   const roles = [
     { code: 'ADMIN', name: 'Administrator', name_th: 'ผู้ดูแลระบบ', locked: true },
-    ...Array.from({ length: 5 }, (_, index) => ({ code: 'ROLE_' + index, name: 'Role ' + index, name_th: null, locked: false })),
+    ...Array.from({ length: 6 }, (_, index) => ({ code: 'ROLE_' + index, name: 'Role ' + index, name_th: null, locked: false })),
   ]
   vi.mocked(supabase.rpc).mockImplementation((async (rpc: string, args?: { p_name: string; p_name_th: string }) => {
     if (rpc === 'manage_admin_role_label_v2' && args) {
@@ -21,9 +21,12 @@ it('paginates and filters the compact list and edits both display names without 
   }) as never)
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(<QueryClientProvider client={client}><StaffRoleSettingsPage /></QueryClientProvider>)
-  expect(await screen.findByText('หน้า 1 จาก 2')).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'ถัดไป' }))
-  expect(screen.getByText('Role 4')).toBeInTheDocument()
+  expect(await screen.findByText('Role 5')).toBeInTheDocument()
+  expect(screen.getAllByRole('row')).toHaveLength(8)
+  expect(screen.queryByRole('navigation', { name: 'หน้ารายการบทบาท' })).not.toBeInTheDocument()
+  for (const name of ['ทั้งหมด', 'บทบาทระบบ', 'ป้ายกำกับ']) {
+    expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
+  }
   fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'ผู้ดูแล' } })
   expect(screen.queryByText('Role 4')).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'ลบ Administrator' })).not.toBeInTheDocument()
@@ -37,4 +40,21 @@ it('paginates and filters the compact list and edits both display names without 
   expect(supabase.rpc).toHaveBeenCalledWith('manage_admin_role_label_v2', {
     p_operation: 'RENAME', p_code: 'ADMIN', p_name: 'System Administrator', p_name_th: 'ผู้ดูแลระบบหลัก',
   })
+})
+
+it('shows ten roles per page and restarts pagination when searching', async () => {
+  const roles = Array.from({ length: 11 }, (_, index) => ({
+    code: 'ROLE_' + index, name: 'Role ' + index, name_th: null, locked: false,
+  }))
+  vi.mocked(supabase.rpc).mockResolvedValue({ data: roles, error: null } as never)
+  render(<QueryClientProvider client={new QueryClient()}><StaffRoleSettingsPage /></QueryClientProvider>)
+  expect(await screen.findByText('หน้า 1 จาก 2')).toBeInTheDocument()
+  expect(screen.getAllByRole('row')).toHaveLength(11)
+  fireEvent.click(screen.getByRole('button', { name: 'ถัดไป' }))
+  expect(screen.getAllByRole('row')).toHaveLength(2)
+  expect(screen.getByText('Role 10')).toBeInTheDocument()
+  fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'ROLE_0' } })
+  expect(screen.getByText('Role 0')).toBeInTheDocument()
+  fireEvent.change(screen.getByRole('searchbox'), { target: { value: '' } })
+  expect(screen.getByText('หน้า 1 จาก 2')).toBeInTheDocument()
 })
