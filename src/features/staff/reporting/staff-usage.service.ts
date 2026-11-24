@@ -1,7 +1,16 @@
 import { supabase } from '../../../lib/supabase/client'
 import type { StaffUsageRow, UsageCategory } from './staff-usage.types'
+import type { ReportDetails } from './staff-report-model'
 
 interface Row { transaction_id:string;source:string;room_id:string;room_code:string;room_name:string;room_category:UsageCategory;purpose:string;user_name:string;starts_at:string;ends_at:string;returned_at:string|null;status:string }
+
+export async function getStaffUsageReportDetails(): Promise<ReportDetails[] | null> {
+  // Null allows the report to render while migration 0120 is being rolled out.
+  const { data, error } = await supabase.rpc('get_staff_usage_report_details')
+  if (error?.code === 'PGRST202') return null
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
 
 export async function confirmOverdueRoomKeyReturns({ roomId, count }: { roomId: string; count: number | null }) {
   // Migration 0101 provides this RPC. Validate its integer response until types can be regenerated.

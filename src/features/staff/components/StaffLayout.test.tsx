@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StaffRoomsPage } from '../pages/StaffRoomsPage'
 import { roomEditorOptionsQuery, roomsQuery } from '../../rooms/room.queries'
 import { StaffReportsPage } from '../pages/StaffReportPages'
-import { staffUsageQuery } from '../reporting/staff-usage.queries'
+import { staffUsageQuery, staffUsageReportDetailsQuery } from '../reporting/staff-usage.queries'
 import { staffKeyRequestQueryKey } from '../staff-key-request.service'
 import { StaffAuditLogsPage } from '../pages/StaffAuditLogsPage'
 import { staffAuditQuery } from '../audit/staff-audit'
@@ -25,6 +25,7 @@ describe('StaffLayout', () => {
     client.setQueryData(staffAuditQuery(null, '', 1).queryKey, { rows: [], total: 0 })
     client.setQueryData(staffAuditQuery('ADMIN', '', 1).queryKey, { rows: [], total: 0 })
     client.setQueryData(staffUsageQuery().queryKey, [])
+    client.setQueryData(staffUsageReportDetailsQuery().queryKey, [])
     client.setQueryData(staffKeyRequestQueryKey, [])
     render(<QueryClientProvider client={client}>
       <MemoryRouter initialEntries={['/staff/logs']}>
@@ -44,6 +45,7 @@ describe('StaffLayout', () => {
   it('opens the statistics report hub from the ordered system menu', () => {
     const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } })
     client.setQueryData(staffUsageQuery().queryKey, [])
+    client.setQueryData(staffUsageReportDetailsQuery().queryKey, [])
     client.setQueryData(staffKeyRequestQueryKey, [])
     render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/staff/rooms']}>
       <Routes>
@@ -58,10 +60,13 @@ describe('StaffLayout', () => {
       'การตั้งค่าสิทธิ์', 'การตั้งค่าการแสดงผล', 'การตั้งค่าเพิ่มเติม', 'รายงานสถิติ', 'Logs',
     ])
     fireEvent.click(screen.getByRole('link', { name: 'รายงานสถิติ' }))
-    expect(screen.getByRole('link', { name: 'รายงานการใช้ห้องปฏิบัติการ' })).toHaveAttribute('href', '/staff/reports/labs')
-    expect(screen.getByRole('link', { name: 'รายงานการใช้ห้องประชุม' })).toHaveAttribute('href', '/staff/reports/meetings')
+    expect(screen.getAllByRole('heading', { level: 1, name: 'รายงานสถิติ' })).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'พิมพ์รายงาน' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'รายงานการใช้ห้องปฏิบัติการ' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'รายงานการใช้ห้องประชุม' })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'จำนวนครั้งการใช้งานรายห้อง' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'สถิติผู้ใช้สูงสุด' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'รายคน' }))
+    expect(screen.getByRole('heading', { name: 'จำนวนครั้งการใช้งานรายคน' })).toBeInTheDocument()
   })
   it('restores room filters and list view after switching staff menus', () => {
     const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } })

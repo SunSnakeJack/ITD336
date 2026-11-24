@@ -1,0 +1,79 @@
+.staff-usage-report {
+  --report-ink: #142f55;
+  --report-border: #d4dce7;
+  --report-gold: #f7c344;
+  display: grid;
+  gap: 1rem;
+  color: var(--report-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.staff-usage-report :is(h3, h4, dl, dd) { margin: 0; }
+.report-panel, .report-filters { border: 1px solid var(--report-border); border-radius: .75rem; background: #fff; min-width: 0; }
+.staff-usage-report :is(button, input, select) {
+  min-height: 2.75rem;
+  max-width: 100%;
+  border: 1px solid var(--report-border);
+  background: #fff;
+  color: inherit;
+  border-radius: .5rem;
+  padding: .4rem .65rem;
+}
+.staff-usage-report button { font-weight: 650; cursor: pointer; }
+.staff-usage-report button:hover:not(:disabled) { border-color: var(--report-ink); }
+.staff-usage-report button[aria-pressed="true"] { background: var(--report-gold); border-color: #d6a52f; }
+.staff-usage-report :is(button, input, select, a):focus-visible { outline: 2px solid #194fa3; outline-offset: 2px; }
+.staff-usage-report :is(button, select):disabled { color: #566477; background: #f1f4f8; cursor: default; }
+.report-switch, .report-presets { display: flex; gap: .35rem; flex-wrap: wrap; }
+.staff-usage-report .report-chart-toggle { border-color: var(--report-ink); }
+.staff-usage-report > .report-switch { border-bottom: 1px solid var(--report-border); }
+.staff-usage-report > .report-switch button { padding-inline: clamp(.75rem, 2.5vw, 2.25rem); border-radius: .6rem .6rem 0 0; }
+.report-filters { display: flex; flex-wrap: wrap; align-items: end; gap: .5rem .75rem; padding: .65rem; }
+.report-filters label { display: grid; gap: .15rem; font-size: .875rem; min-width: 0; }
+.report-filters select { max-width: 12rem; }
+.report-columns { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: .9rem; align-items: start; }
+.report-column { display: grid; gap: .9rem; min-width: 0; }
+.report-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: .9rem 0; }
+.report-metrics > div { padding: .25rem .85rem; }
+.report-metrics > div + div { border-inline-start: 1px solid var(--report-border); }
+.report-metrics dd { font-size: clamp(1.12rem, 2vw, 1.85rem); font-weight: 750; }
+.report-metrics small, .report-note { color: #455a75; }
+.report-highlights { padding: .35rem .9rem; background: #fff8e6; }
+.report-highlights > div { display: flex; gap: .6rem; justify-content: space-between; align-items: baseline; padding: .55rem 0; }
+.report-highlights > div + div { border-top: 1px solid #e0d7c3; }
+.report-highlights dd { font-size: 1.15rem; font-weight: 750; overflow-wrap: anywhere; text-align: end; }
+.report-chart { text-align: center; overflow: hidden; padding-bottom: .9rem; }
+.report-chart h3 { text-align: start; background: var(--report-ink); color: #fff; padding: .75rem 1rem; }
+.staff-usage-report .report-chart h3, .staff-usage-report .report-ranking h3 { font-size: 1.1rem; font-weight: 700; }
+.report-chart .report-note { text-align: start; margin: .75rem 1rem 0; }
+.report-chart svg { display: block; width: 100%; padding: .5rem; }
+.report-chart svg text { fill: currentColor; font-size: 16px; }
+.report-gridline { stroke: #c7d2df; }
+.report-point { fill: currentColor; }
+.report-peak { fill: var(--report-gold); stroke: var(--report-ink); stroke-width: 2; }
+.report-chart-toggle { margin-top: .6rem; }
+.report-data-table { max-height: 24rem; overflow: auto; }
+.report-data-table .staff-table { min-width: 0; table-layout: fixed; }
+.report-ranking { padding: .85rem; display: grid; gap: .7rem; }
+.report-ranking h4 { color: #455a75; font-size: .875rem; font-weight: 600; }
+.report-ranking :is(td, th) { overflow-wrap: anywhere; }
+.report-ranking :is(td, th):last-child { width: 55%; text-align: end; }
+.report-rank-value { display: flex; gap: .6rem; align-items: center; justify-content: flex-end; }
+.report-rank-value strong { min-width: 2ch; }
+.report-rank-track { width: min(100%, 10rem); height: .6rem; border-radius: .3rem; background: #e8edf4; overflow: hidden; }
+.report-rank-track span { display: block; height: 100%; background: #d49a1e; }
+
+@media (max-width: 1050px) {
+  .report-columns { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 540px) {
+  .report-metrics { grid-template-columns: minmax(0, 1fr); }
+  .report-metrics > div + div { border-inline-start: 0; border-top: 1px solid var(--report-border); }
+  .report-chart svg text { font-size: 19px; }
+}
+@media print {
+  .staff-usage-report button { display: none; }
+  .staff-usage-report .report-columns { display: block; }
+  .report-ranking { margin-top: 1rem; }
+  .report-data-table { max-height: none; overflow: visible; }
+}

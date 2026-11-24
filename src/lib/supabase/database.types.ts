@@ -4606,6 +4606,15 @@ export type Database = {
           user_name: string
         }[]
       }
+      get_staff_usage_report_details: {
+        Args: never
+        Returns: {
+          checked_out_at: string
+          transaction_id: string
+          user_key: string
+          user_type: string
+        }[]
+      }
       get_usage_permission_policy: { Args: never; Returns: Json }
       get_viewer_permissions: { Args: never; Returns: string[] }
       has_permission: { Args: { p_permission: string }; Returns: boolean }

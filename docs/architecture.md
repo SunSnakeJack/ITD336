@@ -56,3 +56,8 @@ Notifications are stored with IN_APP and EMAIL delivery queue rows. No provider 
 Public navigation is a global display setting stored in the `PUBLIC_NAVIGATION_MODE` booking rule. The public layout defaults to the top bar and account drawer; admins with settings permission can select the bottom bar or both bars. The profile provides notifications and sign-out when only the bottom bar is shown.
 
 Public menu destinations and unfinished key and meeting-room forms are stored in browser session storage. Menu destinations are scoped to the requester, and form drafts are also scoped to the room. Successful submission clears the draft for that request, and sign-out clears this tab's navigation and draft data. Both forms refresh room availability before confirmation and the database remains the authority for accepting requests.
+# Staff usage reporting
+
+The statistics page uses the canonical staff usage history for key activity and meeting bookings. Migration `0120` adds a reporting RPC with requester categories, opaque grouping keys, and recorded checkout timestamps. It uses the same report authorization and does not return contact information. Registered requester categories follow current system roles in priority order, while public key requests can use their recorded requester type.
+
+The page groups dates in Asia/Bangkok. Key duration totals include records with both a recorded checkout and a recorded return. Meeting duration totals use the booked interval. Key requests without a recorded checkout can contribute to activity counts without contributing to the duration total.

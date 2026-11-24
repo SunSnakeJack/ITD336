@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+export { StaffUsageReport as StaffReportsPage } from '../reporting/StaffUsageReport'
 import { useStaffViewState } from '../useStaffViewState'
 import { useQuery } from '@tanstack/react-query'
 import { adminBookingsQuery } from '../../bookings/booking.queries'
@@ -8,10 +8,6 @@ import { getBorrowerIdentity } from '../../keys/utils/admin-key.utils'
 import { roomsQuery } from '../../rooms/room.queries'
 import { BackendLimitation, StaffPage, StaffQueryState } from '../components/StaffPage'
 import { bangkokDate, bangkokDateTime, isMeetingRoom } from '../utils/staff-analytics'
-import { UsageInsights } from '../reporting/UsageInsights'
-import { staffUsageQuery } from '../reporting/staff-usage.queries'
-import { applyRequestStatuses, filterUsageRows, usageInsightFilters } from '../reporting/staff-usage.utils'
-import { getStaffKeyRequests, staffKeyRequestQueryKey } from '../staff-key-request.service'
 
 function ReportActions({ from, setFrom, to, setTo }: { from: string; setFrom: (value: string) => void; to: string; setTo: (value: string) => void }) {
   return <div className="staff-toolbar"><div className="staff-field"><label htmlFor="report-from">ตั้งแต่วันที่</label><input id="report-from" type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></div><div className="staff-field"><label htmlFor="report-to">ถึงวันที่</label><input id="report-to" type="date" value={to} onChange={(event) => setTo(event.target.value)} /></div><button className="staff-button" onClick={() => window.print()}>Export PDF / พิมพ์</button></div>
@@ -22,25 +18,6 @@ function inRange(iso: string, from: string, to: string) {
   const fromTime = from ? new Date(`${from}T00:00:00+07:00`).getTime() : Number.NEGATIVE_INFINITY
   const toTime = to ? new Date(`${to}T23:59:59+07:00`).getTime() : Number.POSITIVE_INFINITY
   return time >= fromTime && time <= toTime
-}
-
-export function StaffReportsPage() {
-  const [params] = useSearchParams()
-  const selected = params.get('view')
-  const view = selected === 'rooms' || selected === 'users' ? selected : undefined
-  const usage = useQuery(staffUsageQuery())
-  const requests = useQuery({ queryKey: staffKeyRequestQueryKey, queryFn: getStaffKeyRequests })
-  const rows = filterUsageRows(applyRequestStatuses(usage.data ?? [],
-    new Map(requests.data?.map(request => [request.id, request]))), usageInsightFilters(params))
-  return <StaffPage eyebrow="" title="รายงานสถิติ" description="">
-    <nav className="staff-toolbar" aria-label="ประเภทรายงาน">
-      <Link className="staff-button" to="/staff/reports/labs">รายงานการใช้ห้องปฏิบัติการ</Link>
-      <Link className="staff-button" to="/staff/reports/meetings">รายงานการใช้ห้องประชุม</Link>
-    </nav>
-    <StaffQueryState loading={usage.isPending || requests.isPending} error={usage.error || requests.error}>
-      <UsageInsights rows={rows} view={view} />
-    </StaffQueryState>
-  </StaffPage>
 }
 
 export function StaffLabReportPage() {
