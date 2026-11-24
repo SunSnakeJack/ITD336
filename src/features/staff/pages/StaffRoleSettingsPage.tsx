@@ -1,16 +1,23 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getRoleCatalog, roleCatalogKey, saveRoleLabel, type CatalogRole, type RoleOperation } from '../staff-role-label.service'
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog'
 import { auditLogKeys } from '../audit/staff-audit'
 import { StaffPage, StaffQueryState } from '../components/StaffPage'
+import { StaffRoleLabelEditor } from '../components/StaffRoleLabelEditor'
 import { staffUserKeys } from '../staff-user.queries'
-import { staffRoleThaiLabel } from '../utils/staff-role-label'
-import './StaffSystemPages.css'
+import './StaffRoleSettingsPage.css'
+
+const filters = { all: 'ทั้งหมด', system: 'บทบาทระบบ', custom: 'ป้ายกำกับ' } as const
+const pageSize = 5
 
 export function StaffRoleSettingsPage() {
   const client = useQueryClient()
   const roles = useQuery({ queryKey: roleCatalogKey, queryFn: getRoleCatalog })
+  const [showRoles, setShowRoles] = useState(true)
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState<keyof typeof filters>('all')
+  const [page, setPage] = useState(1)
   const [draft, setDraft] = useState<RoleOperation | null>(null)
   const save = useMutation({ mutationFn: saveRoleLabel, onSuccess: async () => {
     setDraft(null)
@@ -18,47 +25,60 @@ export function StaffRoleSettingsPage() {
   } })
   const open = (operation: RoleOperation['operation'], role?: CatalogRole) => {
     save.reset()
-    setDraft({ operation, code: role?.code ?? '', name: role?.name ?? '' })
+    setDraft({ operation, code: role?.code ?? '', name: role?.name ?? '', nameTh: role?.name_th ?? '' })
   }
-  const submit = (event: FormEvent) => {
-    event.preventDefault()
-    if (draft) save.mutate(draft)
-  }
-  return <StaffPage eyebrow="Settings" title="การตั้งค่าเพิ่มเติม" description="" hideHeader>
-    <div className="staff-role-settings-heading"><h2>การตั้งค่าบทบาท</h2>
-      <button className="staff-button" type="button" onClick={() => open('CREATE')}>+ เพิ่มบทบาท</button>
-    </div>
-    <StaffQueryState loading={roles.isPending} error={roles.error}>
-      <div className="staff-table-wrap"><table className="staff-table staff-role-settings-table">
-        <thead><tr><th>ชื่อบทบาท</th><th>รหัส</th><th>ประเภท</th><th>จัดการ</th></tr></thead>
-        <tbody>{roles.data?.map(role => <tr key={role.code}>
-          <td><strong>{role.name}</strong>{staffRoleThaiLabel(role.code) && <small>{staffRoleThaiLabel(role.code)}</small>}</td>
-          <td>{role.code}</td><td>{role.locked ? 'บทบาทระบบ' : 'ป้ายกำกับ'}</td>
-          <td>{role.locked ? '—' : <div className="staff-role-settings-actions">
-            <button type="button" onClick={() => open('RENAME', role)}>แก้ไข</button>
-            <button type="button" onClick={() => open('DELETE', role)}>ลบ</button>
-          </div>}</td>
-        </tr>)}</tbody>
-      </table></div>
-    </StaffQueryState>
+  const term = search.trim().toLocaleLowerCase()
+  const matching = (roles.data ?? []).filter(role =>
+    (filter === 'all' || role.locked === (filter === 'system')) &&
+    [role.name, role.name_th, role.code].some(value => value?.toLocaleLowerCase().includes(term)),
+  )
+  const pageCount = Math.max(1, Math.ceil(matching.length / pageSize))
+  const currentPage = Math.min(page, pageCount)
+  const visible = matching.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  return <StaffPage eyebrow="" title="การตั้งค่าเพิ่มเติม" description="" hideHeader>
+    <nav className="staff-extra-categories" aria-label="หมวดการตั้งค่าเพิ่มเติม">
+      <button type="button" aria-expanded={showRoles} aria-controls="staff-role-panel" onClick={() => setShowRoles(value => !value)}>
+        <strong>บทบาท</strong>{roles.isSuccess && <small>{roles.data.length} บทบาท</small>}
+      </button>
+    </nav>
+    <section id="staff-role-panel" hidden={!showRoles} aria-labelledby="staff-role-heading">
+      <h2 id="staff-role-heading">จัดการบทบาท</h2>
+      <div className="staff-role-toolbar">
+        <input type="search" aria-label="ค้นหาบทบาท" placeholder="ค้นหาบทบาท" value={search}
+          onChange={event => { setSearch(event.target.value); setPage(1) }} />
+        <div role="group" aria-label="ประเภทบทบาท">
+          {(['all', 'system', 'custom'] as const).map(value => <button key={value} type="button"
+            aria-pressed={filter === value} onClick={() => { setFilter(value); setPage(1) }}>{filters[value]}</button>)}
+        </div>
+        <button className="staff-button" type="button" onClick={() => open('CREATE')}>+ เพิ่มบทบาท</button>
+      </div>
+      <StaffQueryState loading={roles.isPending} error={roles.error} empty={!matching.length} emptyText="ไม่พบบทบาทที่ตรงกับการค้นหา">
+        <div className="staff-table-wrap staff-role-table-wrap" role="region" aria-label="ตารางบทบาท" tabIndex={0}>
+          <table className="staff-table staff-role-compact-table">
+            <thead><tr><th scope="col">ชื่อบทบาท</th><th scope="col">รหัส</th><th scope="col">ประเภท</th><th scope="col">จัดการ</th></tr></thead>
+            <tbody>{visible.map(role => <tr key={role.code}>
+              <td><strong>{role.name}</strong>{role.name_th && role.name_th !== role.name && <small>{role.name_th}</small>}</td>
+              <td><code>{role.code}</code></td><td>{role.locked ? 'บทบาทระบบ' : 'ป้ายกำกับ'}</td>
+              <td><div className="staff-role-row-actions">
+                <button type="button" aria-label={`แก้ไข ${role.name}`} onClick={() => open('RENAME', role)}>แก้ไข</button>
+                {!role.locked && <button className="staff-role-delete" type="button" aria-label={`ลบ ${role.name}`}
+                  onClick={() => open('DELETE', role)}>ลบ</button>}
+              </div></td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+        {pageCount > 1 && <nav className="staff-role-pagination" aria-label="หน้ารายการบทบาท">
+          <span>หน้า {currentPage} จาก {pageCount}</span>
+          <button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>ก่อนหน้า</button>
+          <button type="button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>ถัดไป</button>
+        </nav>}
+      </StaffQueryState>
+    </section>
     {draft?.operation === 'DELETE' && <ConfirmDialog title="ลบบทบาท"
       message={`ลบป้ายกำกับ «${draft.name}» ออกจากระบบหรือไม่?`} confirmLabel="ลบบทบาท" danger
       pending={save.isPending} error={save.error?.message} onClose={() => setDraft(null)} onConfirm={() => save.mutate(draft)}/>}
-    {draft && draft.operation !== 'DELETE' && <div className="staff-role-dialog-backdrop">
-      <section className="staff-role-dialog" role="dialog" aria-modal="true" aria-labelledby="role-label-title">
-        <header><h2 id="role-label-title">{draft.operation === 'CREATE' ? 'เพิ่มบทบาท' : 'แก้ไขบทบาท'}</h2>
-          <button type="button" aria-label="ปิด" disabled={save.isPending} onClick={() => setDraft(null)}>×</button></header>
-        <form className="staff-role-label-form" onSubmit={submit}>
-          <label className="staff-field">ชื่อบทบาท<input autoFocus required maxLength={80} value={draft.name}
-            onChange={event => setDraft({ ...draft, name: event.target.value })}/></label>
-          <label className="staff-field">รหัสบทบาท<input required readOnly={draft.operation === 'RENAME'}
-            pattern="[A-Z][A-Z0-9_]{1,39}" maxLength={40} value={draft.code}
-            onChange={event => setDraft({ ...draft, code: event.target.value.toUpperCase() })}/></label>
-          {save.error && <p role="alert" className="staff-role-error">{save.error.message}</p>}
-          <footer><button type="button" disabled={save.isPending} onClick={() => setDraft(null)}>ยกเลิก</button>
-            <button type="submit" className="staff-button" disabled={save.isPending}>บันทึก</button></footer>
-        </form>
-      </section>
-    </div>}
+    {draft && draft.operation !== 'DELETE' && <StaffRoleLabelEditor draft={draft} pending={save.isPending}
+      error={save.error?.message} onChange={setDraft} onClose={() => setDraft(null)} onSave={() => save.mutate(draft)} />}
   </StaffPage>
 }

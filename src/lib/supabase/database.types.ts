@@ -2022,6 +2022,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          name_th: string | null
           system_role: boolean
         }
         Insert: {
@@ -2030,6 +2031,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          name_th?: string | null
           system_role?: boolean
         }
         Update: {
@@ -2038,6 +2040,7 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          name_th?: string | null
           system_role?: boolean
         }
         Relationships: []
@@ -4232,6 +4235,15 @@ export type Database = {
           name: string
         }[]
       }
+      get_admin_role_catalog_v2: {
+        Args: never
+        Returns: {
+          code: string
+          locked: boolean
+          name: string
+          name_th: string
+        }[]
+      }
       get_admin_role_options: {
         Args: never
         Returns: {
@@ -4675,6 +4687,15 @@ export type Database = {
       }
       manage_admin_role_label: {
         Args: { p_code: string; p_name: string; p_operation: string }
+        Returns: undefined
+      }
+      manage_admin_role_label_v2: {
+        Args: {
+          p_code: string
+          p_name: string
+          p_name_th: string
+          p_operation: string
+        }
         Returns: undefined
       }
       mark_all_notifications_read: { Args: never; Returns: number }

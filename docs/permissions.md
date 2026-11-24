@@ -48,6 +48,8 @@ Migration 0115 replaces category minimum and maximum request durations with **�
 
 Migration 0116 adds the service permission matrix for general and special key requests, meeting bookings, booking overrides, and staff workspace access. Signed-in accounts inherit the union of their active roles' grants. Guests may request general laboratory keys by default, subject to the room's sign-in policy. Students may request special laboratory keys after signing in. The staff workspace entry permission leaves granular management permissions in force.
 
+Migration 0118 adds Thai display names to the role catalog and prepopulates the system roles. Administrators can edit both names from Additional Settings. Role IDs, role codes, assignments, and permission grants remain the authorization source. Custom roles retain their existing name until an administrator supplies both display names.
+
 ### เหตุผลเมื่อไม่อนุมัติ
 
 ตั้งแยกตามประเภทห้อง ค่าเริ่มต้นบังคับระบุเหตุผลตามพฤติกรรมเดิม เมื่อปิด ผู้อนุมัติสามารถเว้นเหตุผลได้ ทั้งคำขอจองห้องและคำขอเบิกกุญแจ ฐานข้อมูลตรวจค่าที่บันทึกไว้ขณะดำเนินการ และบันทึกเหตุผลเฉพาะเมื่อมีข้อความ

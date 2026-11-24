@@ -7,6 +7,10 @@ the current layout without checkout history. The last option omits the
 checkout history query and section on both catalog tabs. Schedule availability
 and the history on each room detail page remain available.
 
+Staff can preview catalog layouts, lecturer-name languages, and navigation layouts
+on the display settings page. All display changes are drafts until **บันทึกทั้งหมด**
+is pressed. If an individual save fails, that change stays in the draft for retry.
+
 The admin display setting for elapsed room slots defaults to enabled. It
 controls the daily schedule on key and meeting room detail pages. Availability
 and time selection continue to follow the existing room policy.
