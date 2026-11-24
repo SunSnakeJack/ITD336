@@ -2,7 +2,6 @@ import { AccountRequestAction, AccountRequestCard, AccountRequestTime } from '..
 import { EditableRequestCard } from '../components/EditableRequestCard'
 import { AccountKeyRequestHistoryPage } from '../../keys/pages/AccountKeyRequestHistoryPage'
 import { useSearchParams } from 'react-router-dom'
-import { useEffect } from 'react'
 import { useRequestFocus } from '../../../shared/components/useRequestFocus'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
@@ -12,7 +11,7 @@ import type { KeyLoanDetail, KeyLoanStatus } from '../../keys/key.types'
 import { bookingKeys, myBookingsQuery } from '../booking.queries'
 import { cancelBooking } from '../booking.service'
 import { canCancelBooking } from '../booking-status.utils'
-import { accountBookingStatus, accountKeyLoanStatus } from '../account-request-status'
+import { accountBookingApprovalStatus, accountBookingStatus, accountKeyLoanStatus } from '../account-request-status'
 import { PublicPageHeading } from '../../../shared/components/PublicPageHeading'
 import { RecentRequestsHeading } from '../components/RecentRequestsHeading'
 
@@ -26,18 +25,10 @@ export function AccountRequestsPage(){
  const [params, setParams] = useSearchParams()
  const tab = params.get('tab') === 'keys' ? 'keys' : 'bookings'
  const setTab = (next: 'bookings' | 'keys') => setParams(next === 'keys' ? { tab: 'keys' } : {})
- const client=useQueryClient();const bookings=useQuery(myBookingsQuery());const keys=useQuery(myKeyLoanDetailsQuery());
- const focusedLoan = keys.data?.find(loan => loan.id === params.get('item'))
- useEffect(() => {
-   if (tab !== 'keys' || focusedLoan?.usageSource !== 'BOOKING') return
-   const next = new URLSearchParams(params)
-   next.delete('tab')
-   setParams(next, { replace: true, preventScrollReset: true })
- }, [focusedLoan, params, setParams, tab])
- const requestFocus = useRequestFocus(tab === 'bookings'
-   ? focusedLoan ? keys.isSuccess : bookings.isSuccess
-   : keys.isSuccess)
- const tabLoans = keys.data?.filter(loan => (loan.usageSource === 'BOOKING') === (tab === 'bookings'))
+ const client = useQueryClient()
+ const bookings = useQuery(myBookingsQuery())
+ const keys = useQuery({ ...myKeyLoanDetailsQuery(), enabled: tab === 'keys' })
+ const requestFocus = useRequestFocus(tab === 'bookings' ? bookings.isSuccess : keys.isSuccess)
  const refresh=()=>Promise.all([client.invalidateQueries({queryKey:bookingKeys.mine}),client.invalidateQueries({queryKey:keyLoanKeys.mine})]);
  const cancel=useMutation({mutationFn:(id:string)=>cancelBooking(id,'ผู้ใช้ยกเลิกการจอง'),onSuccess:refresh});
  const status=useMutation({mutationFn:({id,action,description}:{id:string;action:'CHECKED_OUT'|'RETURNED'|'LOST'|'DAMAGED';description?:string})=>reportKeyStatus(id,action,description),onSuccess:refresh});
@@ -48,23 +39,28 @@ export function AccountRequestsPage(){
    ? <p className="panel-error">{bookings.error.message}</p> : <div className="account-request-card-list">
      <RecentRequestsHeading count={bookings.data?.length ?? 0} />
      {bookings.data?.length ? bookings.data.map(booking => {
-       const editable = ['APPROVED', 'PENDING'].includes(booking.status) && Date.parse(booking.startsAt) > Date.now()
+       const now = Date.now()
+       const basis = booking.approvalDeadlineBasis ?? 'END'
+       const expired = booking.status === 'PENDING' && now >= Date.parse(basis === 'START' ? booking.startsAt : booking.endsAt)
+       const editable = ['APPROVED', 'PENDING'].includes(booking.status) && Date.parse(booking.startsAt) > now
        return <EditableRequestCard key={booking.id} id={booking.id} type="booking" start={booking.startsAt} end={booking.endsAt} editable={editable} articleProps={requestFocus(booking.id)}
          title={booking.roomName === '—' ? booking.roomCode : booking.roomName}
-         status={accountBookingStatus(booking.status, booking.endsAt)}
+         status={booking.status === 'PENDING'
+           ? accountBookingApprovalStatus(booking.startsAt, booking.endsAt, basis, now)
+           : accountBookingStatus(booking.status, booking.endsAt, now)}
 
          time={<AccountRequestTime start={booking.startsAt} end={booking.endsAt}/>}
          purpose={booking.purpose}
-         actions={canCancelBooking(booking.status, booking.endsAt) && <AccountRequestAction variant="cancel"
+         actions={!expired && canCancelBooking(booking.status, booking.endsAt, now) && <AccountRequestAction variant="cancel"
            disabled={cancel.isPending} onClick={() => {
              if (window.confirm('ยืนยันการยกเลิกการจองนี้?')) cancel.mutate(booking.id)
            }}>ยกเลิก</AccountRequestAction>}/>
      }) : <div className="empty-panel">ยังไม่มีรายการจอง</div>}
    </div>)}
- {tab === 'keys' && <AccountKeyRequestHistoryPage embedded />}
- {keys.isPending ? <LoadingSpinner label="กำลังโหลดข้อมูลกุญแจ…"/> : keys.error
+ {tab === 'keys' && <AccountKeyRequestHistoryPage embedded loanCount={keys.data?.length ?? 0} />}
+ {tab === 'keys' && (keys.isPending ? <LoadingSpinner label="กำลังโหลดข้อมูลกุญแจ…"/> : keys.error
    ? <p className="panel-error">{keys.error.message}</p> : <div className="account-request-card-list">
-     {tabLoans?.map(loan => <AccountRequestCard key={loan.id} articleProps={requestFocus(loan.id)}
+     {keys.data?.map(loan => <AccountRequestCard key={loan.id} articleProps={requestFocus(loan.id)}
        title={`ห้อง ${loan.roomCode}`} status={accountKeyLoanStatus(loan)}
        time={loan.expectedReturnAt ? `กำหนดคืน ${dateTime.format(new Date(loan.expectedReturnAt))}` : '—'}
        purposeLabel="ที่มาของสิทธิ์"
@@ -72,6 +68,6 @@ export function AccountRequestsPage(){
        actions={<KeyActions loan={loan} pending={status.isPending}
          onStatus={action => status.mutate({ id: loan.id, action })}
          onIssue={action => reportIssue(loan.id, action)}/>}/>)}
-   </div>}
+   </div>)}
  {(cancel.error||status.error)&&<p className="panel-error">{(cancel.error||status.error)?.message}</p>}</section>
 }

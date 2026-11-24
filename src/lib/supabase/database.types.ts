@@ -455,6 +455,7 @@ export type Database = {
       }
       bookings: {
         Row: {
+          approval_deadline_basis: string | null
           beneficiary_user_id: string | null
           booking_code: string
           cancel_reason: string | null
@@ -479,6 +480,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approval_deadline_basis?: string | null
           beneficiary_user_id?: string | null
           booking_code?: string
           cancel_reason?: string | null
@@ -503,6 +505,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approval_deadline_basis?: string | null
           beneficiary_user_id?: string | null
           booking_code?: string
           cancel_reason?: string | null
@@ -1520,6 +1523,7 @@ export type Database = {
       }
       key_requests: {
         Row: {
+          approval_deadline_basis: string | null
           approval_mode: string
           authenticated_user_id: string | null
           cancelled_at: string | null
@@ -1551,6 +1555,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approval_deadline_basis?: string | null
           approval_mode: string
           authenticated_user_id?: string | null
           cancelled_at?: string | null
@@ -1582,6 +1587,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approval_deadline_basis?: string | null
           approval_mode?: string
           authenticated_user_id?: string | null
           cancelled_at?: string | null
@@ -2095,6 +2101,21 @@ export type Database = {
           },
         ]
       }
+      room_category_restrictions: {
+        Row: {
+          category: string
+          policy: Json
+        }
+        Insert: {
+          category: string
+          policy: Json
+        }
+        Update: {
+          category?: string
+          policy?: Json
+        }
+        Relationships: []
+      }
       room_equipment: {
         Row: {
           equipment_id: string
@@ -2410,6 +2431,7 @@ export type Database = {
           name: string
           room_type_id: string
           updated_at: string
+          visible_on_web: boolean
         }
         Insert: {
           academic_schedule_confirmed?: boolean
@@ -2433,6 +2455,7 @@ export type Database = {
           name: string
           room_type_id: string
           updated_at?: string
+          visible_on_web?: boolean
         }
         Update: {
           academic_schedule_confirmed?: boolean
@@ -2456,6 +2479,7 @@ export type Database = {
           name?: string
           room_type_id?: string
           updated_at?: string
+          visible_on_web?: boolean
         }
         Relationships: [
           {
@@ -3071,6 +3095,7 @@ export type Database = {
       }
       booking_details_v: {
         Row: {
+          approval_deadline_basis: string | null
           beneficiary_user_id: string | null
           booking_code: string | null
           cancel_reason: string | null
@@ -4095,6 +4120,7 @@ export type Database = {
         Args: { p_decision: string; p_key_request_id: string; p_reason: string }
         Returns: Json
       }
+      delete_admin_room: { Args: { p_room_id: string }; Returns: string }
       dispatch_scheduled_emails: { Args: never; Returns: undefined }
       edit_own_request_purpose: {
         Args: { p_id: string; p_purpose: string; p_type: string }
@@ -4335,6 +4361,15 @@ export type Database = {
         Args: { p_id: string; p_type: string }
         Returns: Json
       }
+      get_public_key_login_required_rooms: { Args: never; Returns: string[] }
+      get_public_key_operating_hours: {
+        Args: never
+        Returns: {
+          closes_at: string
+          opens_at: string
+          room_id: string
+        }[]
+      }
       get_public_key_request_history: {
         Args: { p_limit?: number; p_room_id: string }
         Returns: {
@@ -4391,6 +4426,7 @@ export type Database = {
         Args: { p_room_id: string; p_week_start: string }
         Returns: Json
       }
+      get_public_navigation_mode: { Args: never; Returns: string }
       get_public_room_catalog: {
         Args: never
         Returns: {
@@ -4424,6 +4460,12 @@ export type Database = {
           status: string
           title: string
         }[]
+      }
+      get_public_rooms_closed_today: { Args: never; Returns: string[] }
+      get_room_category_restrictions: { Args: never; Returns: Json }
+      get_room_rejection_reason_required: {
+        Args: { p_room_code: string }
+        Returns: boolean
       }
       get_room_schedule_events: {
         Args: { p_range_end: string; p_range_start: string; p_room_id: string }
@@ -4523,6 +4565,13 @@ export type Database = {
         Args: { p_expires_at: string; p_key_request_id: string }
         Returns: Json
       }
+      key_request_operating_hours: {
+        Args: { p_room_id: string }
+        Returns: {
+          closes_at: string
+          opens_at: string
+        }[]
+      }
       list_available_rooms: {
         Args: { p_ends_at: string; p_starts_at: string }
         Returns: {
@@ -4547,6 +4596,7 @@ export type Database = {
           name: string
           room_type_id: string
           updated_at: string
+          visible_on_web: boolean
         }[]
         SetofOptions: {
           from: "*"
@@ -4598,6 +4648,7 @@ export type Database = {
         Args: { p_action: string; p_raw_token: string }
         Returns: Json
       }
+      publish_room_reminders: { Args: never; Returns: undefined }
       reconcile_expired_bookings: { Args: never; Returns: number }
       register_key_request_action_token: {
         Args: {
@@ -4669,6 +4720,25 @@ export type Database = {
         Args: { p_key_request_id: string }
         Returns: Json
       }
+      room_approval_display_status: {
+        Args: {
+          p_basis: string
+          p_end: string
+          p_now: string
+          p_start: string
+          p_status: string
+        }
+        Returns: string
+      }
+      room_approval_setting: {
+        Args: { p_key: string; p_room_id: string }
+        Returns: string
+      }
+      room_policy_category: { Args: { p_room_id: string }; Returns: string }
+      room_requires_rejection_reason: {
+        Args: { p_room_id: string }
+        Returns: boolean
+      }
       save_admin_room: {
         Args: {
           p_active: boolean
@@ -4688,6 +4758,34 @@ export type Database = {
           p_room_type_id: string
         }
         Returns: string
+      }
+      save_admin_room_v2: {
+        Args: {
+          p_active: boolean
+          p_building: string
+          p_capacity: number
+          p_code: string
+          p_computer_type: string
+          p_description: string
+          p_display_type: string
+          p_equipment: Json
+          p_floor: string
+          p_image_url: string
+          p_location_description: string
+          p_name: string
+          p_room_id: string
+          p_room_type_id: string
+          p_visible_on_web: boolean
+        }
+        Returns: string
+      }
+      save_permission_settings: {
+        Args: { p_changes: Json }
+        Returns: undefined
+      }
+      save_permission_settings_v2: {
+        Args: { p_changes: Json }
+        Returns: undefined
       }
       set_admin_key_request_timing_setting: {
         Args: { p_enabled: boolean }
@@ -4720,6 +4818,7 @@ export type Database = {
         Returns: number
       }
       set_open_saturday: { Args: { p_date: string }; Returns: string }
+      set_public_navigation_mode: { Args: { p_mode: string }; Returns: string }
       set_room_availability: {
         Args: { p_active: boolean; p_room_id: string }
         Returns: boolean

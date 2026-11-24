@@ -13,13 +13,13 @@ import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
 import { RoomUsageHistory } from '../../schedules/components/RoomUsageHistory'
 import { RoomScheduleGrid, type RoomScheduleSlot } from '../../schedules/components/RoomScheduleGrid'
 import { keyRequestTimingPolicyQuery, publicKeyRequestHistoryQuery } from '../key.queries'
-import { isSlotElapsedForBangkokDate } from '../utils/key-catalog-time'
+import { isKeySlotElapsed, keySlotBounds, keySlotTimes } from '../utils/key-catalog-time'
 import { isSelectableRange, isTimeSelected } from '../utils/key-slot-selection'
 import { GoogleSsoModal } from '../../auth/components/GoogleSsoModal'
+import { useTabDraft } from '../../../shared/components/useTabDraft'
 import defaultRoomImage from '../../../assets/default-room.jpg'
 import './KeyRequestRoomDetailPage.css'
 
-const SLOTS = Array.from({ length: 21 }, (_, index) => `${String(8 + Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`)
 const bangkokDate = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
 const thaiDate = (date:string) => new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', weekday:'long',year:'numeric',month:'long',day:'numeric' }).format(new Date(`${date}T00:00:00+07:00`))
 
@@ -33,35 +33,40 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
   const saturday = useQuery(saturdayPolicyQuery())
   const closed = isSaturdayClosed(date, saturday.data)
   const timingPolicy=useQuery(keyRequestTimingPolicyQuery())
-  const [start, setStart] = useState<string | null>(null)
-  const [end, setEnd] = useState<string | null>(null)
+  const [{ start, end }, updateSelection] = useTabDraft<{ start: string | null; end: string | null }>(
+    `draft:key-selection:${identity?.userId ?? 'guest'}:${roomId}:${date}`, { start: null, end: null },
+  )
+  const [selectionId, setSelectionId] = useState(() => crypto.randomUUID())
   const [showLogin, setShowLogin] = useState(false)
   const [selectionNotice,setSelectionNotice]=useState<string|null>(null)
 
   useEffect(()=>{if(!selectionNotice)return;const timer=window.setTimeout(()=>setSelectionNotice(null),3000);return()=>window.clearTimeout(timer)},[selectionNotice])
 
   if (rooms.isPending) return <LoadingSpinner label="กำลังโหลดข้อมูลห้อง…" />
+  if (rooms.isError) return <section className="key-request-entry" role="alert">ไม่สามารถโหลดข้อมูลห้องได้ <button type="button" onClick={() => void rooms.refetch()}>ลองใหม่</button></section>
   if (!room || room.usageScope !== 'LABORATORY') return <Navigate to="/keys" replace />
 
   const now = new Date()
-  const slotTarget = (time: string) => time === '18:00' ? '17:30' : time
+  const slots = keySlotTimes(room.keyOperatingHours)
+  const closingTime = slots[slots.length - 1]
   const covers = (item: { startsAt: string; endsAt: string }, time: string) => {
-    const startsAt = Date.parse(`${date}T${slotTarget(time)}:00+07:00`)
-    return Date.parse(item.startsAt) < startsAt + 30 * 60_000 && Date.parse(item.endsAt) > startsAt
+    const [startsAt, endsAt] = keySlotBounds(date, time, slots)
+    return Date.parse(item.startsAt) < endsAt && Date.parse(item.endsAt) > startsAt
   }
   const occupied = (time: string) => events.data?.find(event => covers(event, time))
   const isUnavailable = (time: string) => {
-    return closed || Boolean(occupied(time)) || isSlotElapsedForBangkokDate(time, date, now, timingPolicy.data ?? false)
+    return closed || Boolean(occupied(time)) || isKeySlotElapsed(date, time, slots, now, timingPolicy.data ?? false)
   }
-  const hasNotElapsed = (time: string) => !isSlotElapsedForBangkokDate(time, date, now)
-  const startOptions = timeSelectOptions(SLOTS.slice(0, -1).filter(hasNotElapsed), isUnavailable)
-  const endOptions = timeSelectOptions(availableEndTimes(SLOTS, start ?? '', isUnavailable).filter(hasNotElapsed))
+  const hasNotElapsed = (time: string) => !isKeySlotElapsed(date, time, slots, now)
+  const startOptions = timeSelectOptions(slots.slice(0, -1).filter(hasNotElapsed), isUnavailable)
+  const endOptions = timeSelectOptions(availableEndTimes(slots, start ?? '', isUnavailable).filter(hasNotElapsed))
   const selectedEnd = endOptions.find(option => option.value === end)?.value ?? null
-  const changeStart = (time: string) => { setStart(time); setEnd(null); setSelectionNotice(null) }
+  const changeStart = (time: string | null) => { updateSelection({ start: time, end: null }); setSelectionNotice(null) }
+  const changeEnd = (time: string) => { updateSelection({ end: time }); setSelectionId(crypto.randomUUID()); setSelectionNotice(null) }
   const getSlot = (time: string): RoomScheduleSlot => {
     const disabled = isUnavailable(time)
     const event = occupied(time)
-    const elapsed = isSlotElapsedForBangkokDate(time, date, now)
+    const elapsed = isKeySlotElapsed(date, time, slots, now)
     const returned = elapsed && events.isSuccess
       ? history.data?.find(item => item.status === 'RETURNED' && covers(item, time)) : undefined
 
@@ -80,29 +85,27 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
   }
   const selectSlot = (time: string) => {
     if (isUnavailable(time)){setSelectionNotice('ช่วงเวลานี้ไม่ว่าง กรุณาเลือกเวลาอื่น');return}
-    if(time==='18:00'&&(!start||end)){setSelectionNotice('เวลา 18:00 ใช้เป็นเวลาสิ้นสุดเท่านั้น');return}
-    if(start===time){setStart(null);setEnd(null);setSelectionNotice(null);return}
-    if (!start || end) { setStart(time); setEnd(null);setSelectionNotice(null); return }
+    if (time === closingTime && (!start || end)) { setSelectionNotice(`เวลา ${closingTime} ใช้เป็นเวลาสิ้นสุดเท่านั้น`); return }
+    if (start === time) { changeStart(null); return }
+    if (!start || end) { changeStart(time); return }
     if (time > start) {
-      if(isSelectableRange(start,time,SLOTS,isUnavailable)){setEnd(time);setSelectionNotice(null)}
+      if(isSelectableRange(start,time,slots,isUnavailable)) changeEnd(time)
       else setSelectionNotice('ไม่สามารถเลือกช่วงเวลานี้ได้ เนื่องจากมีรายการใช้งานห้องคั่นอยู่')
       return
     }
-    setStart(time)
-    setEnd(null)
-    setSelectionNotice(null)
+    changeStart(time)
   }
-  const requestPath = `/keys/rooms/${room.id}/request?date=${date}&start=${start ?? '08:00'}&end=${selectedEnd ?? ''}`
+  const requestPath = `/keys/rooms/${room.id}/request?date=${date}&start=${start ?? slots[0]}&end=${selectedEnd ?? ''}&selection=${selectionId}`
   const canRequest = !closed && room.active && Boolean(start && selectedEnd)
-  const clearSelection=()=>{setStart(null);setEnd(null);setSelectionNotice(null)}
+  const clearSelection = () => changeStart(null)
 
   return <section className="key-request-entry key-room-detail">
     <Link className="back-link" to={keyCatalogPath(room.requiresSsoForKeyRequest)}>← กลับ</Link>
-    <header className="key-detail-heading"><h1>ห้อง {room.code}</h1><p>{room.description||'ยังไม่มีคำอธิบายห้อง'}</p><div className="key-detail-metadata"><span>{room.active?'เปิดใช้งาน':'ไม่พร้อมใช้'}</span><span>{room.requiresSsoForKeyRequest?'ต้องเข้าสู่ระบบ':'ไม่ต้องเข้าสู่ระบบ'}</span><span>{room.requiresSsoForKeyRequest?'รออนุมัติ':'ไม่ต้องรออนุมัติ'}</span></div></header>
+    <header className="key-detail-heading"><h1>ห้อง {room.code}</h1><p>{room.description||'ยังไม่มีคำอธิบายห้อง'}</p><div className="key-detail-metadata"><span>{room.active?'เปิดใช้งาน':'ไม่พร้อมใช้'}</span><span>{room.requiresLoginForKeyRequest?'ต้องเข้าสู่ระบบ':'ไม่ต้องเข้าสู่ระบบ'}</span><span>{room.requiresSsoForKeyRequest?'รออนุมัติ':'ไม่ต้องรออนุมัติ'}</span></div></header>
     <article className="key-detail-card key-room-information"><div className="key-room-photo"><img src={room.imageUrl||defaultRoomImage} alt={`ภาพห้อง ${room.code}`} className="key-room-photo-image" loading="lazy" /></div><div className="key-room-facts"><h2>ข้อมูลห้อง</h2><p><small>ประเภทห้อง</small><strong>{thaiRoomType(room.roomTypeName)}</strong></p><p><small>ความจุ</small><strong>{room.capacity>0?`${room.capacity} ที่นั่ง`:'ยังไม่มีข้อมูล'}</strong></p></div><footer><strong>อุปกรณ์เพิ่มเติม</strong><span>{room.equipment?.length?room.equipment.join(' · '):'ยังไม่มีข้อมูลอุปกรณ์เพิ่มเติม'}</span></footer></article>
     <article className="key-detail-card key-history"><h2>รายการผู้เบิกกุญแจ</h2>{history.isPending?<p className="key-detail-empty">กำลังโหลดรายการ…</p>:history.isError?<p className="key-detail-empty">ไม่สามารถโหลดรายการได้</p>:history.data?.length ? <RoomUsageHistory items={history.data.map(item => ({ ...item, title: item.requesterName }))} label="รายการผู้เบิกกุญแจทั้งหมด" heading="รายการเบิก" compact />:<p className="key-detail-empty">— ยังไม่มีรายการ —</p>}</article>
-    <article className="key-detail-card key-schedule-card"><div className="key-schedule-heading" data-testid="key-schedule-heading"><h2>ตารางเวลาการเบิกกุญแจ</h2><time dateTime={date}>{thaiDate(date)}<span className="sr-only"> ({date})</span></time><p>เลือกเวลาเริ่มต้นจากตารางหรือดรอปดาวน์ แล้วปรับเวลาสิ้นสุดได้ตามต้องการ</p></div><RoomScheduleGrid times={SLOTS} upcomingTimes={SLOTS.filter(hasNotElapsed)} serviceEnded={now.getTime() >= Date.parse(`${date}T${SLOTS.at(-1)}:00+07:00`)} hasSelectableStart={events.isSuccess && room.active && !closed ? startOptions.some(option => !option.disabled) : undefined} getSlot={getSlot} onSelect={selectSlot} />{selectionNotice&&<p className="key-selection-notice" role="alert">{selectionNotice}</p>}<div className="key-selected-time"><div className="key-time-summary"><SelectField label="เวลาเริ่มต้น" value={start ?? ''} placeholder="กรุณาเลือก" options={startOptions} disabled={!startOptions.some(option => !option.disabled)} onChange={changeStart}/><SelectField label="เวลาสิ้นสุด" value={selectedEnd ?? ''} placeholder={start ? "กรุณาเลือก" : "เลือกเวลาเริ่มต้นก่อน"} options={endOptions} disabled={!endOptions.length} onChange={setEnd}/></div>{start && <button type="button" className="key-reset-selection" onClick={clearSelection}>เลือกช่วงเวลาใหม่</button>}</div></article>
-    {room.requiresSsoForKeyRequest && !identity ? <button className="primary-action" disabled={!canRequest} onClick={() => setShowLogin(true)}>เบิกกุญแจห้องนี้</button> : <Link className="primary-action" aria-disabled={!canRequest} to={canRequest ? requestPath : '#'}>เบิกกุญแจห้องนี้</Link>}
+    <article className="key-detail-card key-schedule-card"><div className="key-schedule-heading" data-testid="key-schedule-heading"><h2>ตารางเวลาการเบิกกุญแจ</h2><time dateTime={date}>{thaiDate(date)}<span className="sr-only"> ({date})</span></time><p>เลือกเวลาเริ่มต้นจากตารางหรือดรอปดาวน์ แล้วปรับเวลาสิ้นสุดได้ตามต้องการ</p></div><RoomScheduleGrid times={slots} upcomingTimes={slots.filter(hasNotElapsed)} serviceEnded={now.getTime() >= Date.parse(`${date}T${closingTime}:00+07:00`)} hasSelectableStart={events.isSuccess && room.active && !closed ? startOptions.some(option => !option.disabled) : undefined} getSlot={getSlot} onSelect={selectSlot} />{selectionNotice&&<p className="key-selection-notice" role="alert">{selectionNotice}</p>}<div className="key-selected-time"><div className="key-time-summary"><SelectField label="เวลาเริ่มต้น" value={start ?? ''} placeholder="กรุณาเลือก" options={startOptions} disabled={!startOptions.some(option => !option.disabled)} onChange={changeStart}/><SelectField label="เวลาสิ้นสุด" value={selectedEnd ?? ''} placeholder={start ? "กรุณาเลือก" : "เลือกเวลาเริ่มต้นก่อน"} options={endOptions} disabled={!endOptions.length} onChange={changeEnd}/></div>{start && <button type="button" className="key-reset-selection" onClick={clearSelection}>เลือกช่วงเวลาใหม่</button>}</div></article>
+    {room.requiresLoginForKeyRequest && !identity ? <button className="primary-action" disabled={!canRequest} onClick={() => setShowLogin(true)}>เบิกกุญแจห้องนี้</button> : <Link className="primary-action" aria-disabled={!canRequest} to={canRequest ? requestPath : '#'}>เบิกกุญแจห้องนี้</Link>}
     {showLogin && <GoogleSsoModal returnTo={requestPath} onClose={() => setShowLogin(false)} />}
   </section>
 }

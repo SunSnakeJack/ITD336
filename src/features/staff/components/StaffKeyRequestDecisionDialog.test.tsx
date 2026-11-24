@@ -3,6 +3,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { StaffKeyRequestDecisionDialog } from './StaffKeyRequestDecisionDialog'
 
 describe('StaffKeyRequestDecisionDialog', () => {
+  it('allows a blank rejection reason when the policy is off', () => {
+    const confirm = vi.fn()
+    render(<StaffKeyRequestDecisionDialog requestCode="KR-1" roomCode="S2407" decision="REJECTED" reasonRequired={false} onClose={vi.fn()} onConfirm={confirm}/>)
+    fireEvent.click(screen.getByRole('button', { name: 'ยืนยันไม่อนุมัติ' }))
+    expect(confirm).toHaveBeenCalledWith('')
+  })
+
   it('requires a reason before rejecting', () => {
     const confirm = vi.fn()
     render(<StaffKeyRequestDecisionDialog requestCode="KR-1" roomCode="S2407" decision="REJECTED" onClose={vi.fn()} onConfirm={confirm}/>)

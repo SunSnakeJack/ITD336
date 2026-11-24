@@ -29,6 +29,7 @@
 .key-tag-label small { font-size: .68rem; }
 .key-tag-label .key-tag-available { color: #166534; }
 .key-tag-label .key-tag-unavailable { color: #b91c1c; }
+.key-tag-room-closed .key-tag-label { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
 .key-tag-times { display: grid; gap: .2rem; border-top: 1px solid #e7ddb5; padding-top: .25rem; font-size: .66rem; font-variant-numeric: tabular-nums; }
 a.key-tag-label:hover { background: var(--theme-yellow-soft); }
 .key-tag-grid .key-room-empty { grid-column: 1 / -1; }

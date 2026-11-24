@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { accountBookingStatus, accountKeyLoanStatus, accountKeyRequestStatus } from './account-request-status'
+import { accountBookingApprovalStatus, accountBookingStatus, accountKeyLoanStatus, accountKeyRequestStatus } from './account-request-status'
 
 const now = Date.parse('2026-11-19T17:00:00+07:00')
 const end = '2026-11-19T17:30:00+07:00'
 
 describe('account request status badges', () => {
+  it('distinguishes the start and end approval deadlines', () => {
+    const start = new Date(now).toISOString()
+    expect(accountBookingApprovalStatus(start, end, 'START', now).label).toBe('หมดอายุ')
+    expect(accountBookingApprovalStatus(start, end, 'END', now).label).toBe('รออนุมัติ · เริ่มแล้ว')
+    expect(accountBookingApprovalStatus(start, end, 'END', Date.parse(end)).label).toBe('หมดอายุ')
+  })
   it('uses the completed badge for an approved booking at its end time', () => {
     expect(accountBookingStatus('APPROVED', end, now)).toEqual({ label: 'อนุมัติแล้ว', tone: 'green' })
     expect(accountBookingStatus('APPROVED', end, Date.parse(end))).toEqual({ label: 'สิ้นสุดแล้ว', tone: 'gray' })

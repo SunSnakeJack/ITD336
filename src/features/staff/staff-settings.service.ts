@@ -36,6 +36,9 @@ export async function savePermissionSettings(changes: PermissionChanges) {
 
 export type RoomPolicyCategory = 'LAB' | 'SPECIAL' | 'MEETING'
 export type RoomCategoryPolicy = {
+  approvalMode?: 'AUTO' | 'MANUAL'
+  requireRejectionReason?: boolean
+  approvalDeadline?: 'START' | 'END'
   loginForKey?: true
   days?: number[]
   opensAt?: string
@@ -50,4 +53,12 @@ export async function getRoomCategoryPolicies() {
   const { data, error } = await supabase.rpc('get_room_category_restrictions' as never)
   if (error) throw new Error('ไม่สามารถโหลดกติกาตามประเภทห้องได้', { cause: error })
   return (data ?? {}) as Partial<Record<RoomPolicyCategory, RoomCategoryPolicy>>
+}
+
+export const roomRejectionReasonQueryKey = ['staff', 'room-rejection-reason-required'] as const
+
+export async function getRoomRejectionReasonRequired(roomCode: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('get_room_rejection_reason_required' as never, { p_room_code: roomCode } as never)
+  if (error) throw new Error('โหลดการตั้งค่าเหตุผลไม่สำเร็จ', { cause: error })
+  return data !== false
 }

@@ -50,6 +50,8 @@ export interface ScheduleRoom {
   academicScheduleConfirmed: boolean
   usageScope?: 'LABORATORY' | 'MEETING' | 'OTHER'
   requiresSsoForKeyRequest?: boolean
+  requiresLoginForKeyRequest?: boolean
+  keyOperatingHours?: { opensAt: string; closesAt: string }
 }
 
 export interface ScheduleFilters {

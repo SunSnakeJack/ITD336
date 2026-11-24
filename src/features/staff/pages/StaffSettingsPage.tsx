@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { keyServiceDaysQueryKey } from '../../keys/key-service-days.queries'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase/client'
@@ -6,10 +7,11 @@ import { ROLE_LABELS, type RoleCode } from '../../auth/auth.types'
 import { meetingBookingPolicyKey } from '../../meeting-rooms/meeting-booking-policy'
 import { bangkokDateKey, isSaturday } from '../../schedules/saturday-policy'
 import { saturdayPolicyQuery } from '../../schedules/saturday-policy.queries'
+import { scheduleKeys } from '../../schedules/schedule.queries'
 import { keyLoanKeys } from '../../keys/key.queries'
 import { StaffPage, StaffQueryState } from '../components/StaffPage'
 import { keyRequestTimingSettingQuery, meetingAdvanceBookingDaysQuery } from '../staff-settings.queries'
-import { getRoomCategoryPolicies, savePermissionSettings, type PermissionChanges, type RoomPolicyCategory } from '../staff-settings.service'
+import { getRoomCategoryPolicies, roomRejectionReasonQueryKey, savePermissionSettings, type PermissionChanges, type RoomPolicyCategory } from '../staff-settings.service'
 import { StaffRoomCategoryFields } from '../components/StaffRoomCategoryFields'
 import { useStaffViewState } from '../useStaffViewState'
 import './StaffSettingsPage.css'
@@ -59,13 +61,22 @@ export function StaffSettingsPage() {
   if (changes.meetingAdvanceDays !== undefined && changes.meetingAdvanceDays !== advance.data) pendingChanges.meetingAdvanceDays = changes.meetingAdvanceDays
   if (changes.allowElapsed !== undefined && changes.allowElapsed !== timing.data) pendingChanges.allowElapsed = changes.allowElapsed
   if ((saturdayEnabled !== undefined || changes.openSaturday !== undefined) && (enabled ? date : null) !== saturday.data) pendingChanges.openSaturday = enabled ? date : null
+  const invalidRoomPolicy = Object.values(pendingChanges.roomPolicies ?? {}).some(policy =>
+    !((policy.opensAt ?? '08:00') < (policy.closesAt ?? '18:00')) ||
+    policy.closesAt === '' ||
+    policy.opensAt === '' ||
+    (policy.minMinutes ?? 30) < 1 ||
+    (policy.minMinutes ?? 30) > (policy.maxMinutes ?? 600) ||
+    (policy.maxMinutes ?? 600) > 1440
+  )
   const save = useMutation({
     mutationFn: savePermissionSettings,
     onSuccess: async () => {
       updateView({ changes: {}, saturdayEnabled: undefined })
       await Promise.all([roleCatalogKey, categoryPoliciesKey, keyRequestTimingSettingQuery().queryKey,
         meetingAdvanceBookingDaysQuery().queryKey, saturdayPolicyQuery().queryKey,
-        meetingBookingPolicyKey, keyLoanKeys.all].map(queryKey => client.invalidateQueries({ queryKey })))
+        meetingBookingPolicyKey, keyLoanKeys.all, keyServiceDaysQueryKey, roomRejectionReasonQueryKey,
+        scheduleKeys.publicRooms()].map(queryKey => client.invalidateQueries({ queryKey })))
     },
   })
   const patch = (values: PermissionChanges) => {
@@ -82,8 +93,9 @@ export function StaffSettingsPage() {
   const dirty = Object.keys(pendingChanges).length > 0
 
   return <StaffPage eyebrow="" title="การตั้งค่าสิทธิ์" description="กำหนดสิทธิ์ตามบทบาทและเงื่อนไขการใช้งานห้อง"
-    actions={<button className="staff-button" type="button" disabled={loading || Boolean(error) || invalidSaturday || !dirty || save.isPending}
+    actions={<button className="staff-button" type="button" disabled={loading || Boolean(error) || invalidSaturday || invalidRoomPolicy || !dirty || save.isPending}
       onClick={() => save.mutate(pendingChanges)}>{save.isPending ? 'กำลังบันทึก…' : 'บันทึกทั้งหมด'}</button>}>
+    {invalidRoomPolicy && <p className="panel-error" role="alert">กรุณาระบุเวลาเปิดก่อนเวลาปิด และระยะเวลาขั้นต่ำตั้งแต่ 1 นาทีโดยไม่เกินระยะเวลาสูงสุด</p>}
     {save.error && <p className="panel-error" role="alert">{save.error.message}</p>}
     {save.isSuccess && <p role="status">บันทึกการตั้งค่าแล้ว</p>}
     <StaffQueryState loading={loading} error={error}>
@@ -133,7 +145,6 @@ export function StaffSettingsPage() {
             {enabled && <label>วันเสาร์ที่เปิด <input type="date" min={today} value={date} onChange={event => patch({ openSaturday: event.target.value })} /></label>}
           </fieldset>
           {invalidSaturday && <p className="panel-error" role="alert">กรุณาเลือกวันเสาร์ตั้งแต่วันนี้เป็นต้นไป</p>}
-          <div className="staff-settings-row"><Link to="/staff/logs">เปิด Logs</Link></div>
         </section>
       </div>
     </StaffQueryState>

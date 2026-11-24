@@ -1,10 +1,12 @@
 import { bangkokDateKey, isSaturdayClosed } from '../../schedules/saturday-policy'
+import { DEFAULT_KEY_HOURS } from './key-catalog-time'
 
 export interface KeyRequestRuleInput {
   email: string
   startsAt: string
   endsAt: string
   openSaturday?: string | null
+  hours?: typeof DEFAULT_KEY_HOURS
 }
 
 export interface KeyRequestRuleErrors {
@@ -46,10 +48,9 @@ export function validateKeyRequest(input: KeyRequestRuleInput) {
     }
   }
 
-  const startMinutes = Number(start.hour) * 60 + Number(start.minute)
-  const endMinutes = Number(end.hour) * 60 + Number(end.minute)
-  if (startMinutes < 8 * 60 || endMinutes > 18 * 60) {
-    errors.time = 'กรุณาเลือกเวลาระหว่าง 08:00–18:00 น.'
+  const { opensAt, closesAt } = input.hours ?? DEFAULT_KEY_HOURS
+  if (`${start.hour}:${start.minute}` < opensAt || `${end.hour}:${end.minute}` > closesAt) {
+    errors.time = `กรุณาเลือกเวลาระหว่าง ${opensAt}–${closesAt} น.`
   }
 
   return { valid: Object.keys(errors).length === 0, errors }

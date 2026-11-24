@@ -39,3 +39,11 @@ The staff role picker offers Dean and Head of Department. Both inherit the prior
 Migration 0107 provides save_permission_settings for saving role grants and existing booking settings atomically. It requires ADMIN and SETTINGS_MANAGE, protects the ADMIN role grants, and audits each role grant change. Role-based route gates and room-type-specific workflow rules remain separate from this RPC.
 
 Migration 0108 adds optional restrictions by room category for key-request sign-in, service days and hours, notice horizon, duration, and per-person daily limits (counted separately for room bookings and key requests). These restrictions apply to new or rescheduled time ranges in addition to existing workflow rules. Empty values inherit existing rules. The v2 save RPC includes these restrictions in the same transaction as role grants and shared settings.
+
+Migration 0110 exposes the IDs of visible catalog rooms closed today in Asia/Bangkok. The public key catalog uses this result for its closed-day label and honors the temporary Saturday exception without exposing the admin settings table.
+
+Migration 0111 lets room categories override approval mode and records the deadline basis on each new pending request. Pending requests use the start or end of their requested interval, and a database trigger rejects approval at or after the deadline.
+
+### เหตุผลเมื่อไม่อนุมัติ
+
+ตั้งแยกตามประเภทห้อง ค่าเริ่มต้นบังคับระบุเหตุผลตามพฤติกรรมเดิม เมื่อปิด ผู้อนุมัติสามารถเว้นเหตุผลได้ ทั้งคำขอจองห้องและคำขอเบิกกุญแจ ฐานข้อมูลตรวจค่าที่บันทึกไว้ขณะดำเนินการ และบันทึกเหตุผลเฉพาะเมื่อมีข้อความ

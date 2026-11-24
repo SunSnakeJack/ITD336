@@ -66,12 +66,18 @@ async function dispatchCreatedRequestEmail(result: KeyRequestResult): Promise<Ke
   return result
 }
 
+export class KeyRequestOperatingHoursError extends Error {
+  constructor() { super('ช่วงเวลาที่เลือกอยู่นอกเวลาให้บริการของห้อง กรุณาเลือกเวลาใหม่') }
+}
+
 function throwKeyRequestError(message:string):never{
   if(message.includes('KEY_REQUEST_PAST_SLOT_DISABLED'))throw new Error('ช่วงเวลานี้ผ่านไปแล้วและระบบยังไม่อนุญาตให้เบิกย้อนหลัง')
   if (message.includes('KEY_REQUEST_TIME_CONFLICT') || message.includes('LEGACY_KEY_REQUEST_TIME_CONFLICT')) throw new Error('ช่วงเวลานี้มีคำขอเบิกกุญแจแล้ว')
   if (message.includes('AUTHENTICATION_REQUIRED')) throw new Error('ห้องนี้ต้องเข้าสู่ระบบมหาวิทยาลัยก่อนส่งคำขอ')
   if (message.includes('UNIVERSITY_EMAIL_REQUIRED')) throw new Error('กรุณาใช้อีเมลมหาวิทยาลัย @northbkk.ac.th')
-  if (message.includes('OUTSIDE_SERVICE_HOURS')) throw new Error('กรุณาเลือกเวลาระหว่าง 08:00–18:00 น.')
+  if (message.includes('OUTSIDE_SERVICE_HOURS') || message.includes('OUTSIDE_OPERATING_HOURS')) {
+    throw new KeyRequestOperatingHoursError()
+  }
   if (message.includes('SATURDAY_NOT_AVAILABLE')) throw new Error('ไม่สามารถทำรายการสำหรับวันเสาร์ได้')
   if(message.includes('REQUESTER_IDENTITY_REQUIRED'))throw new Error('กรุณาระบุสถานะและรหัสนักศึกษา/บุคลากร')
   if(message.includes('REFERENCE_OPTION_REQUIRED'))throw new Error('กรุณาเลือกอาจารย์ผู้สอน')

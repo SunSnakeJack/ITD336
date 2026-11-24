@@ -10,6 +10,12 @@ const room: ScheduleRoom = {
 }
 
 describe('key tag catalog card', () => {
+  it('shows a closed day instead of advertising available times', () => {
+    render(<MemoryRouter><KeyRoomTagCard room={room} schedule="closed" available={['08:00–10:00']} /></MemoryRouter>)
+    expect(screen.getByText('งดให้บริการวันนี้').closest('article')).toHaveClass('key-tag-room-closed')
+    expect(screen.queryByText('08:00–10:00')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'ดูรายละเอียด S2407' })).not.toBeInTheDocument()
+  })
   it('marks a room with no available slots as unavailable', () => {
     render(<MemoryRouter><KeyRoomTagCard room={room} schedule="ready" available={[]} /></MemoryRouter>)
     expect(screen.getByText('ไม่มีช่วงเวลาว่าง')).toHaveClass('key-tag-unavailable')

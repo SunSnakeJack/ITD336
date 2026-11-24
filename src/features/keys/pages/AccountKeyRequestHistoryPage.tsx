@@ -11,7 +11,7 @@ import { keyLoanKeys, myKeyRequestsQuery } from '../key.queries'
 import { RecentRequestsHeading } from '../../bookings/components/RecentRequestsHeading'
 import { PublicPageHeading } from '../../../shared/components/PublicPageHeading'
 
-export function AccountKeyRequestHistoryPage({ embedded = false }: { embedded?: boolean } = {}) {
+export function AccountKeyRequestHistoryPage({ embedded = false, loanCount = 0 }: { embedded?: boolean; loanCount?: number } = {}) {
   const query = useQuery({ ...myKeyRequestsQuery(), refetchInterval: 15_000 })
   const requestFocus = useRequestFocus(query.isSuccess)
   const client = useQueryClient()
@@ -23,7 +23,7 @@ export function AccountKeyRequestHistoryPage({ embedded = false }: { embedded?: 
   if (query.isPending) return <LoadingSpinner label="กำลังโหลดประวัติ…"/>
   return <section className={embedded ? "key-history-page embedded-key-history" : "key-account-page key-history-page"}>
     {!embedded && <PublicPageHeading title="การจองและกุญแจของฉัน" />}
-    <RecentRequestsHeading count={query.data?.length ?? 0} />
+    <RecentRequestsHeading count={(query.data?.length ?? 0) + loanCount} />
     <div className="account-request-card-list">{query.data?.map(item => {
       const now = Date.now()
       const canCancel = Boolean(item.canCancel) && Date.parse(item.endsAt) > now && ['PENDING_APPROVAL', 'PENDING_STARTED', 'APPROVED'].includes(item.status)

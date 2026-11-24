@@ -5,4 +5,5 @@ export const staffUsageQuery = () => queryOptions({
   queryKey: staffUsageQueryKey,
   queryFn: getStaffUsageHistory,
   staleTime: 30_000,
+  refetchInterval: 30_000,
 })

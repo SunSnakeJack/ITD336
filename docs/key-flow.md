@@ -1,5 +1,7 @@
 # Key flow
 
+Account history shows booking cards in the booking tab. Key loans, including loans created from a booking, appear in the key tab alongside direct key requests. Key-loan notifications open the loan in that tab.
+
 Staff can set the public key catalog to the current layout, key tags, or
 the current layout without checkout history. The last option omits the
 checkout history query and section on both catalog tabs. Schedule availability
@@ -10,6 +12,14 @@ controls the daily schedule on key and meeting room detail pages. Availability
 and time selection continue to follow the existing room policy.
 
 Public key request forms show the requester status, name, and email. New requests omit the student or staff identifier. The request RPCs still accept an identifier from older clients. Time pickers hide elapsed starts, disable booked half-hours, and offer continuous end times up to the next blocked slot.
+
+Guests see the Google sign-in dialog before entering the key form when the room type or its category requires login. `get_public_key_login_required_rooms` exposes only matching rooms the caller can see. The form and submission still enforce sign-in on direct entry and when a request is sent.
+
+The room detail page remembers its selected range in the current browser tab. Starting the form from a new room selection replaces the draft's date and times while preserving its other fields. Returning through the bottom navigation restores later edits made in the form.
+
+The key form and review show the same primary account role as the site header. Lecturer selection and the submitted requester type continue to use the student or teacher classification.
+
+The key catalog, room schedule, and form use the room category's Bangkok opening and closing times. The default window is 08:00–18:00. Closing time is an end-only option. The database enforces the same window on new requests and time changes, and the form checks for policy changes before confirmation.
 
 For S2407–S2412, `get_room_slot_permissions` is the single decision boundary used by the room dialog. During an active class occurrence, every authenticated Student may create an auto-approved class key request; Teacher is intentionally supported by the same database rule for later UI reuse. This rule does not depend on enrollment data. Without a class, the user must own an approved room booking before requesting a key. Another user's booking never grants key permission.
 

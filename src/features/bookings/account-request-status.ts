@@ -52,6 +52,12 @@ export function accountBookingStatus(status: BookingStatus, endsAt: string, now 
   return bookingStatuses[effectiveBookingStatus(status, endsAt, now)] ?? { label: status, tone: 'gray' }
 }
 
+export function accountBookingApprovalStatus(start: string, end: string, basis: 'START' | 'END', now = Date.now()): AccountRequestStatus {
+  if (now >= Date.parse(basis === 'START' ? start : end)) return { label: 'หมดอายุ', tone: 'gray' }
+  if (now >= Date.parse(start)) return { label: 'รออนุมัติ · เริ่มแล้ว', tone: 'amber' }
+  return pending
+}
+
 export function accountKeyRequestStatus(status: string, endsAt: string, now = Date.now(), canReturn = false): AccountRequestStatus {
   if (canReturn && ['APPROVED', 'IN_USE'].includes(status) && Date.parse(endsAt) <= now) return keyLoanStatuses.LATE
   if (status === 'APPROVED' && Date.parse(endsAt) <= now) return completed

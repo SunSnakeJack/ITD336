@@ -5,7 +5,7 @@ import { bookingKeys } from '../../bookings/booking.queries'
 import { scheduleKeys } from '../../schedules/schedule.queries'
 import { staffUsageQueryKey } from '../reporting/staff-usage.queries'
 import type { StaffUsageRow } from '../reporting/staff-usage.types'
-import { StaffKeyRequestDecisionDialog } from './StaffKeyRequestDecisionDialog'
+import { StaffRoomDecisionDialog } from './StaffKeyRequestDecisionDialog'
 
 export function StaffMeetingDecisionButtons({ row }: { row: StaffUsageRow }) {
   const [decision, setDecision] = useState<'APPROVED' | 'REJECTED' | null>(null)
@@ -33,10 +33,14 @@ export function StaffMeetingDecisionButtons({ row }: { row: StaffUsageRow }) {
       <button type="button" onClick={() => open('APPROVED')}>อนุมัติ</button>
       <button type="button" className="danger" onClick={() => open('REJECTED')}>ไม่อนุมัติ</button>
     </div>
-    {decision && <StaffKeyRequestDecisionDialog requestCode={row.userName} roomCode={row.roomCode}
+    {decision && <StaffRoomDecisionDialog requestCode={row.userName} roomCode={row.roomCode}
       decision={decision} pending={save.isPending}
-      error={save.error ? (save.error.message.includes('ROOM_UNAVAILABLE')
-        ? 'ช่วงเวลานี้มีการใช้งานห้องแล้ว' : 'ไม่สามารถบันทึกผลได้ กรุณาตรวจสอบสิทธิ์และสถานะรายการ') : undefined}
+      error={save.error ? (save.error.message.includes('ROOM_APPROVAL_EXPIRED')
+        ? 'คำขอหมดอายุแล้ว เนื่องจากเลยกำหนดอนุมัติ'
+        : save.error.message.includes('REJECTION_REASON_REQUIRED')
+          ? 'กรุณาระบุเหตุผลที่ไม่อนุมัติ'
+          : save.error.message.includes('ROOM_UNAVAILABLE')
+          ? 'ช่วงเวลานี้มีการใช้งานห้องแล้ว' : 'ไม่สามารถบันทึกผลได้ กรุณาตรวจสอบสิทธิ์และสถานะรายการ') : undefined}
       onClose={() => { if (!save.isPending) setDecision(null) }}
       onConfirm={reason => save.mutate({ choice: decision, reason })} />}
   </>
