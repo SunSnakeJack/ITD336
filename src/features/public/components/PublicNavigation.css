@@ -94,6 +94,10 @@
   font-size: clamp(.625rem, 3.1vw, .75rem);
 }
 .public-bottom-nav.public-bottom-nav-combined svg { width: 17px; height: 17px; flex-basis: 17px; }
+.public-bottom-nav.public-bottom-nav-merged {
+  width: min(380px, calc(100% - 24px));
+  grid-template-columns: minmax(0, 1.8fr) repeat(2, minmax(0, 1fr));
+}
 .public-bottom-nav.public-bottom-nav-combined a[aria-current="page"] {
   background: var(--theme-yellow-soft);
 }

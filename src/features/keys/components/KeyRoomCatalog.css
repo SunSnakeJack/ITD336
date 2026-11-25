@@ -1,5 +1,31 @@
-.key-room-catalog-page > .public-page-heading {
-  padding: .25rem 0 0;
+.key-room-group {
+  margin-block-start: 1.5rem;
+  scroll-margin-top: 5rem;
+}
+
+.key-room-group + .key-room-group { margin-block-start: 2rem; }
+.key-room-meeting-group .meeting-room-picker { justify-content: start; }
+
+.key-room-group > h2 {
+  border-inline-start: .3rem solid var(--theme-yellow-primary);
+  color: #0a0047;
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0 0 .75rem;
+  padding-inline-start: .65rem;
+}
+
+@media (width < 720px) {
+  .key-room-group[data-active="false"], .key-room-group > h2 { display: none; }
+  .key-room-group, .key-room-group + .key-room-group { margin-block-start: 0; }
+}
+
+@media (min-width: 720px) {
+  .key-room-catalog-page > .key-room-tabs { display: none; }
+  .key-request-entry.key-room-catalog-page {
+    max-width: 48rem;
+    padding-inline: .75rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -17,17 +43,15 @@
     margin-bottom: 18px;
   }
 
-  .key-room-catalog-page .key-room-tabs {
-    margin: 0 0 24px;
-  }
+  .key-room-catalog-page .key-room-tabs { margin: 0 0 24px; }
 
   .key-room-catalog-page .key-room-tabs button {
     border-bottom-width: 1px;
-    font-size: 14px;
     display: grid;
-    place-items: center;
+    font-size: 14px;
     min-height: 36px;
     padding: 6px 4px;
+    place-items: center;
   }
 
   .key-room-catalog-page .key-room-tabs button[aria-selected="true"] {

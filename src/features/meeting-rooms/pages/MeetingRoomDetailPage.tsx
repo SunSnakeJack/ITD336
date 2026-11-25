@@ -4,7 +4,7 @@ import { SelectField } from '../../../shared/components/SelectField'
 import { availableEndTimes, timeSelectOptions, isRoomSlotElapsed, isRoomSlotOccupied, roomSlotTimes } from '../../schedules/request-time-options'
 import { useQuery } from '@tanstack/react-query'
 import { useId, useMemo, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import type { AuthIdentity } from '../../auth/auth.types'
 import { GoogleSsoModal } from '../../auth/components/GoogleSsoModal'
 import { publicRoomsQuery, publicScheduleEventsQuery } from '../../schedules/schedule.queries'
@@ -22,11 +22,15 @@ import { scheduleKeys } from '../../schedules/schedule.queries'
 import { canOverrideMeetingEvent } from '../utils/meeting-time-options'
 import { useTabDraft } from '../../../shared/components/useTabDraft'
 import { meetingDetailSelectionKey, type MeetingDetailSelection } from '../utils/meeting-detail-selection'
+import { useMergedRoomCatalog } from '../../public/useMergedRoomCatalog'
 
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date())
 const thaiDate = (date: string) => new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(`${date}T00:00:00+07:00`))
 
 export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | null }) {
+  const { state } = useLocation()
+  const mergedCatalog = useMergedRoomCatalog()
+  const catalogBack = mergedCatalog && state?.fromRoomCatalog === true ? '/keys?section=meeting' : '/meeting-room'
   const { roomId = '' } = useParams()
   const rooms = useQuery(publicRoomsQuery())
   const room = rooms.data?.find((item) => item.id === roomId)
@@ -107,7 +111,7 @@ export function MeetingRoomDetailPage({ identity }: { identity: AuthIdentity | n
   const roomTitle = meetingRoomDisplayName(room)
 
   return <section className="key-request-entry key-room-detail meeting-room-detail">
-    <Link className="back-link" to="/meeting-room"><span aria-hidden="true">&lt;</span>{' '}กลับไปเลือกห้อง</Link>
+    <Link className="back-link" to={catalogBack}><span aria-hidden="true">&lt;</span>{' '}กลับไปเลือกห้อง</Link>
     <header className="key-detail-heading"><h1>{roomTitle}</h1><p>{room.description||'ยังไม่มีคำอธิบายห้อง'}</p><div className="key-detail-metadata"><span>{room.active ? 'เปิดใช้งาน' : 'ไม่พร้อมใช้'}</span><span>ต้องเข้าสู่ระบบ</span></div></header>
     <article className="key-detail-card key-room-information"><div className="key-room-photo"><img src={room.imageUrl||defaultRoomImage} alt={`ภาพห้อง ${room.code}`} className="key-room-photo-image" /></div><div className="key-room-facts"><h2>ข้อมูลห้อง</h2><p><small>ประเภทห้อง</small><strong>{thaiRoomType(room.roomTypeName)}</strong></p><p><small>ความจุ</small><strong>{room.capacity > 0 ? `${room.capacity} ที่นั่ง` : 'ยังไม่มีข้อมูล'}</strong></p></div><footer><strong>อุปกรณ์เพิ่มเติม</strong><span>{room.equipment?.length?room.equipment.join(' · '):'ยังไม่มีข้อมูลอุปกรณ์เพิ่มเติม'}</span></footer></article>
     <MeetingBookingList key={room.id} roomId={room.id} active={room.active} viewerId={identity?.userId ?? null} />

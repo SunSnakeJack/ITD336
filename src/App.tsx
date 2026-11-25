@@ -138,7 +138,7 @@ export function App() {
       >
         <Route index element={<Navigate to="/keys" replace />} />
         <Route path="dashboard" element={<PublicDashboardPage />} />
-        <Route path="keys" element={<KeyRequestRoomsPage identity={identity} />} />
+        <Route path="keys" element={<KeyRequestRoomsPage identity={identity} authLoading={loading} />} />
         <Route path="meeting-room" element={<MeetingRoomEntryPage identity={identity} authLoading={loading} />} />
         <Route path="meeting-room/:roomId" element={<MeetingRoomDetailPage identity={identity} />} />
         <Route path="meeting-room/:roomId/request" element={<MeetingRoomRequestPage identity={identity} authLoading={loading} />} />

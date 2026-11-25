@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -95,6 +95,24 @@ describe('Authentication entry point', () => {
     client.setQueryData(['public-navigation', 'mode'], mode)
     return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[path]}><App /></MemoryRouter></QueryClientProvider>)
   }
+
+  it('combines the meeting picker and bottom navigation on large tablets', async () => {
+    vi.stubGlobal('matchMedia', (media: string) => ({ matches: media.includes('1024px') }))
+    try {
+      vi.mocked(supabase.rpc).mockImplementation((async (name: string) => ({
+        data: name === 'get_public_room_catalog' ? [{ id: 'meeting-1', code: 'MEETING-ROOM', active: true, usage_scope: 'MEETING' }] : [],
+        error: null,
+      })) as never)
+      renderPath('/keys', 'both')
+      const booking = await screen.findByRole('region', { name: 'การจองห้องประชุม' })
+      expect(within(booking).getByRole('button', { name: /MEETING-ROOM.*เข้าสู่ระบบ/ })).toBeInTheDocument()
+      const navigation = screen.getByRole('navigation', { name: 'เมนูหลัก' })
+      expect(within(navigation).getByRole('link', { name: 'เบิกกุญแจและจองห้อง' })).toHaveAttribute('href', '/keys')
+      expect(within(navigation).queryByRole('link', { name: 'จองห้อง' })).not.toBeInTheDocument()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 
   it.each([
     ['/account/requests', 'การจองและกุญแจของฉัน'],
@@ -373,7 +391,6 @@ describe('Authentication entry point', () => {
     ], error: null } as never)
     renderPath('/keys')
     expect((await screen.findAllByRole('link', { name: /S2407/ })).length).toBeGreaterThan(0)
-    fireEvent.click(screen.getByRole('tab', { name: 'ห้องปฏิบัติการพิเศษ' }))
     expect(screen.getAllByRole('link', { name: /STUDIO/ }).length).toBeGreaterThan(0)
     expect(screen.queryByRole('link', { name: /MEETING-ROOM/ })).not.toBeInTheDocument()
   })
@@ -594,12 +611,16 @@ describe('Authentication entry point', () => {
       { id: 'special-1', code: 'STUDIO', name: 'Studio', room_type_name: 'Studio Room', active: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: true },
     ], error: null } as never)
     renderPath('/keys')
-    expect(await screen.findByRole('tab', { name: 'ห้องปฏิบัติการ' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getAllByRole('link', { name: /S2407/ }).length).toBeGreaterThan(0)
-    expect(screen.queryByRole('link', { name: /STUDIO/ })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('tab', { name: 'ห้องปฏิบัติการพิเศษ' }))
-    expect(screen.getAllByRole('link', { name: /STUDIO/ }).length).toBeGreaterThan(0)
-    expect(screen.queryByRole('link', { name: /S2407/ })).not.toBeInTheDocument()
+    const general = await screen.findByRole('region', { name: 'ห้องปฏิบัติการ' })
+    const special = screen.getByRole('region', { name: 'ห้องปฏิบัติการพิเศษ' })
+    expect(within(general).getAllByRole('link', { name: /S2407/ }).length).toBeGreaterThan(0)
+    expect(within(special).getAllByRole('link', { name: /STUDIO/ }).length).toBeGreaterThan(0)
+    const generalTab = screen.getByRole('tab', { name: 'ห้องปฏิบัติการ' })
+    const specialTab = screen.getByRole('tab', { name: 'ห้องปฏิบัติการพิเศษ' })
+    expect(generalTab).toHaveAttribute('aria-selected', 'true')
+    fireEvent.keyDown(generalTab, { key: 'ArrowRight' })
+    expect(specialTab).toHaveAttribute('aria-selected', 'true')
+    expect(specialTab).toHaveFocus()
   })
 
   it('offers separate detail and key-request actions on a room card', async () => {
@@ -701,10 +722,12 @@ describe('Authentication entry point', () => {
   })
 
   it('opens Google SSO in a modal for a special-room key request', async () => {
+    vi.setSystemTime(new Date('2026-11-08T07:30:00+07:00'))
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{ id: 'special-1', code: 'STUDIO', name: 'Studio', room_type_name: 'Studio Room', active: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: true }], error: null } as never)
     renderPath('/keys')
-    fireEvent.click(await screen.findByRole('tab', { name: 'ห้องปฏิบัติการพิเศษ' }))
-    fireEvent.click(screen.getByRole('button', { name: 'เบิกกุญแจ STUDIO' }))
+    const request = await screen.findByRole('button', { name: 'เบิกกุญแจ STUDIO' })
+    await waitFor(() => expect(request).toBeEnabled())
+    fireEvent.click(request)
     expect(screen.getByRole('dialog')).toHaveTextContent('กรุณาเข้าสู่ระบบ')
     expect(screen.getByRole('dialog').closest('.key-room-card')).toBeNull()
     expect(document.querySelector('.google-logo')).toBeInTheDocument()
@@ -718,7 +741,7 @@ describe('Authentication entry point', () => {
     })
   })
 
-  it.each(['current', 'key-tags', 'current-no-history'])('returns to the special-room tab from details in %s mode', async (mode) => {
+  it.each(['current', 'key-tags', 'current-no-history'])('returns to the special-room section from details in %s mode', async (mode) => {
     vi.mocked(supabase.rpc).mockImplementation((async (name: string) => {
       if (name === 'get_public_room_catalog') return { data: [{
         id: 'special-1', code: 'STUDIO', name: 'Studio', room_type_name: 'Studio Room',
@@ -728,16 +751,16 @@ describe('Authentication entry point', () => {
       return { data: [], error: null }
     }) as never)
     renderPath('/keys')
-    fireEvent.click(await screen.findByRole('tab', { name: 'ห้องปฏิบัติการพิเศษ' }))
     fireEvent.click(await screen.findByRole('link', { name: 'ดูรายละเอียด STUDIO' }))
     const back = await screen.findByRole('link', { name: '← กลับ' })
     expect(back).toHaveAttribute('href', '/keys?tab=special')
     fireEvent.click(back)
-    expect(await screen.findByRole('tab', { name: 'ห้องปฏิบัติการพิเศษ' })).toHaveAttribute('aria-selected', 'true')
+    expect(await screen.findByRole('region', { name: 'ห้องปฏิบัติการพิเศษ' })).toHaveTextContent('STUDIO')
+    expect(screen.getByRole('tab', { name: 'ห้องปฏิบัติการพิเศษ' })).toHaveAttribute('aria-selected', 'true')
     expect(await screen.findByRole('link', { name: 'ดูรายละเอียด STUDIO' })).toBeInTheDocument()
   })
 
-  it('hides catalog history without fetching it or hiding availability in either room tab', async () => {
+  it('hides catalog history without fetching it or hiding availability in either room section', async () => {
     vi.setSystemTime(new Date('2026-11-08T07:30:00+07:00'))
     vi.mocked(supabase.rpc).mockImplementation((async (name: string) => {
       if (name === 'get_key_catalog_display') return { data: 'current-no-history', error: null }
@@ -748,11 +771,12 @@ describe('Authentication entry point', () => {
       return { data: [], error: null }
     }) as never)
     renderPath('/keys')
-    expect(await screen.findByText('08:00–18:00 น.')).toBeInTheDocument()
+    const general = await screen.findByRole('region', { name: 'ห้องปฏิบัติการ' })
+    const special = screen.getByRole('region', { name: 'ห้องปฏิบัติการพิเศษ' })
+    expect(await within(general).findByText('08:00–18:00 น.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'เบิกกุญแจ S2407' })).toBeInTheDocument()
     expect(screen.queryByText(/รายการเบิก/)).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('tab', { name: 'ห้องปฏิบัติการพิเศษ' }))
-    expect(await screen.findByText('08:00–18:00 น.')).toBeInTheDocument()
+    expect(await within(special).findByText('08:00–18:00 น.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'ดูรายละเอียด STUDIO' })).toBeInTheDocument()
     expect(screen.queryByText(/รายการเบิก/)).not.toBeInTheDocument()
     expect(supabase.rpc).not.toHaveBeenCalledWith('get_public_key_request_history', expect.anything())

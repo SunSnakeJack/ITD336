@@ -1,0 +1,101 @@
+:is(.student-shell.public-shell, main.login-page) {
+  --public-layout-scale: 1.025;
+
+  min-height: calc(100dvh / var(--public-layout-scale));
+  outline: 1px solid #e4ded0;
+  outline-offset: -1px;
+  zoom: var(--public-layout-scale);
+}
+
+@media (min-width: 720px) {
+  :is(.student-shell.public-shell, main.login-page) { --public-layout-scale: 1.08; }
+}
+
+.public-main > main > :is(.account-profile, .public-account-sign-in, .account-requests, .meeting-room-entry, .key-room-catalog-page) {
+  padding-block-start: 1rem;
+}
+
+.public-main > main > .key-room-catalog-page > .public-page-heading h1 {
+  margin-block-start: 0;
+}
+
+@media (min-width: 1024px) {
+  :is(.student-shell.public-shell, main.login-page) { --public-layout-scale: 1.24; }
+}
+
+@media (min-width: 1280px) {
+  :is(.student-shell.public-shell, main.login-page) { --public-layout-scale: 1.12; }
+
+  .public-shell.has-bottom-nav .public-main {
+    display: grid;
+    grid-template-columns: 11.5rem minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    min-height: calc(100dvh / var(--public-layout-scale));
+  }
+
+  .public-shell.has-bottom-nav .public-main > .public-wave-header {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin-bottom: 0;
+  }
+
+  .public-shell.has-bottom-nav .public-main > main {
+    --sidebar-content-gutter: 2.5rem;
+    grid-column: 2;
+    grid-row: 2;
+    padding-bottom: 1.5rem;
+  }
+
+  .public-shell.has-bottom-nav .public-main > main > :is(
+    .meeting-room-entry,
+    .account-profile,
+    .public-account-sign-in,
+    .key-room-detail,
+    .key-booking-form-page
+  ) {
+    margin-inline: calc(var(--sidebar-content-gutter) - 1rem) auto;
+  }
+
+  .public-shell.has-bottom-nav .public-main > main > .key-room-catalog-page {
+    margin-inline: calc(var(--sidebar-content-gutter) - .75rem) auto;
+  }
+
+  .public-shell.has-bottom-nav .meeting-room-entry > .meeting-room-picker {
+    justify-content: start;
+  }
+
+  .public-shell.has-bottom-nav .public-main > .public-wave-header + nav + main {
+    padding-top: 14px;
+  }
+
+  .public-shell.has-bottom-nav .public-main > .public-bottom-nav {
+    align-content: start;
+    background: #faf6ed;
+    border: 0;
+    border-inline-end: 1px solid #e4ded0;
+    border-radius: 0;
+    box-shadow: none;
+    gap: .4rem;
+    grid-column: 1;
+    grid-row: 2;
+    grid-template-columns: minmax(0, 1fr);
+    inset: auto;
+    margin: 0;
+    padding: 2rem .75rem 1rem;
+    position: relative;
+    width: auto;
+    z-index: auto;
+  }
+
+  .public-shell.has-bottom-nav .public-main > .public-bottom-nav a {
+    border-radius: .65rem;
+    font-size: .875rem;
+    gap: .75rem;
+    justify-content: flex-start;
+    padding-inline: .75rem;
+  }
+
+  .public-shell.has-bottom-nav .public-main > .public-bottom-nav a:hover {
+    background: var(--theme-yellow-soft);
+  }
+}

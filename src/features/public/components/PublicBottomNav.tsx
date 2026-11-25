@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useMergedRoomCatalog } from '../useMergedRoomCatalog'
 
 const items = [
   { href: '/keys', label: 'เลือกห้อง', path: 'M5 20V5h3m9 0h2v15M3 20h5m9 0h4M8 4l9-2v18l-9 2zM14 12h.01' },
@@ -14,15 +15,17 @@ const combinedItems = [
 ]
 
 export function PublicBottomNav({ pathname, combined, destination }: { pathname: string; combined: boolean; destination: (root: string) => string }) {
+  const mergedCatalog = useMergedRoomCatalog()
   const active = pathname.startsWith('/account/profile') ? '/account/profile'
     : pathname.startsWith('/account/') ? '/account/requests'
-    : combined && /^\/meeting-room(?:\/|$)/.test(pathname) ? '/meeting-room'
+    : combined && !mergedCatalog && /^\/meeting-room(?:\/|$)/.test(pathname) ? '/meeting-room'
     : '/keys'
-  const links = combined ? combinedItems : items
-  return <nav className={`public-bottom-nav${combined ? ' public-bottom-nav-combined' : ''}`} aria-label="เมนูหลัก">
-    {links.map(({ href, label, path }) => <Link key={href} to={destination(href)} aria-current={href === active ? 'page' : undefined}>
+  const links = mergedCatalog ? [combinedItems[0], combinedItems[2], combinedItems[3]] : combined ? combinedItems : items
+  const layout = mergedCatalog ? ' public-bottom-nav-merged' : combined ? ' public-bottom-nav-combined' : ''
+  return <nav className={`public-bottom-nav${layout}`} aria-label="เมนูหลัก">
+    {links.map(({ href, label, path }) => <Link key={href} to={mergedCatalog && href === '/keys' ? href : destination(href)} aria-current={href === active ? 'page' : undefined}>
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d={path} /></svg>
-      {label}
+      {mergedCatalog && href === '/keys' ? 'เบิกกุญแจและจองห้อง' : label}
     </Link>)}
   </nav>
 }

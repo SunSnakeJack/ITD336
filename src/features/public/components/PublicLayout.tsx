@@ -13,6 +13,7 @@ import { publicNavigationQuery, type NavigationMode } from '../public-navigation
 import { PublicBottomNav } from './PublicBottomNav'
 import { PersonIcon } from './AccountAvatar'
 import './PublicNavigation.css'
+import './PublicLayout.css'
 import { publicMenuRoot, rememberPublicMenu, rememberedPublicMenu } from '../public-navigation-memory'
 import { useTabScrollPosition } from '../../../shared/components/useTabScrollPosition'
 import { hasViewerPermission, useViewerPermissions } from '../../auth/viewer-permissions.queries'
@@ -69,9 +70,9 @@ export function PublicLayout({ identity, loading, onLogout }: { identity: AuthId
           </div>
         </>}</div>
       </header>}
+      {hasBottomNav && <PublicBottomNav pathname={pathname} combined={navigationMode === 'both'} destination={destination} />}
       <main ref={content}><Outlet context={context} /></main>
     </div>
-    {hasBottomNav && <PublicBottomNav pathname={pathname} combined={navigationMode === 'both'} destination={destination} />}
     {navigationMode === 'top' && menuOpen && <UserMenuDrawer identity={identity} staffAccess={staffAccess} destination={destination} onClose={()=>setMenuOpen(false)} onProfile={()=>{setMenuOpen(false);setLoginOpen(true)}} onLogout={logout}/>}
     {loginOpen&&<GoogleSsoModal returnTo={returnTo} onClose={()=>setLoginOpen(false)}/>}
   </div>

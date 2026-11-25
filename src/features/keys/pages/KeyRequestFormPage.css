@@ -1,3 +1,34 @@
+@media (max-width: 520px), (min-width: 720px) {
+  .key-booking-form-page .key-request-form {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    gap: 12px;
+    padding: 0;
+  }
+
+  .key-booking-form-page .key-form-section,
+  .key-booking-form-page .key-purpose-options {
+    background: #fff;
+    border: 1px solid rgb(220 220 220 / 50%);
+    border-radius: 12px;
+    box-shadow: 2px 2px 2px rgb(212 212 212 / 60%);
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 12px;
+  }
+
+  .key-booking-form-page .key-form-section h2,
+  .key-booking-form-page .key-purpose-heading {
+    color: #0a0047;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+    padding: 0;
+  }
+}
+
 @media (max-width: 520px) {
   .student-shell.public-shell:has(.key-booking-form-page),
   .public-main:has(.key-booking-form-page) {
@@ -49,35 +80,6 @@
   .key-booking-form-page .key-stepper b[aria-current='step'] {
     background: #0a0047;
     border: 2px solid #0e38aa;
-  }
-
-  .key-booking-form-page .key-request-form {
-    background: transparent;
-    border: 0;
-    border-radius: 0;
-    gap: 12px;
-    padding: 0;
-  }
-
-  .key-booking-form-page .key-form-section,
-  .key-booking-form-page .key-purpose-options {
-    background: #fff;
-    border: 1px solid rgb(220 220 220 / 50%);
-    border-radius: 12px;
-    box-shadow: 2px 2px 2px rgb(212 212 212 / 60%);
-    display: grid;
-    gap: 12px;
-    margin: 0;
-    padding: 12px;
-  }
-
-  .key-booking-form-page .key-form-section h2,
-  .key-booking-form-page .key-purpose-heading {
-    color: #0a0047;
-    font-size: 16px;
-    font-weight: 500;
-    margin: 0;
-    padding: 0;
   }
 
   .key-booking-form-page .key-request-form label,

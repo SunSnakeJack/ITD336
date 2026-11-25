@@ -356,3 +356,59 @@
   width: 100%;
 }
 
+@media (width > 520px) {
+  .key-room-detail .key-schedule-heading {
+    align-items: start;
+    display: grid;
+    gap: .5rem;
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: start;
+  }
+
+  .key-room-detail .key-schedule-heading time,
+  .key-room-detail .key-schedule-heading p {
+    color: #697586;
+    margin: 0;
+    white-space: normal;
+  }
+
+  .key-room-detail .key-schedule-heading p {
+    line-height: 1.55;
+    margin-block-start: .5rem;
+  }
+}
+
+@media (min-width: 720px) {
+  .key-room-detail .key-room-information {
+    align-items: start;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto 1fr;
+  }
+
+  .key-room-detail .key-room-photo {
+    align-self: stretch;
+    grid-row: 1 / span 2;
+    position: relative;
+  }
+
+  .key-room-detail .key-room-photo-image { position: absolute; }
+
+  .key-room-detail .key-room-facts { display: grid; gap: .75rem; }
+  .key-room-detail .key-room-facts h2 { margin: 0; }
+
+  .key-room-detail .key-room-facts p,
+  .key-room-detail .key-room-information footer {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgb(15 23 42 / 8%);
+    display: grid;
+    gap: .35rem;
+    margin: 0;
+    overflow-wrap: anywhere;
+    padding: .75rem;
+  }
+
+  .key-room-detail .key-room-information footer { grid-column: 2; }
+  .key-room-detail .key-slot-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+

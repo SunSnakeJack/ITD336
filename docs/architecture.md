@@ -43,7 +43,13 @@ The room directory and room-detail routes are public. Guests read only through d
 
 After sign-in, the login route uses a validated internal return location for the keys, meeting-room, and account routes. Direct sign-in opens the staff dashboard for administrators and the key catalog for other users. Destination routes continue to enforce their own access rules.
 
-The key catalog has a global display setting under `/staff/display-settings`. Administrators with settings permission can choose the current catalog or the key-tag grid. Guests can read the selected mode. Both layouts use the same availability and key-request rules.
+The public layout and standalone sign-in page share responsive scaling and an inset viewport outline. The 1024–1279 px range uses the largest scale for tablet readability.
+
+In that range, the bottom navigation uses a single room-services link and `/keys` includes the meeting-room picker below the laboratory sections. The picker shares the same permission checks as the standalone meeting-room catalog.
+
+At 1280 px and above, layouts with bottom navigation render the same links in a left sidebar. In combined mode, the full-width header wave overlaps the top of the sidebar.
+
+The key catalog has a global display setting under `/staff/display-settings`. Administrators with settings permission can choose the current catalog or the key-tag grid. Guests can read the selected mode. Below 720 px, tabs select between general and special laboratories. At 720 px and above, both sections are visible and the key-tag grid keeps compact card widths. At the same width, room details place the photo beside the room information and show four time slots per row. Availability and key-request rules are shared across layouts.
 
 Notifications are stored with IN_APP and EMAIL delivery queue rows. No provider is wired in this phase. A trusted Edge Function/server can later claim EMAIL rows. Supabase Storage is ready for later use but no bucket is created because no confirmed document workflow exists.
 
