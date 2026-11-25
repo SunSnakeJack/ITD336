@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { renderKeyRequestEmail } from '../../../supabase/functions/_shared/email-templates'
+import { requestEmailSubject, requestEmailThreadHeaders } from '../../../supabase/functions/_shared/email-thread'
 
 const migrationPath=join(process.cwd(),'supabase/migrations/0040_key_request_email_notifications.sql')
 const sql=existsSync(migrationPath)?readFileSync(migrationPath,'utf8'):''
@@ -19,6 +20,32 @@ const scopedRetryPath=join(process.cwd(),'supabase/migrations/0049_scoped_termin
 const scopedRetrySql=existsSync(scopedRetryPath)?readFileSync(scopedRetryPath,'utf8'):''
 
 describe('key-request email notifications',()=>{
+  it('renders one cancellation link to the existing history route', () => {
+    const email = renderKeyRequestEmail('key-request-approved', {
+      requestCode: 'KR-1', roomName: 'S2407', startsAt: '2026-11-08T13:00:00+07:00',
+      endsAt: '2026-11-08T14:00:00+07:00', purpose: 'ทดสอบ', status: 'APPROVED',
+      cancelUrl: 'https://itd336.app/account/requests?tab=keys&item=room-request',
+    })
+    expect(email.html).toContain('href="https://itd336.app/account/requests?tab=keys&amp;item=room-request"')
+    expect(email.html.match(/>ยกเลิกคำขอ<\/a>/g)).toHaveLength(1)
+  })
+  it('uses the same thread reference for one recipient and separates requests and recipients', async () => {
+    const first = await requestEmailThreadHeaders('key_request', 'request-1', 'user@example.test')
+    const next = await requestEmailThreadHeaders('key_request', 'request-1', 'USER@example.test', '<first@example.test>')
+    expect(next).toEqual({ 'In-Reply-To': '<first@example.test>', References: `${first.References} <first@example.test>` })
+    expect(await requestEmailThreadHeaders('key_request', 'request-2', 'user@example.test')).not.toEqual(first)
+    expect(await requestEmailThreadHeaders('key_request', 'request-1', 'admin@example.test')).not.toEqual(first)
+    expect(requestEmailSubject('key_request', 'KR-1')).toBe('IT KeySpace | คำขอเบิกกุญแจ KR-1')
+    expect(requestEmailSubject('booking', 'KR-1')).not.toBe(requestEmailSubject('key_request', 'KR-1'))
+  })
+  it.each(['booking', 'key-request'])('renders a separate start-time email for %s', (entity) => {
+    const data = { requestCode: 'R-1', roomName: 'S2407', startsAt: '2026-11-08T13:00:00+07:00',
+      endsAt: '2026-11-08T14:00:00+07:00', purpose: 'ทดสอบ', status: 'APPROVED' }
+    const start = renderKeyRequestEmail(`${entity}-start-time`, data)
+    expect(start.subject).toBe('ถึงเวลาใช้ห้องแล้ว')
+    expect(start.html).toContain('13:00')
+    expect(renderKeyRequestEmail(`${entity}-starting-soon`, data).subject).toContain('30 นาที')
+  })
   it('queues idempotent reminder and expiry jobs only for approved requests',()=>{
     expect(sql).toContain("'key-request:'||new.id||':ending-soon'")
     expect(sql).toContain("'key-request:'||new.id||':ended'")

@@ -116,6 +116,7 @@ describe('Authentication entry point', () => {
 
   it.each([
     ['/account/requests', 'การจองและกุญแจของฉัน'],
+    ['/account/requests?tab=keys&item=4b9ee9cf-a22b-479e-ab1d-4b6b05bc7955', 'การจองและกุญแจของฉัน'],
     ['/account/profile', 'โปรไฟล์ผู้ใช้'],
   ])('shows the page heading and sign-in prompt at %s for guests', async (path, title) => {
     renderPath(path)

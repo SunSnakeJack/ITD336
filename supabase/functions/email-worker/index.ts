@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.119.2'
 import { renderKeyRequestEmail } from '../_shared/email-templates.ts'
 import {emailDeliveryPolicy,matchesTestRecipient} from '../_shared/email-delivery-policy.ts'
+import { requestEmailSubject, requestEmailThreadHeaders } from '../_shared/email-thread.ts'
 
 type OutboxRow={id:string;entity_type:string;entity_id:string;recipient_email:string;template_key:string;payload:Record<string,unknown>;idempotency_key:string}
 type RequestRow={request_code:string;status:string;starts_at:string;ends_at:string;purpose:string;decision_reason:string|null;room_name:string}
@@ -52,9 +53,50 @@ Deno.serve(async(req)=>{
    if(['key-request-starting-soon','key-request-ending-soon','key-request-ended','key-request-overdue'].includes(row.template_key)&&!['APPROVED','IN_USE'].includes(item.status))throw new Error('STALE_TIMED_NOTIFICATION')
    if(row.template_key.endsWith('-starting-soon')&&Date.parse(item.starts_at)<=Date.now())throw new Error('STALE_TIMED_NOTIFICATION')
    if(row.template_key==='booking-starting-soon'&&item.status!=='APPROVED')throw new Error('STALE_TIMED_NOTIFICATION')
+   if (row.template_key === 'booking-start-time' || row.template_key === 'key-request-start-time') {
+    const now = Date.now()
+    const startsAt = Date.parse(item.starts_at)
+    if (!['APPROVED', 'IN_USE'].includes(item.status) || !(startsAt <= now && startsAt > now - 300_000)
+      || !(Date.parse(item.ends_at) > now) || Date.parse(String(row.payload.starts_at)) !== startsAt) {
+     throw new Error('STALE_TIMED_NOTIFICATION')
+    }
+   }
    const details = (field: string, fallback: string) => typeof row.payload[field] === 'string' ? String(row.payload[field]) : fallback
-   const rendered=renderKeyRequestEmail(row.template_key,{requestCode:item.request_code,roomName:item.room_name,startsAt:details('starts_at',item.starts_at),endsAt:details('ends_at',item.ends_at),purpose:details('purpose',item.purpose),status:details('status',item.status),reason:String(row.payload.reason??item.decision_reason??'')||null})
-   const response=await fetch('https://api.resend.com/emails',{method:'POST',signal:AbortSignal.timeout(10_000),headers:{authorization:`Bearer ${resendKey}`,'content-type':'application/json','Idempotency-Key':row.idempotency_key},body:JSON.stringify({from:sender,to:[row.recipient_email],subject:rendered.subject,html:rendered.html})})
+   let cancelUrl: string | undefined
+   // These templates are queued for the requester by the request workflow.
+   if (row.entity_type === 'key_request' && ['key-request-submitted', 'key-request-approved', 'key-request-starting-soon'].includes(row.template_key)
+     && ['PENDING_APPROVAL', 'APPROVED'].includes(item.status) && Date.parse(item.starts_at) > Date.now()) {
+    const siteUrl = URL.parse(Deno.env.get('PUBLIC_SITE_URL') ?? '')
+    if (siteUrl?.protocol === 'https:' && !siteUrl.username && !siteUrl.password) {
+     const url = new URL('/account/requests', siteUrl.origin)
+     url.search = new URLSearchParams({ tab: 'keys', item: row.entity_id }).toString()
+     cancelUrl = url.toString()
+    }
+   }
+   const rendered=renderKeyRequestEmail(row.template_key,{requestCode:item.request_code,roomName:item.room_name,startsAt:details('starts_at',item.starts_at),endsAt:details('ends_at',item.ends_at),purpose:details('purpose',item.purpose),status:details('status',item.status),reason:String(row.payload.reason??item.decision_reason??'')||null,cancelUrl})
+   const subject = requestEmailSubject(row.entity_type, item.request_code)
+   let previousMessageId: string | undefined
+   if (mode === 'production') {
+    try {
+     const { data: previous } = await db.from('notification_outbox').select('provider_message_id')
+      .eq('entity_type', row.entity_type).eq('entity_id', row.entity_id)
+      .eq('recipient_email', row.recipient_email).eq('status', 'SENT')
+      .not('provider_message_id', 'is', null).order('sent_at', { ascending: false }).limit(1).maybeSingle()
+     if (previous?.provider_message_id && uuid.test(previous.provider_message_id)) {
+      const lookup = await fetch(`https://api.resend.com/emails/${previous.provider_message_id}`, {
+       headers: { authorization: `Bearer ${resendKey}` }, signal: AbortSignal.timeout(1500),
+      })
+      if (lookup.ok) {
+       const prior = await lookup.json() as { subject?: string; message_id?: string }
+       if (prior.subject === subject) previousMessageId = prior.message_id
+      }
+     }
+    } catch {
+     // The stable References value also works when provider lookup is unavailable.
+    }
+   }
+   const headers = await requestEmailThreadHeaders(row.entity_type, row.entity_id, row.recipient_email, previousMessageId)
+   const response=await fetch('https://api.resend.com/emails',{method:'POST',signal:AbortSignal.timeout(10_000),headers:{authorization:`Bearer ${resendKey}`,'content-type':'application/json','Idempotency-Key':row.idempotency_key},body:JSON.stringify({from:sender,to:[row.recipient_email],subject,headers,html:rendered.html})})
    const provider=await response.json().catch(()=>({})) as{id?:string;message?:string}
    if(!response.ok||!provider.id)throw new Error(`RESEND_${response.status}`)
    const {error: completionError}=await db.rpc('complete_notification_outbox',{p_outbox_id:row.id,p_succeeded:true,p_error:null,p_provider_message_id:provider.id})

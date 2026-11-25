@@ -34,9 +34,22 @@ and priority replacement to production delivery. New events go to the
 requester affected by the change. Deadline events are deduplicated per request
 and only consider deadlines in the last day and at or after the production cutoff.
 
-New notification emails show the subject and request details. The logo header
-and web action links are paused while their design is reviewed. The worker
-does not issue action tokens for new emails during this pause.
+Migration 0121 adds a separate start-time email for approved or in-use bookings
+and key requests. The worker queues it once per request for starts in the last
+five minutes and rechecks eligibility before sending. The 30-minute reminder
+uses its existing schedule.
+
+New emails use a stable subject per request and show the event title in the body.
+The worker uses a shared References value scoped to the request and recipient.
+When the Resend key can retrieve a previous email with the same subject, the
+worker also references its Message-ID. Conversation grouping is controlled by
+the receiving mail client.
+
+Key-request submission, approval, and start reminder emails can include a
+cancellation link for the requester before the start time. Set PUBLIC_SITE_URL
+to the HTTPS origin of the user-facing application. Apply migration 0122 before
+deploying the worker. The link opens the existing authenticated history page and
+requires confirmation there. The worker does not issue email action tokens.
 Keep the scheduler inactive until Vault is configured and the SQL is verified.
 Never expose CRON_SECRET, Resend keys, or service-role keys to frontend code.
 
