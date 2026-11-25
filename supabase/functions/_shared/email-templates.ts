@@ -1,4 +1,4 @@
-export interface KeyRequestEmailData{requestCode:string;roomName:string;startsAt:string;endsAt:string;purpose:string;status:string;reason?:string|null;cancelUrl?:string}
+export interface KeyRequestEmailData{requestCode:string;roomName:string;startsAt:string;endsAt:string;purpose:string;status:string;reason?:string|null;cancelUrl?:string;editUrl?:string;returnUrl?:string}
 export interface RenderedEmail{subject:string;html:string}
 const escapeHtml=(value:string)=>value.replace(/[&<>'"]/g,(char)=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]??char))
 const bangkokDate = new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', dateStyle: 'long' })
@@ -26,6 +26,11 @@ export function renderKeyRequestEmail(templateKey:string,data:KeyRequestEmailDat
    'key-request-expired': 'คำขอเบิกกุญแจห้องพิเศษหมดอายุ',
  }
  const heading = changeSubjects[templateKey] ?? subject
- const cancelButton = data.cancelUrl ? `<p><a href="${escapeHtml(data.cancelUrl)}" style="display:inline-block;padding:12px 18px;border-radius:8px;background:#b91c1c;color:#fff;font-weight:bold;text-decoration:none">ยกเลิกคำขอ</a></p><p>เปิดรายการใน IT KeySpace เพื่อยืนยันการยกเลิก</p>` : ''
- return{subject:heading,html:`<!doctype html><html lang="th"><head></head><body style="font-family:Arial,sans-serif;color:#111"><h2>${escapeHtml(heading)}</h2>${detail}${reason}${cancelButton}<p style="color:#64748b;font-size:12px">อีเมลอัตโนมัติจาก IT KeySpace</p></body></html>`}
+ const button = (url: string | undefined, label: string, color: string) => url
+   ? `<td width="112" valign="top"><a href="${escapeHtml(url)}" style="display:block;width:112px;padding:12px 0;border-radius:8px;background:${color};color:#fff;font-size:14px;line-height:20px;font-weight:bold;text-align:center;text-decoration:none;white-space:nowrap">${label}</a></td>` : ''
+ const buttons = [button(data.cancelUrl, 'ยกเลิกคำขอ', '#b91c1c'),
+   button(data.editUrl, 'แก้ไขคำขอ', '#1d4ed8'),
+   button(data.returnUrl, 'คืนกุญแจ', '#166534')].filter(Boolean)
+ const actions = buttons.length ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${buttons.join('<td width="8" aria-hidden="true">&nbsp;</td>')}</tr></table>` : ''
+ return{subject:heading,html:`<!doctype html><html lang="th"><head></head><body style="font-family:Arial,sans-serif;color:#111"><h2>${escapeHtml(heading)}</h2>${detail}${reason}${actions}${actions ? '<p>เปิดรายการใน IT KeySpace เพื่อดำเนินการ</p>' : ''}<p style="color:#64748b;font-size:12px">อีเมลอัตโนมัติจาก IT KeySpace</p></body></html>`}
 }

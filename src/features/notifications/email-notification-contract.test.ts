@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { renderKeyRequestEmail } from '../../../supabase/functions/_shared/email-templates'
+import { keyRequestEmailActions } from '../../../supabase/functions/_shared/key-request-email-actions'
 import { requestEmailSubject, requestEmailThreadHeaders } from '../../../supabase/functions/_shared/email-thread'
 
 const migrationPath=join(process.cwd(),'supabase/migrations/0040_key_request_email_notifications.sql')
@@ -20,6 +21,41 @@ const scopedRetryPath=join(process.cwd(),'supabase/migrations/0049_scoped_termin
 const scopedRetrySql=existsSync(scopedRetryPath)?readFileSync(scopedRetryPath,'utf8'):''
 
 describe('key-request email notifications',()=>{
+  it.each([
+    ['key-request-submitted', 'PENDING_APPROVAL', -1, true, false],
+    ['key-request-approved', 'APPROVED', 0, false, false],
+    ['key-request-ending-soon', 'APPROVED', -1, false, false],
+    ['key-request-ending-soon', 'APPROVED', 0, false, true],
+    ['key-request-overdue', 'IN_USE', 1, false, true],
+    ['key-request-updated', 'APPROVED', -1, true, false],
+    ['key-request-updated', 'IN_USE', 1, false, true],
+    ['key-request-returned', 'RETURNED', 1, false, false],
+    ['key-request-overdue', 'CANCELLED', 1, false, false],
+  ])('selects action links for %s with status %s', (template, status, offset, edit, returnKey) => {
+    const start = '2026-11-08T13:00:00+07:00'
+    expect(keyRequestEmailActions(template, status, start, Date.parse(start) + offset)).toMatchObject({ edit, returnKey })
+  })
+
+  it('renders blue edit and green return links to the request history', () => {
+    const url = 'https://itd-336.vercel.app/account/requests?tab=keys&item=room-request'
+    const data = { requestCode: 'KR-1', roomName: 'S2407', startsAt: '2026-11-08T13:00:00+07:00',
+      endsAt: '2026-11-08T14:00:00+07:00', purpose: 'ทดสอบ', status: 'APPROVED' }
+    const edit = renderKeyRequestEmail('key-request-approved', { ...data, editUrl: url }).html
+    const returned = renderKeyRequestEmail('key-request-ended', { ...data, returnUrl: url }).html
+    expect(edit).toMatch(/href="[^"]+tab=keys&amp;item=room-request"[^>]+background:#1d4ed8[^>]+>แก้ไขคำขอ<\/a>/)
+    expect(returned).toMatch(/href="[^"]+tab=keys&amp;item=room-request"[^>]+background:#166534[^>]+>คืนกุญแจ<\/a>/)
+    const both = renderKeyRequestEmail('key-request-approved', { ...data, cancelUrl: url, editUrl: url }).html
+    const doc = new DOMParser().parseFromString(both, 'text/html')
+    const rows = doc.querySelectorAll('table[role="presentation"] tr')
+    expect(rows).toHaveLength(1)
+    const links = Array.from(rows[0].querySelectorAll('a'))
+    expect(links.map(link => link.textContent)).toEqual(['ยกเลิกคำขอ', 'แก้ไขคำขอ'])
+    expect(links.map(link => [link.style.width, link.style.padding, link.style.lineHeight])).toEqual([
+      ['112px', '12px 0px', '20px'], ['112px', '12px 0px', '20px'],
+    ])
+    expect(new DOMParser().parseFromString(returned, 'text/html').querySelectorAll('table a')).toHaveLength(1)
+    expect(renderKeyRequestEmail('key-request-rejected', data).html).not.toContain('<table')
+  })
   it('renders one cancellation link to the existing history route', () => {
     const email = renderKeyRequestEmail('key-request-approved', {
       requestCode: 'KR-1', roomName: 'S2407', startsAt: '2026-11-08T13:00:00+07:00',

@@ -2,6 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.119.2'
 import { renderKeyRequestEmail } from '../_shared/email-templates.ts'
 import {emailDeliveryPolicy,matchesTestRecipient} from '../_shared/email-delivery-policy.ts'
 import { requestEmailSubject, requestEmailThreadHeaders } from '../_shared/email-thread.ts'
+import { keyRequestEmailActions } from '../_shared/key-request-email-actions.ts'
 
 type OutboxRow={id:string;entity_type:string;entity_id:string;recipient_email:string;template_key:string;payload:Record<string,unknown>;idempotency_key:string}
 type RequestRow={request_code:string;status:string;starts_at:string;ends_at:string;purpose:string;decision_reason:string|null;room_name:string}
@@ -62,18 +63,25 @@ Deno.serve(async(req)=>{
     }
    }
    const details = (field: string, fallback: string) => typeof row.payload[field] === 'string' ? String(row.payload[field]) : fallback
-   let cancelUrl: string | undefined
-   // These templates are queued for the requester by the request workflow.
-   if (row.entity_type === 'key_request' && ['key-request-submitted', 'key-request-approved', 'key-request-starting-soon'].includes(row.template_key)
-     && ['PENDING_APPROVAL', 'APPROVED'].includes(item.status) && Date.parse(item.starts_at) > Date.now()) {
+   let actionLinks: { cancelUrl?: string; editUrl?: string; returnUrl?: string } = {}
+   // The older overdue queue also targeted administrators. Only the current
+   // requester-only event is eligible for a management link.
+   if (row.entity_type === 'key_request' && (row.template_key !== 'key-request-overdue'
+     || row.idempotency_key === `key-request:${row.entity_id}:key-request-overdue`)) {
+    const actions = keyRequestEmailActions(row.template_key, item.status, item.starts_at, Date.now())
     const siteUrl = URL.parse(Deno.env.get('PUBLIC_SITE_URL') ?? '')
     if (siteUrl?.protocol === 'https:' && !siteUrl.username && !siteUrl.password) {
      const url = new URL('/account/requests', siteUrl.origin)
      url.search = new URLSearchParams({ tab: 'keys', item: row.entity_id }).toString()
-     cancelUrl = url.toString()
+     const requestUrl = url.toString()
+     actionLinks = {
+      cancelUrl: actions.cancel ? requestUrl : undefined,
+      editUrl: actions.edit ? requestUrl : undefined,
+      returnUrl: actions.returnKey ? requestUrl : undefined,
+     }
     }
    }
-   const rendered=renderKeyRequestEmail(row.template_key,{requestCode:item.request_code,roomName:item.room_name,startsAt:details('starts_at',item.starts_at),endsAt:details('ends_at',item.ends_at),purpose:details('purpose',item.purpose),status:details('status',item.status),reason:String(row.payload.reason??item.decision_reason??'')||null,cancelUrl})
+   const rendered=renderKeyRequestEmail(row.template_key,{requestCode:item.request_code,roomName:item.room_name,startsAt:details('starts_at',item.starts_at),endsAt:details('ends_at',item.ends_at),purpose:details('purpose',item.purpose),status:details('status',item.status),reason:String(row.payload.reason??item.decision_reason??'')||null,...actionLinks})
    const subject = requestEmailSubject(row.entity_type, item.request_code)
    let previousMessageId: string | undefined
    if (mode === 'production') {

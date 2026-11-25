@@ -50,6 +50,12 @@ cancellation link for the requester before the start time. Set PUBLIC_SITE_URL
 to the HTTPS origin of the user-facing application. Apply migration 0122 before
 deploying the worker. The link opens the existing authenticated history page and
 requires confirmation there. The worker does not issue email action tokens.
+
+The same history link supports editing before the request starts and returning
+keys once the request has started. Return links are included in ending,
+ended, and requester overdue emails as applicable. Request update emails can
+include the action that matches the current status and time. Apply migration
+0123 before deploying the worker with return links.
 Keep the scheduler inactive until Vault is configured and the SQL is verified.
 Never expose CRON_SECRET, Resend keys, or service-role keys to frontend code.
 
