@@ -220,6 +220,7 @@ describe('Authentication entry point', () => {
 
   it('keeps the key catalog return path and rejects external redirects', () => {
     expect(normalizeAuthReturnTo('/keys')).toBe('/keys')
+    expect(normalizeAuthReturnTo('/dashboard')).toBeUndefined()
     expect(normalizeAuthReturnTo('/meeting-room/meeting-1/request?start=12:30')).toBe('/meeting-room/meeting-1/request?start=12:30')
     expect(normalizeAuthReturnTo('https://evil.example/keys')).toBeUndefined()
     expect(normalizeAuthReturnTo('//evil.example/keys')).toBeUndefined()
@@ -230,6 +231,11 @@ describe('Authentication entry point', () => {
     renderPath('/staff')
     expect(await screen.findByRole('heading', { name: 'เข้าสู่ระบบ' })).toBeInTheDocument()
     expect(screen.queryByText('Staff Management')).not.toBeInTheDocument()
+  })
+
+  it('opens the key catalog from an old public dashboard link', async () => {
+    renderPath('/dashboard')
+    expect(await screen.findByRole('heading', { name: 'เลือกกุญแจที่ต้องการเบิก' })).toBeInTheDocument()
   })
 
   it.each([
@@ -354,9 +360,9 @@ describe('Authentication entry point', () => {
     expect(screen.getByLabelText('รหัสผ่าน')).toBeInTheDocument()
     expect(screen.getByRole('checkbox', { name: 'Remember Me' })).toBeChecked()
     expect(screen.getByRole('button', { name: 'Log In' })).toBeInTheDocument()
-    expect(screen.getByText('Forgot Password')).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.queryByText('Forgot Password')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Login with Google' })).toBeEnabled()
-    expect(screen.getByText('Sign up')).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.queryByText('Sign up')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: /เว็บไซต์มหาวิทยาลัยนอร์ทกรุงเทพ/ })).toHaveAttribute(
       'href',
       'https://nbu-mockup.vercel.app/',
@@ -859,6 +865,10 @@ describe('Authentication entry point', () => {
   })
 
   it('opens an anonymous key-request form for a general laboratory', async () => {
+    vi.setSystemTime(new Date('2026-11-08T16:45:00+07:00'))
+    sessionStorage.setItem('itkeyspace:tab:draft:key:guest:room-1:2026-11-08', JSON.stringify({
+      selectedStart: '17:00', selectedEnd: '17:30', reviewing: true,
+    }))
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{ id: 'room-1', code: 'S2407', layout_key: 'S2407', name: 'ห้องปฏิบัติการคอมพิวเตอร์', room_type_name: 'ห้องทั่วไป', building: 'อาคาร 2', floor: '4', capacity: 30, active: true, academic_schedule_confirmed: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: false }], error: null } as never)
     renderPath('/keys/rooms/room-1/request')
     expect(await screen.findByRole('heading', { name: 'แบบฟอร์มการเบิกกุญแจ' })).toBeInTheDocument()
@@ -868,6 +878,27 @@ describe('Authentication entry point', () => {
     expect(screen.getByRole('button', { name: 'ถัดไป' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'ย้อนกลับ' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'เข้าสู่ระบบ' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'เวลาเริ่มต้น เลือกเวลาเริ่มต้น' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'เวลาสิ้นสุด เลือกเวลาสิ้นสุด' })).toBeDisabled()
+    expect(screen.queryByText('ช่วงเวลาที่เลือกใช้ไม่ได้แล้ว กรุณาเลือกเวลาใหม่')).not.toBeInTheDocument()
+  })
+
+  it.each(['', '/request'])('shows an unavailable room state without loading its schedule (%s)', async suffix => {
+    renderPath(`/keys/rooms/00000000-0000-0000-0000-000000000000${suffix}`)
+    expect(await screen.findByRole('heading', { name: 'ไม่พบห้องนี้' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'กลับไปเลือกห้อง' })).toHaveAttribute('href', '/keys')
+    expect(supabase.rpc).not.toHaveBeenCalledWith('get_public_room_schedule_events', expect.anything())
+    expect(supabase.rpc).not.toHaveBeenCalledWith('get_public_key_request_history', expect.anything())
+  })
+
+  it('shows when there are no more key-request slots today', async () => {
+    vi.setSystemTime(new Date('2026-11-08T18:05:00+07:00'))
+    vi.mocked(supabase.rpc).mockImplementation((async (name: string) => ({
+      data: name === 'get_public_room_catalog' ? [{ id: 'room-1', code: 'S2407', active: true, usage_scope: 'LABORATORY' }] : [],
+      error: null,
+    })) as never)
+    renderPath('/keys/rooms/room-1/request')
+    expect(await screen.findByText('วันนี้ไม่มีช่วงเวลาว่าง')).toBeInTheDocument()
   })
 
   it('returns to the same key request and restores its draft after switching menu tabs', async () => {
@@ -886,6 +917,10 @@ describe('Authentication entry point', () => {
     fireEvent.click(screen.getByRole('link', { name: 'เบิกกุญแจ' }))
     expect(await screen.findByLabelText('ระบุวัตถุประสงค์')).toHaveValue('ทำโครงงาน')
     expect(screen.getByLabelText('ชื่อ–นามสกุล')).toHaveValue('ผู้เบิกทดสอบ')
+    fireEvent.click(screen.getByRole('button', { name: 'เวลาเริ่มต้น เลือกเวลาเริ่มต้น' }))
+    fireEvent.click(screen.getByRole('option', { name: '08:00' }))
+    fireEvent.click(screen.getByRole('button', { name: 'เวลาสิ้นสุด เลือกเวลาสิ้นสุด' }))
+    fireEvent.click(screen.getByRole('option', { name: '09:00' }))
     fireEvent.click(screen.getByRole('button', { name: 'ถัดไป' }))
     await screen.findByRole('heading', { name: 'ตรวจสอบข้อมูล' })
     vi.setSystemTime(new Date('2026-11-08T08:15:00+07:00'))
@@ -912,7 +947,7 @@ describe('Authentication entry point', () => {
       if (name === 'get_public_key_request_lecturers_v2') return { data: [{ id: 'course-1', course_code: 'ITD336', course_name: 'การพัฒนาเว็บแอปพลิเคชัน', lecturer_name: 'อ. พสวัตน์' }], error: null } as never
       return { data: [], error: null } as never
     }) as never)
-    renderPath('/keys/rooms/room-1/request')
+    renderPath('/keys/rooms/room-1/request?start=08:00&end=09:00')
 
     fireEvent.click(await screen.findByRole('radio', { name: 'เพื่อเปิดห้องการเรียนการสอน' }))
     fireEvent.change(screen.getByLabelText('รหัสวิชา'), { target: { value: 'SOC401' } })
@@ -1028,7 +1063,7 @@ describe('Authentication entry point', () => {
   it('reviews an anonymous key request before sending it', async () => {
     vi.setSystemTime(new Date('2026-11-08T07:30:00+07:00'))
     vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: [{ id: 'room-1', code: 'S2407', layout_key: 'S2407', name: 'ห้องปฏิบัติการคอมพิวเตอร์', room_type_name: 'ห้องทั่วไป', building: 'อาคาร 2', floor: '4', capacity: 30, active: true, academic_schedule_confirmed: true, usage_scope: 'LABORATORY', requires_sso_for_key_request: false }], error: null } as never)
-    renderPath('/keys/rooms/room-1/request')
+    renderPath('/keys/rooms/room-1/request?start=08:00&end=09:00')
     fireEvent.change(await screen.findByLabelText('ชื่อ–นามสกุล'), { target: { value: 'นักศึกษาทดสอบ' } })
     fireEvent.change(screen.getByLabelText('อีเมล'), { target: { value: 'student@northbkk.ac.th' } })
     fireEvent.click(screen.getByRole('radio', { name: 'อื่นๆ' }))
@@ -1056,7 +1091,7 @@ describe('Authentication entry point', () => {
       if (name === 'create_key_request_v2') return { data: { id: 'request-1', request_code: 'KR-001', status: 'APPROVED', email_dispatch_token: 'a'.repeat(64) }, error: null } as never
       return { data: [], error: null } as never
     }) as never)
-    renderPath('/keys/rooms/room-1/request')
+    renderPath('/keys/rooms/room-1/request?start=08:00&end=09:00')
     fireEvent.change(await screen.findByLabelText('ชื่อ–นามสกุล'), { target: { value: 'นักศึกษาทดสอบ' } })
     fireEvent.change(screen.getByLabelText('อีเมล'), { target: { value: 'student@northbkk.ac.th' } })
     fireEvent.click(screen.getByRole('radio', { name: 'อื่นๆ' }))
@@ -1083,7 +1118,7 @@ describe('Authentication entry point', () => {
       if (name === 'create_key_request_v2') return { data: { id: 'request-2', request_code: 'KR-002', status: 'PENDING_APPROVAL' }, error: null } as never
       return { data: [], error: null } as never
     }) as never)
-    renderPath('/keys/rooms/room-1/request')
+    renderPath('/keys/rooms/room-1/request?start=08:00&end=09:00')
     fireEvent.change(await screen.findByLabelText('ชื่อ–นามสกุล'), { target: { value: 'นักศึกษาทดสอบ' } })
     fireEvent.change(screen.getByLabelText('อีเมล'), { target: { value: 'student@northbkk.ac.th' } })
     fireEvent.click(screen.getByRole('radio', { name: 'อื่นๆ' }))
@@ -1258,7 +1293,7 @@ describe('Authentication entry point', () => {
     })) as never)
     const identity = { userId: 'role-test', fullName: 'Test Account', email: 'role@northbkk.ac.th', role,
       roles: role === 'DEPARTMENT_HEAD' ? [role, 'TEACHER' as const] : [role] }
-    render(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={['/keys/rooms/room-1/request']}>
+    render(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={['/keys/rooms/room-1/request?start=08:00&end=09:00']}>
       <Routes><Route path="/keys/rooms/:roomId/request" element={<KeyRequestFormPage identity={identity} authLoading={false} />} /></Routes>
     </MemoryRouter></QueryClientProvider>)
     expect(await screen.findByLabelText('สถานะ')).toHaveValue(label)

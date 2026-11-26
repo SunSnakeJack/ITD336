@@ -4,7 +4,7 @@ import { RequestStepper } from '../../../shared/components/RequestStepper'
 import { saturdayPolicyQuery } from '../../schedules/saturday-policy.queries'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FormEvent, useMemo, useState } from 'react'
-import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { getRequesterStatus, ROLE_LABELS, type AuthIdentity } from '../../auth/auth.types'
 import { publicRoomsQuery, publicScheduleEventsQuery, scheduleKeys } from '../../schedules/schedule.queries'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
@@ -15,6 +15,7 @@ import { keyLoanKeys, keyRequestReferenceOptionsQuery } from '../key.queries'
 import { RequesterStatusSelect } from '../components/RequesterStatusSelect'
 import { KeyRequestReview } from '../components/KeyRequestReview'
 import { KeyRequestSuccess } from '../components/KeyRequestSuccess'
+import { KeyRoomNotFound } from '../components/KeyRoomNotFound'
 import { LecturerCombobox } from '../components/LecturerCombobox'
 import { SelectField } from '../../../shared/components/SelectField'
 import { availableEndTimes, timeSelectOptions, DEFAULT_ROOM_SLOT_POLICY, isRoomSlotElapsed, roomSlotTimes, isRoomSlotOccupied } from '../../schedules/request-time-options'
@@ -49,21 +50,24 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
   const rooms = useQuery(publicRoomsQuery())
   const saturday = useQuery(saturdayPolicyQuery())
   const referenceOptions = useQuery(keyRequestReferenceOptionsQuery(identity?.userId))
-  const room = rooms.data?.find((item) => item.id === roomId)
+  const room = rooms.data?.find((item) => item.id === roomId && item.usageScope === 'LABORATORY')
   const access = useViewerPermissions(identity)
   const permitted = hasViewerPermission(access.data, keyRequestPermission(room?.requiresSsoForKeyRequest))
   const requestedDate = useMemo(() => searchParams.get('date') ?? bangkokDate(), [searchParams])
   const scope = identity?.userId ?? 'guest'
-  const [draft, updateDraft, clearDraft] = useTabDraft<KeyDraft>(`draft:key:${scope}:${roomId}:${requestedDate}`, {
+  const incomingStart = searchParams.get('start') ?? ''
+  const incomingEnd = searchParams.get('end') ?? ''
+  const incomingSelection = incomingStart && incomingEnd
+    ? JSON.stringify([searchParams.get('selection'), incomingStart, incomingEnd]) : ''
+  // Separate direct entry from room selections and ignore legacy implicit time defaults.
+  const entry = incomingSelection ? 'room-selection' : 'direct'
+  const [draft, updateDraft, clearDraft] = useTabDraft<KeyDraft>(`draft:key:v2:${scope}:${roomId}:${requestedDate}:${entry}`, {
     guestStatus: 'STUDENT', purposeType: null, purpose: '', courseCode: '', referenceOptionId: '',
-    selectedStart: searchParams.get('start') ?? '08:00', selectedEnd: searchParams.get('end') ?? '09:00', reviewing: false,
+    selectedStart: '', selectedEnd: '', reviewing: false,
   })
-  const selection = searchParams.get('selection')
-  const incomingStart = searchParams.get('start')
-  const incomingEnd = searchParams.get('end')
-  if (!authLoading && selection && incomingStart && incomingEnd && draft.appliedSelection !== selection) {
+  if (!authLoading && incomingSelection && draft.appliedSelection !== incomingSelection) {
     // Consume each explicit room selection once so reopening this URL restores subsequent form edits.
-    updateDraft({ appliedSelection: selection, replacementDate: undefined, selectedStart: incomingStart, selectedEnd: incomingEnd, reviewing: false })
+    updateDraft({ appliedSelection: incomingSelection, replacementDate: undefined, selectedStart: incomingStart, selectedEnd: incomingEnd, reviewing: false })
   }
   const date = draft.replacementDate ?? requestedDate
   const resetToToday = () => updateDraft({ replacementDate: bangkokDate(), selectedStart: '', selectedEnd: '', reviewing: false })
@@ -80,7 +84,7 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
   const accountStatus = getRequesterStatus(identity)
   const requesterType = accountStatus ?? guestStatus
   const displayRole = identity?.role ?? requesterType
-  const events = useQuery({ ...publicScheduleEventsQuery({ roomId, from: date, to: date }), enabled: Boolean(roomId && room && permitted && (!room.requiresLoginForKeyRequest || identity)) })
+  const events = useQuery({ ...publicScheduleEventsQuery({ roomId, from: date, to: date }), enabled: rooms.isSuccess && Boolean(room && permitted && (!room.requiresLoginForKeyRequest || identity)) })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [result, setResult] = useState<KeyRequestResult | null>(null)
   const save = useMutation({ mutationFn: createKeyRequest, onError: (error) => {
@@ -102,7 +106,7 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
   if (authLoading) return <LoadingSpinner label="กำลังตรวจสอบบัญชี…" />
   if (rooms.isPending) return <LoadingSpinner label="กำลังโหลดข้อมูลห้อง…" />
   if (rooms.isError) return <section className="key-request-entry" role="alert">ไม่สามารถโหลดข้อมูลห้องได้ <button type="button" onClick={() => void rooms.refetch()}>ลองใหม่</button></section>
-  if (!room || room.usageScope && room.usageScope !== 'LABORATORY') return <Navigate to="/keys" replace />
+  if (!room) return <KeyRoomNotFound />
   if (access.isPending) return <LoadingSpinner label="กำลังตรวจสอบสิทธิ์…" />
   if (access.isError) return <p role="alert">ไม่สามารถตรวจสอบสิทธิ์เบิกกุญแจได้ <button onClick={() => void access.refetch()}>ลองใหม่</button></p>
   if (!identity && (room.requiresLoginForKeyRequest || !permitted)) return <section className="key-request-entry key-auth-required"><h1>ห้องนี้ต้องเข้าสู่ระบบ</h1><p>กรุณายืนยันตัวตนด้วยบัญชีมหาวิทยาลัยก่อนส่งคำขอ</p><Link className="primary-action" to={`/login?returnTo=${encodeURIComponent(`/keys/rooms/${roomId}/request${searchParams.size ? `?${searchParams.toString()}` : ''}`)}`}>เข้าสู่ระบบมหาวิทยาลัย</Link><Link to={`/keys/rooms/${roomId}`}>กลับไปดูรายละเอียดห้อง</Link></section>
@@ -126,8 +130,8 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
     isRoomSlotOccupied(date, time, slots, events.data ?? []),
   ))
   const endTime = reviewing || result || endOptions.some((option) => option.value === selectedEnd) ? selectedEnd : ''
-  const customHours = hours.opensAt !== DEFAULT_ROOM_SLOT_POLICY.opensAt || hours.closesAt !== DEFAULT_ROOM_SLOT_POLICY.closesAt || (hours.slotMinutes ?? DEFAULT_ROOM_SLOT_POLICY.slotMinutes) !== DEFAULT_ROOM_SLOT_POLICY.slotMinutes
-  const selectionUnavailable = Boolean((draft.appliedSelection || customHours) && events.isSuccess && (
+  const noTimesToday = date === bangkokDate() && events.isSuccess && startOptions.every(option => option.disabled)
+  const selectionUnavailable = Boolean(events.isSuccess && (
     (selectedStart && !startTime) || (selectedEnd && !endTime)
   ))
   if (result) return <KeyRequestSuccess catalogPath={keyCatalogPath(room.requiresSsoForKeyRequest)} status={result.status} roomCode={room.code} date={date} startTime={startTime} endTime={endTime} purpose={effectivePurpose} />
@@ -168,7 +172,7 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
     if (!purposeType) nextErrors.purposeType = 'กรุณาเลือกวัตถุประสงค์'
     if (purposeType === 'OTHER' && !purpose.trim()) nextErrors.purpose = 'กรุณาระบุวัตถุประสงค์'
     if (!events.isSuccess) nextErrors.time = 'ไม่สามารถตรวจสอบช่วงเวลาว่างได้'
-    else if (!startTime || !endTime || endTime <= startTime) nextErrors.time = 'เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น'
+    else if (!startTime || !endTime) nextErrors.time = 'กรุณาเลือกเวลาเริ่มต้นและเวลาสิ้นสุด'
     if (courseRequired) {
       if (!courseCode.trim()) nextErrors.courseCode = 'กรุณากรอกรหัสวิชา'
       if (requesterType === 'STUDENT' && !selectedReference) {
@@ -195,6 +199,7 @@ export function KeyRequestFormPage({ identity, authLoading }: { identity: AuthId
       <div className="key-time-fields key-time-row"><SelectField label="เวลาเริ่มต้น" value={startTime} placeholder="เลือกเวลาเริ่มต้น" options={startOptions} onChange={setStartTime} placement="top"/><SelectField label="เวลาสิ้นสุด" value={endTime} placeholder="เลือกเวลาสิ้นสุด" options={endOptions} disabled={!startTime} onChange={setEndTime} placement="top"/></div></section>
       {(errors.date || errors.time || save.error) && <p className="panel-error" role="alert">{errors.date ?? errors.time ?? save.error?.message}</p>}
       {selectionUnavailable && !errors.date && !errors.time && !save.error && <p className="panel-error" role="alert">ช่วงเวลาที่เลือกใช้ไม่ได้แล้ว กรุณาเลือกเวลาใหม่</p>}
+      {noTimesToday && <p role="status">วันนี้ไม่มีช่วงเวลาว่าง <Link to={keyCatalogPath(room.requiresSsoForKeyRequest)}>กลับไปเลือกห้อง</Link></p>}
       {events.isPending && <p role="status">กำลังตรวจสอบช่วงเวลาว่าง…</p>}
       <div className="key-form-actions"><Link to={`/keys/rooms/${roomId}`}>ย้อนกลับ</Link><button className="primary-action" disabled={events.isPending}>ถัดไป <span aria-hidden="true">→</span></button></div>
     </form>

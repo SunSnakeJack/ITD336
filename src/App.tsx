@@ -12,7 +12,6 @@ import type { AuthIdentity } from "./features/auth/auth.types";
 import { hasViewerPermission, useViewerPermissions } from "./features/auth/viewer-permissions.queries";
 import { canOpenStaffRoute, staffNavigation } from "./features/staff/staff-navigation";
 import { PublicLayout } from "./features/public/components/PublicLayout";
-import { PublicDashboardPage } from "./features/public/pages/PublicDashboardPage";
 import { AccountSignInPrompt } from "./features/public/components/AccountSignInPrompt";
 import { AccountRequestsPage } from "./features/bookings/pages/AccountRequestsPage";
 import { LoadingSpinner } from "./shared/components/LoadingSpinner";
@@ -137,7 +136,6 @@ export function App() {
         }
       >
         <Route index element={<Navigate to="/keys" replace />} />
-        <Route path="dashboard" element={<PublicDashboardPage />} />
         <Route path="keys" element={<KeyRequestRoomsPage identity={identity} authLoading={loading} />} />
         <Route path="meeting-room" element={<MeetingRoomEntryPage identity={identity} authLoading={loading} />} />
         <Route path="meeting-room/:roomId" element={<MeetingRoomDetailPage identity={identity} />} />

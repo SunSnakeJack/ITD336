@@ -7,7 +7,7 @@ import { isSaturdayClosed } from '../../schedules/saturday-policy'
 import { saturdayPolicyQuery } from '../../schedules/saturday-policy.queries'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import type { AuthIdentity } from '../../auth/auth.types'
 import { publicRoomsQuery, publicScheduleEventsQuery } from '../../schedules/schedule.queries'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
@@ -17,6 +17,7 @@ import { keyRequestTimingPolicyQuery, publicKeyRequestHistoryQuery } from '../ke
 import { isSelectableRange, isTimeSelected } from '../utils/key-slot-selection'
 import { GoogleSsoModal } from '../../auth/components/GoogleSsoModal'
 import { useTabDraft } from '../../../shared/components/useTabDraft'
+import { KeyRoomNotFound } from '../components/KeyRoomNotFound'
 import defaultRoomImage from '../../../assets/default-room.jpg'
 import './KeyRequestRoomDetailPage.css'
 
@@ -26,11 +27,12 @@ const thaiDate = (date:string) => new Intl.DateTimeFormat('th-TH', { timeZone: '
 export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity | null }) {
   const { roomId = '' } = useParams()
   const rooms = useQuery(publicRoomsQuery())
-  const room = rooms.data?.find((candidate) => candidate.id === roomId)
+  const room = rooms.data?.find((candidate) => candidate.id === roomId && candidate.usageScope === 'LABORATORY')
   const access = useViewerPermissions(identity)
   const date = useMemo(bangkokDate, [])
-  const events = useQuery(publicScheduleEventsQuery({ roomId, from: date, to: date }))
-  const history = useQuery(publicKeyRequestHistoryQuery(roomId))
+  const canLoadRoomData = rooms.isSuccess && Boolean(room)
+  const events = useQuery({ ...publicScheduleEventsQuery({ roomId, from: date, to: date }), enabled: canLoadRoomData })
+  const history = useQuery({ ...publicKeyRequestHistoryQuery(roomId), enabled: canLoadRoomData })
   const saturday = useQuery(saturdayPolicyQuery())
   const closed = isSaturdayClosed(date, saturday.data)
   const timingPolicy=useQuery(keyRequestTimingPolicyQuery())
@@ -45,7 +47,7 @@ export function KeyRequestRoomDetailPage({ identity }: { identity: AuthIdentity 
 
   if (rooms.isPending) return <LoadingSpinner label="กำลังโหลดข้อมูลห้อง…" />
   if (rooms.isError) return <section className="key-request-entry" role="alert">ไม่สามารถโหลดข้อมูลห้องได้ <button type="button" onClick={() => void rooms.refetch()}>ลองใหม่</button></section>
-  if (!room || room.usageScope !== 'LABORATORY') return <Navigate to="/keys" replace />
+  if (!room) return <KeyRoomNotFound />
 
   const now = new Date()
   const slots = roomSlotTimes(room.operatingHours)

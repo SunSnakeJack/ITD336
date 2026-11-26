@@ -196,7 +196,6 @@ button { cursor: pointer; }
 
 .remember-option input { accent-color: #2c1eed; height: 14px; margin: 0; width: 14px; }
 
-.disabled-link { color: #454754; cursor: default; font-size: .72rem; font-weight: 500; }
 
 .form-error {
   background: #fff1f2;
@@ -254,13 +253,11 @@ button { cursor: pointer; }
 
 .google-button svg { height: 20px; margin-right: .6rem; width: 20px; }
 
-.signup-copy { color: #858895; font-size: .68rem; margin: 1.05rem 0 .9rem; text-align: center; }
-.signup-copy span { color: #2818dd; font-weight: 700; }
-
 .login-footer {
   align-items: center;
   display: flex;
   justify-content: center;
+  margin-top: 1rem;
   min-height: 48px;
 }
 
@@ -312,7 +309,6 @@ button { cursor: pointer; }
   .login-button { min-height: 43px; }
   .or-divider { margin-block: .7rem; }
   .google-button { min-height: 39px; }
-  .signup-copy { margin-block: .7rem .5rem; }
   .login-footer { min-height: 42px; }
   .nbu-footer-logo, .faculty-footer-logo { height: 36px; }
 }
@@ -403,7 +399,6 @@ button { cursor: pointer; }
   .login-brand h1 { font-size: 1.55rem; }
   .login-brand p { font-size: .82rem; margin-bottom: 1.35rem; }
   .or-divider { margin-block: .9rem; }
-  .signup-copy { margin-block: .9rem .7rem; }
 }
 
 @media (max-width: 360px) {

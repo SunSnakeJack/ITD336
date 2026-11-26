@@ -21,6 +21,10 @@ Guests see the Google sign-in dialog before entering the key form when the room 
 
 The room detail page remembers its selected range in the current browser tab. Starting the form from a new room selection replaces the draft's date and times while preserving its other fields. Returning through the bottom navigation restores later edits made in the form.
 
+A fresh direct link to a key request uses today's date in Asia/Bangkok when no date is supplied. Start and end times are blank unless the link supplies both times or the user has already made a selection in the current form draft. Room selections and direct-entry drafts are separate. If today's slots are exhausted, the form explains that no times remain and links back to the catalog.
+
+The key detail and request pages show a room-not-found state for IDs outside the laboratory catalog. They wait for the catalog to validate the room before requesting its schedule or history.
+
 The key form and review show the same primary account role as the site header. Lecturer selection and the submitted requester type continue to use the student or teacher classification.
 
 The key catalog, room schedule, and form use the room category's Bangkok opening and closing times. The default window is 08:00–18:00. The last full-slot boundary is an end-only option. The database enforces the same window on new requests and time changes, and the form checks for policy changes before confirmation.

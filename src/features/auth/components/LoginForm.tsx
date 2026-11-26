@@ -57,7 +57,6 @@ export function LoginForm({ embedded=false, onClose, onSuccess, returnTo }: { em
               />
               <span>Remember Me</span>
             </label>
-            <span aria-disabled="true" className="disabled-link">Forgot Password</span>
           </div>
           {error && <p className="form-error" role="alert">{error}</p>}
           <button className="login-button" disabled={submitting} type="submit">
@@ -74,7 +73,6 @@ export function LoginForm({ embedded=false, onClose, onSuccess, returnTo }: { em
           </svg>
           <span>Login with Google</span>
         </button>
-        <p className="signup-copy">Don't have an account? <span aria-disabled="true">Sign up</span></p>
         <footer aria-label="ตราสัญลักษณ์มหาวิทยาลัยและคณะ" className="login-footer">
           <a
             aria-label="ไปยังเว็บไซต์มหาวิทยาลัยนอร์ทกรุงเทพ (เปิดในแท็บใหม่)"
